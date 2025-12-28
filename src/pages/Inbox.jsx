@@ -3,7 +3,7 @@ import api from '../lib/api';
 import { Inbox as InboxIcon, Send, Star, Check, Clock, User, MessageSquare, Mail, Phone, Search, Filter, MoreVertical } from 'lucide-react';
 import './CRMPages.css';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 export default function Inbox() {
   const [conversations, setConversations] = useState([]);

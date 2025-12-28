@@ -3,7 +3,7 @@ import api from '../lib/api';
 import { History, Search, Filter, RefreshCw } from 'lucide-react';
 import './CRMPages.css';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 export default function AuditLogs() {
   const [logs, setLogs] = useState([]);

@@ -3,7 +3,7 @@ import api from '../lib/api';
 import { Workflow, Plus, Edit, Trash2, Check, Play, Pause, Zap, Settings, History } from 'lucide-react';
 import './CRMPages.css';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 export default function Workflows() {
   const [workflows, setWorkflows] = useState([]);

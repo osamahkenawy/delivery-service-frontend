@@ -6,7 +6,7 @@ import {
   CheckCircle, Xmark, User, Package, Settings,
   Refresh, Play, Pause, Key
 } from 'iconoir-react';
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 import './SuperAdmin.css';
 
 const SuperAdminTenants = () => {

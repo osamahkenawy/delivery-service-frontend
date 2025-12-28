@@ -55,7 +55,7 @@ function App() {
       const token = localStorage.getItem('crm_token');
       if (token) {
         // Token exists, verify with server
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+        const API_URL = import.meta.env.VITE_API_URL || '/api';
         const res = await fetch(`${API_URL}/auth/session`, {
           headers: { 'Authorization': `Bearer ${token}` },
           credentials: 'include'
@@ -84,7 +84,7 @@ function App() {
   };
 
   const login = async (username, password) => {
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+    const API_URL = import.meta.env.VITE_API_URL || '/api';
     const res = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -117,7 +117,7 @@ function App() {
   const logout = async () => {
     try {
       const token = localStorage.getItem('crm_token');
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+      const API_URL = import.meta.env.VITE_API_URL || '/api';
       await fetch(`${API_URL}/auth/logout`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },

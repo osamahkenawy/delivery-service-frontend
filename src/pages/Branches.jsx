@@ -3,7 +3,7 @@ import api from '../lib/api';
 import { Building2, Plus, Edit, Trash2, Check, MapPin, Phone, Mail, Star } from 'lucide-react';
 import './CRMPages.css';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 export default function Branches() {
   const [branches, setBranches] = useState([]);

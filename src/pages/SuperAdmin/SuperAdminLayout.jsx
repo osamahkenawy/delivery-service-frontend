@@ -5,7 +5,7 @@ import {
   Menu, LogOut, Home, Building, User, Settings, ShieldCheck,
   Globe, Package, Bell, Search, NavArrowLeft, Suitcase
 } from 'iconoir-react';
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 import './SuperAdmin.css';
 
 const SuperAdminLayout = () => {
