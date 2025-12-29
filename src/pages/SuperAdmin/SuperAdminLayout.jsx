@@ -5,6 +5,7 @@ import {
   Menu, LogOut, Home, Building, User, Settings, ShieldCheck,
   Globe, Package, Bell, Search, NavArrowLeft, Suitcase
 } from 'iconoir-react';
+import SEO from '../../components/SEO';
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 import './SuperAdmin.css';
 
@@ -73,6 +74,11 @@ const SuperAdminLayout = () => {
 
   return (
     <div className={`super-admin-layout ${sidebarOpen ? '' : 'sidebar-collapsed'}`}>
+      <SEO 
+        title="Super Admin - Trasealla CRM | System Administration" 
+        description="Super Admin panel for Trasealla CRM. Manage tenants, users, and system settings."
+        noindex={true}
+      />
       {/* Sidebar */}
       <aside className={`sa-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sa-sidebar-header">

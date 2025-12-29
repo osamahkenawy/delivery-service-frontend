@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import SEO from '../components/SEO';
 import './RegisterPage.css';
 
 export default function RegisterPage() {
@@ -79,6 +80,7 @@ export default function RegisterPage() {
 
   return (
     <div className="register-page">
+      <SEO page="register" />
       <div className="register-container">
         {/* Left Side - Features */}
         <div className="register-features">

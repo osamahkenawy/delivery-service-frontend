@@ -19,6 +19,7 @@ import {
   Download, Filter
 } from 'iconoir-react';
 import api from '../lib/api';
+import SEO from '../components/SEO';
 import './Reports.css';
 
 ChartJS.register(
@@ -196,6 +197,7 @@ export default function Reports() {
 
   return (
     <div className="reports-page">
+      <SEO page="reports" noindex={true} />
       {/* Header */}
       <div className="reports-header">
         <div className="header-title">

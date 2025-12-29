@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../lib/api';
 import { Label as TagIcon, Plus, EditPencil, Trash, Check } from 'iconoir-react';
+import SEO from '../components/SEO';
 import './CRMPages.css';
 
 export default function Tags() {
@@ -141,6 +142,7 @@ export default function Tags() {
 
   return (
     <div className="crm-page">
+      <SEO page="tags" noindex={true} />
       {toast.show && (
         <div className={`toast-notification ${toast.type}`}>
           {toast.type === 'success' ? '✓' : '⚠'}

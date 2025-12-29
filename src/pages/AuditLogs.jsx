@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../lib/api';
 import { History, Search, Filter, RefreshCw } from 'lucide-react';
+import SEO from '../components/SEO';
 import './CRMPages.css';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
@@ -61,6 +62,7 @@ export default function AuditLogs() {
 
   return (
     <div className="crm-page">
+      <SEO page="auditLogs" noindex={true} />
       <div className="page-header">
         <div className="header-left">
           <h1>Audit Logs</h1>

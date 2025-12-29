@@ -22,6 +22,7 @@ import {
 } from 'iconoir-react';
 import { AuthContext } from '../App';
 import api from '../lib/api';
+import SEO from '../components/SEO';
 import './Dashboard.css';
 
 ChartJS.register(
@@ -282,6 +283,7 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard">
+      <SEO page="dashboard" noindex={true} />
       {/* Smart Welcome Header */}
       <div className="dashboard-header">
         <div className="welcome-section">

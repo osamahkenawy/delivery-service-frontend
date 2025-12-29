@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { EditPencil, Trash } from 'iconoir-react';
+import SEO from '../components/SEO';
 import './CRMPages.css';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
@@ -193,6 +194,7 @@ export default function Deals() {
 
   return (
     <div className="crm-page">
+      <SEO page="deals" noindex={true} />
       <style>{`
         /* Toast */
         .deal-toast {

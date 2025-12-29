@@ -4,6 +4,7 @@ import {
   Percentage, Trophy, XmarkCircle, ArrowDown, Drag
 } from 'iconoir-react';
 import api from '../lib/api';
+import SEO from '../components/SEO';
 import './Pipelines.css';
 
 export default function Pipelines() {
@@ -134,6 +135,7 @@ export default function Pipelines() {
 
   return (
     <div className="pipelines-page">
+      <SEO page="pipelines" noindex={true} />
       {/* Toast */}
       {toast.show && (
         <div className={`toast-notification ${toast.type}`}>

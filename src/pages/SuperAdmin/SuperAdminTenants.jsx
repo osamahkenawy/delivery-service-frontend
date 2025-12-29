@@ -6,6 +6,7 @@ import {
   CheckCircle, Xmark, User, Package, Settings,
   Refresh, Play, Pause, Key
 } from 'iconoir-react';
+import SEO from '../../components/SEO';
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 import './SuperAdmin.css';
 
@@ -165,6 +166,7 @@ const SuperAdminTenants = () => {
 
   return (
     <div className="sa-tenants">
+      <SEO page="superAdminTenants" noindex={true} />
       <div className="sa-page-header">
         <div>
           <h1>Tenant Management</h1>

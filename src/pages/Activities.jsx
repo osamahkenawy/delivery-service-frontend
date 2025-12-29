@@ -5,6 +5,7 @@ import {
   Search, Eye, EditPencil, Trash, Filter, CheckCircle, Clock, WarningTriangle
 } from 'iconoir-react';
 import api from '../lib/api';
+import SEO from '../components/SEO';
 import './CRMPages.css';
 
 export default function Activities() {
@@ -326,6 +327,7 @@ export default function Activities() {
 
   return (
     <div className="crm-page">
+      <SEO page="activities" noindex={true} />
       <style>{`
         /* Toast */
         .activity-toast {

@@ -5,6 +5,7 @@ import {
   GraphUp, User, Globe, Mail
 } from 'iconoir-react';
 import api from '../lib/api';
+import SEO from '../components/SEO';
 import './CRMPages.css';
 
 export default function Leads() {
@@ -173,6 +174,7 @@ export default function Leads() {
 
   return (
     <div className="crm-page">
+      <SEO page="leads" noindex={true} />
       <style>{`
         /* Toast */
         .global-toast {

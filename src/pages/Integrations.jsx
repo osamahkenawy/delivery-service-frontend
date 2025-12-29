@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Network, Plus, EditPencil, Trash, Check, Xmark, RefreshDouble, Link } from 'iconoir-react';
 import api from '../lib/api';
+import SEO from '../components/SEO';
 import './CRMPages.css';
 
 const PLATFORMS = [
@@ -153,6 +154,7 @@ export default function Integrations() {
 
   return (
     <div className="crm-page">
+      <SEO page="integrations" noindex={true} />
       {/* Toast */}
       {toast.show && (
         <div className={`toast-notification ${toast.type}`}>{toast.message}</div>

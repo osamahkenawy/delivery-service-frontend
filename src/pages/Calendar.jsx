@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { EditPencil, Trash } from 'iconoir-react';
 import api from '../lib/api';
+import SEO from '../components/SEO';
 import './CRMPages.css';
 
 export default function Calendar() {
@@ -289,6 +290,7 @@ export default function Calendar() {
 
   return (
     <div className="crm-page">
+      <SEO page="calendar" noindex={true} />
       {toast.show && (
         <div className={`toast-notification ${toast.type}`}>
           {toast.type === 'success' ? '✓' : '⚠'}

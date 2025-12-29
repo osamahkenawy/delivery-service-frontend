@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { DirhamSymbol } from 'dirham-symbol';
 import 'dirham-symbol/dist/index.css';
+import SEO from '../components/SEO';
 import './LandingPage.css';
 
 export default function LandingPage() {
@@ -62,6 +63,7 @@ export default function LandingPage() {
 
   return (
     <div className="landing-page">
+      <SEO page="landing" />
       {/* Mobile Header */}
       <div className={`mobile-header ${isScrolled ? 'scrolled' : ''}`}>
         <div className="container">

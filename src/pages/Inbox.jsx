@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../lib/api';
 import { Inbox as InboxIcon, Send, Star, Check, Clock, User, MessageSquare, Mail, Phone, Search, Filter, MoreVertical } from 'lucide-react';
+import SEO from '../components/SEO';
 import './CRMPages.css';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
@@ -130,6 +131,7 @@ export default function Inbox() {
 
   return (
     <div className="crm-page inbox-page">
+      <SEO page="inbox" noindex={true} />
       {toast.show && (
         <div className={`toast-notification ${toast.type}`}>
           {toast.type === 'success' ? <Check size={16} /> : <span>!</span>}

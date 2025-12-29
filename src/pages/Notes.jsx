@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import SEO from '../components/SEO';
 import './CRMPages.css';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
@@ -163,6 +164,7 @@ export default function Notes() {
 
   return (
     <div className="crm-page">
+      <SEO page="notes" noindex={true} />
       <style>{`
         .notes-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px; }
         .notes-filters { display: flex; gap: 10px; flex-wrap: wrap; }

@@ -38,6 +38,9 @@ import SuperAdminTenants from './pages/SuperAdmin/SuperAdminTenants';
 // Components
 import Layout from './components/Layout';
 
+// Security Hook
+import useSecurityProtection from './hooks/useSecurityProtection';
+
 // Auth Context
 export const AuthContext = createContext(null);
 
@@ -45,6 +48,23 @@ function App() {
   const [user, setUser] = useState(null);
   const [tenant, setTenant] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Initialize security protections (only for logged-in users)
+  useSecurityProtection({
+    disableRightClickMenu: !!user,        // Disable right-click when logged in
+    disableKeyboardShortcuts: !!user,      // Disable DevTools shortcuts when logged in
+    detectDevToolsOpen: !!user,            // Detect DevTools when logged in
+    disableSelection: false,               // Set to true to disable text selection
+    disableCopyPasteOperations: false,     // Set to true to disable copy/paste
+    showWatermark: false,                  // Set to true to show watermark
+    watermarkText: 'CONFIDENTIAL',
+    onDevToolsOpen: (isOpen) => {
+      if (isOpen && user) {
+        console.warn('⚠️ Security Alert: Developer tools opened');
+        // You can add logging to backend here if needed
+      }
+    }
+  });
 
   useEffect(() => {
     checkSession();

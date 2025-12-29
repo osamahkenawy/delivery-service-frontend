@@ -5,6 +5,7 @@ import {
   Link as LinkIcon, ColorWheel, Hashtag, Drag
 } from 'iconoir-react';
 import api from '../lib/api';
+import SEO from '../components/SEO';
 import './CustomFields.css';
 
 export default function CustomFields() {
@@ -163,6 +164,7 @@ export default function CustomFields() {
 
   return (
     <div className="custom-fields-page">
+      <SEO page="customFields" noindex={true} />
       {/* Toast */}
       {toast.show && (
         <div className={`toast-notification ${toast.type}`}>

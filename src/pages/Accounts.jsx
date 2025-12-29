@@ -5,6 +5,7 @@ import {
   Check, Xmark, FilterList
 } from 'iconoir-react';
 import api from '../lib/api';
+import SEO from '../components/SEO';
 import './Accounts.css';
 
 export default function Accounts() {
@@ -113,6 +114,7 @@ export default function Accounts() {
 
   return (
     <div className="accounts-page">
+      <SEO page="accounts" noindex={true} />
       {/* Stats Cards */}
       <div className="stats-grid">
         <div className="stat-card">

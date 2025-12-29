@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../lib/api';
 import { Package, Plus, EditPencil, Trash, Check, Dollar } from 'iconoir-react';
+import SEO from '../components/SEO';
 import './CRMPages.css';
 
 export default function Products() {
@@ -128,6 +129,7 @@ export default function Products() {
 
   return (
     <div className="crm-page">
+      <SEO page="products" noindex={true} />
       {toast.show && (
         <div className={`toast-notification ${toast.type}`}>
           {toast.type === 'success' ? '✓' : '⚠'}

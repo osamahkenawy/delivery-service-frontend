@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SendMail, Plus, EditPencil, Trash, Copy, Eye, Check, Xmark } from 'iconoir-react';
 import api from '../lib/api';
+import SEO from '../components/SEO';
 import './CRMPages.css';
 
 const CATEGORIES = [
@@ -183,6 +184,7 @@ export default function EmailTemplates() {
 
   return (
     <div className="crm-page">
+      <SEO page="emailTemplates" noindex={true} />
       {/* Toast */}
       {toast.show && (
         <div className={`toast-notification ${toast.type}`}>{toast.message}</div>

@@ -5,6 +5,7 @@ import {
   Building, User, Check, CheckCircle, Clock,
   Xmark, Plus, Eye, ArrowRight
 } from 'iconoir-react';
+import SEO from '../../components/SEO';
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 import './SuperAdmin.css';
 
@@ -57,6 +58,7 @@ const SuperAdminDashboard = () => {
 
   return (
     <div className="sa-dashboard">
+      <SEO page="superAdminDashboard" noindex={true} />
       <div className="sa-page-header">
         <div>
           <h1>Platform Dashboard</h1>

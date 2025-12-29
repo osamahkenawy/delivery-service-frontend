@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Megaphone, Plus, EditPencil, Trash, Check, Search, Play, Pause, StatsUpSquare } from 'iconoir-react';
 import api from '../lib/api';
+import SEO from '../components/SEO';
 import './CRMPages.css';
 
 export default function Campaigns() {
@@ -127,6 +128,7 @@ export default function Campaigns() {
 
   return (
     <div className="crm-page">
+      <SEO page="campaigns" noindex={true} />
       {toast.show && (
         <div className={`toast-notification ${toast.type}`}>
           {toast.type === 'success' ? <Check size={16} /> : <span>!</span>}

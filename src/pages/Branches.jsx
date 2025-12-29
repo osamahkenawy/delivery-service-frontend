@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../lib/api';
 import { Building2, Plus, Edit, Trash2, Check, MapPin, Phone, Mail, Star } from 'lucide-react';
+import SEO from '../components/SEO';
 import './CRMPages.css';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
@@ -127,6 +128,7 @@ export default function Branches() {
 
   return (
     <div className="crm-page">
+      <SEO page="branches" noindex={true} />
       {toast.show && (
         <div className={`toast-notification ${toast.type}`}>
           {toast.type === 'success' ? <Check size={16} /> : <span>!</span>}

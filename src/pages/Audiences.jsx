@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Group, Plus, EditPencil, Trash, Eye, RefreshDouble, UserPlus } from 'iconoir-react';
 import api from '../lib/api';
+import SEO from '../components/SEO';
 import './CRMPages.css';
 
 export default function Audiences() {
@@ -115,6 +116,7 @@ export default function Audiences() {
 
   return (
     <div className="crm-page">
+      <SEO page="audiences" noindex={true} />
       {/* Toast */}
       {toast.show && (
         <div className={`toast-notification ${toast.type}`}>{toast.message}</div>

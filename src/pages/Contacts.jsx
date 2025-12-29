@@ -5,6 +5,7 @@ import {
   AtSign, Star, MapPin
 } from 'iconoir-react';
 import api from '../lib/api';
+import SEO from '../components/SEO';
 import './CRMPages.css';
 
 export default function Contacts() {
@@ -173,6 +174,7 @@ export default function Contacts() {
 
   return (
     <div className="crm-page">
+      <SEO page="contacts" noindex={true} />
       {/* Toast */}
       {toast.show && (
         <div className={`toast-notification ${toast.type}`}>

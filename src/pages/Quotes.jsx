@@ -5,6 +5,7 @@ import {
   FilterList, Send, Clock, Wallet
 } from 'iconoir-react';
 import api from '../lib/api';
+import SEO from '../components/SEO';
 import './Quotes.css';
 
 export default function Quotes() {
@@ -170,6 +171,7 @@ export default function Quotes() {
 
   return (
     <div className="quotes-page">
+      <SEO page="quotes" noindex={true} />
       {/* Toast */}
       {toast.show && (
         <div className={`toast-notification ${toast.type}`}>

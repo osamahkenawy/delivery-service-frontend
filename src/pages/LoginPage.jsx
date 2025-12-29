@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Check } from 'iconoir-react';
 import { AuthContext } from '../App';
+import SEO from '../components/SEO';
 import './LoginPage.css';
 
 export default function LoginPage() {
@@ -39,6 +40,7 @@ export default function LoginPage() {
 
   return (
     <div className="login-page">
+      <SEO page="login" />
       <div className="login-left">
         <Link to="/" className="back-link">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

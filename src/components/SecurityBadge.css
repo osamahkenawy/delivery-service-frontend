@@ -1,0 +1,216 @@
+/* Security Badge Styles */
+
+.security-badge {
+  position: fixed;
+  z-index: 999997;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+  pointer-events: auto;
+  user-select: none;
+}
+
+/* Positioning */
+.security-badge--top-left {
+  top: 20px;
+  left: 20px;
+}
+
+.security-badge--top-right {
+  top: 20px;
+  right: 20px;
+}
+
+.security-badge--bottom-left {
+  bottom: 20px;
+  left: 20px;
+}
+
+.security-badge--bottom-right {
+  bottom: 20px;
+  right: 20px;
+}
+
+/* Compact Variant */
+.security-badge--compact {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-radius: 50%;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.security-badge--compact:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
+.security-badge__icon {
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Tooltip */
+.security-badge__tooltip {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  right: 0;
+  background: white;
+  border-radius: 8px;
+  padding: 12px 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  white-space: nowrap;
+  animation: slideUp 0.2s ease-out;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.security-badge__tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  right: 12px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid white;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.security-badge__tooltip-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 4px;
+}
+
+.security-badge__tooltip-text {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* Full Variant */
+.security-badge--full {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-radius: 24px;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  transition: all 0.3s ease;
+}
+
+.security-badge--full:hover {
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+  transform: translateY(-2px);
+}
+
+.security-badge--full .security-badge__icon {
+  animation: none;
+}
+
+.security-badge__content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.security-badge__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+  line-height: 1;
+}
+
+.security-badge__status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1;
+}
+
+.security-badge__status-dot {
+  width: 6px;
+  height: 6px;
+  background: white;
+  border-radius: 50%;
+  animation: blink 2s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .security-badge--bottom-right,
+  .security-badge--bottom-left {
+    bottom: 80px; /* Avoid mobile navigation bars */
+  }
+  
+  .security-badge--full {
+    padding: 8px 12px;
+  }
+  
+  .security-badge__title {
+    font-size: 12px;
+  }
+  
+  .security-badge__status {
+    font-size: 10px;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .security-badge__tooltip {
+    background: #1f2937;
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .security-badge__tooltip::after {
+    border-top-color: #1f2937;
+  }
+  
+  .security-badge__tooltip-title {
+    color: #f9fafb;
+  }
+  
+  .security-badge__tooltip-text {
+    color: #d1d5db;
+  }
+}
+

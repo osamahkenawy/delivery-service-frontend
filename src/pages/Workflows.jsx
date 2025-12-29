@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../lib/api';
 import { Workflow, Plus, Edit, Trash2, Check, Play, Pause, Zap, Settings, History } from 'lucide-react';
+import SEO from '../components/SEO';
 import './CRMPages.css';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
@@ -189,6 +190,7 @@ export default function Workflows() {
 
   return (
     <div className="crm-page">
+      <SEO page="workflows" noindex={true} />
       {toast.show && (
         <div className={`toast-notification ${toast.type}`}>
           {toast.type === 'success' ? <Check size={16} /> : <span>!</span>}
