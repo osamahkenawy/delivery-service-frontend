@@ -169,12 +169,21 @@ export default function Zones() {
     finally { setLoading(false); }
   };
 
+  const canSubmit = form.name && form.emirate && form.center_lat !== '' && form.center_lng !== '' &&
+    form.center_lat !== null && form.center_lng !== null && !isNaN(Number(form.center_lat)) && !isNaN(Number(form.center_lng));
+
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!form.center_lat || !form.center_lng) { setError('Set the zone center on the map or search a location'); return; }
+    if (e) e.preventDefault();
+    if (!canSubmit) { setError('Set the zone center on the map or search a location'); return; }
     setSaving(true); setError('');
     try {
-      const payload = { ...form, radius: form.radius || 5000, polygon: null };
+      const payload = {
+        ...form,
+        center_lat: parseFloat(form.center_lat),
+        center_lng: parseFloat(form.center_lng),
+        radius: parseFloat(form.radius) || 5000,
+        polygon: null,
+      };
       const res = selected
         ? await api.put(`/zones/${selected.id}`, payload)
         : await api.post('/zones', payload);
@@ -265,7 +274,8 @@ export default function Zones() {
           </div>
           <div className="zf-header-actions">
             <button type="button" className="btn-outline-action" onClick={closeForm}>Discard</button>
-            <button className="btn-primary-action" onClick={handleSubmit} disabled={saving}>
+            <button className="btn-primary-action" onClick={handleSubmit} disabled={saving || !canSubmit}
+              title={!canSubmit ? 'Set a location on the map first' : ''}>
               {saving ? 'Saving...' : selected ? 'Save Changes' : 'Create Zone'}
             </button>
           </div>
