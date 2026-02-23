@@ -79,30 +79,35 @@ const STEPS = [
 
 function StepBar({ current }) {
   return (
-    <div style={{ display:'flex', alignItems:'center', padding:'22px 28px 0' }}>
+    <div style={{ display:'flex', alignItems:'flex-start', padding:'22px 28px 0', position:'relative' }}>
       {STEPS.map((s, i) => {
-        const done    = current > s.num;
-        const active  = current === s.num;
-        const lineW   = i < STEPS.length - 1 ? 1 : 0;
+        const done   = current > s.num;
+        const active = current === s.num;
+        const last   = i === STEPS.length - 1;
         return (
-          <div key={s.num} style={{ display:'flex', alignItems:'center', flex: lineW ? 1 : undefined }}>
-            <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4 }}>
-              <div style={{ width:36, height:36, borderRadius:'50%', fontWeight:800, fontSize:15,
-                display:'flex', alignItems:'center', justifyContent:'center',
-                background: done?'#16a34a' : active?'#f97316':'#f1f5f9',
-                color: done||active?'#fff':'#94a3b8',
-                boxShadow: active?'0 0 0 4px rgba(249,115,22,0.18)':'none',
-                transition:'all 0.25s' }}>
-                {done ? <CheckCircle width={18} height={18} /> : s.num}
-              </div>
-              <div style={{ fontSize:11, fontWeight:active?700:500, color:active?'#f97316':done?'#16a34a':'#94a3b8', whiteSpace:'nowrap' }}>
-                {s.title}
-              </div>
-            </div>
-            {lineW > 0 && (
-              <div style={{ flex:1, height:2, margin:'0 8px', marginTop:-14,
-                background:done?'#16a34a':'#e2e8f0', transition:'background 0.3s' }} />
+          <div key={s.num} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', position:'relative' }}>
+            {/* connector line to next step */}
+            {!last && (
+              <div style={{
+                position:'absolute', top:18, left:'50%', width:'100%', height:2,
+                background: done ? '#16a34a' : '#e2e8f0',
+                transition:'background 0.3s', zIndex:0
+              }} />
             )}
+            <div style={{ position:'relative', zIndex:1,
+              width:36, height:36, borderRadius:'50%', fontWeight:800, fontSize:15,
+              display:'flex', alignItems:'center', justifyContent:'center',
+              background: done?'#16a34a' : active?'#f97316':'#f1f5f9',
+              color: done||active?'#fff':'#94a3b8',
+              boxShadow: active?'0 0 0 4px rgba(249,115,22,0.18)':'none',
+              transition:'all 0.25s' }}>
+              {done ? <CheckCircle width={18} height={18} /> : s.num}
+            </div>
+            <div style={{ marginTop:6, fontSize:11, fontWeight:active?700:500,
+              color:active?'#f97316':done?'#16a34a':'#94a3b8',
+              whiteSpace:'nowrap', textAlign:'center' }}>
+              {s.title}
+            </div>
           </div>
         );
       })}
@@ -766,7 +771,7 @@ export default function Clients() {
                     background:'#fff', cursor:'pointer', fontWeight:600, fontSize:14,
                     display:'flex', alignItems:'center', gap:7, color:'#475569' }}>
                   <NavArrowLeft width={15} height={15} />
-                  {step > 1 ? 'Back' : 'Xmark'}
+                  {step > 1 ? 'Back' : 'Cancel'}
                 </button>
 
                 {step < STEPS.length ? (
@@ -812,7 +817,7 @@ export default function Clients() {
             <div style={{ display:'flex', gap:10 }}>
               <button onClick={()=>setDeleteConfirm(null)}
                 style={{ flex:1, padding:12, borderRadius:10, border:'1px solid #e2e8f0',
-                  background:'#fff', cursor:'pointer', fontWeight:600, fontSize:14 }}>Xmark</button>
+                  background:'#fff', cursor:'pointer', fontWeight:600, fontSize:14 }}>Cancel</button>
               <button onClick={handleDelete}
                 style={{ flex:1, padding:12, borderRadius:10, border:'none',
                   background:'#dc2626', color:'#fff', cursor:'pointer', fontWeight:700, fontSize:14 }}>
