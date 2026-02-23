@@ -32,7 +32,6 @@ html, body {
   z-index: 1045;
   opacity: 0;
   visibility: hidden;
-  transition: all 0.3s ease;
 }
 
 .sidebar-overlay.show {
@@ -49,7 +48,6 @@ html, body {
   height: 100vh;
   background: var(--gradient-primary);
   z-index: 1050;
-  transition: transform 0.3s ease, width 0.3s ease;
   overflow-y: auto;
   box-shadow: 4px 0 20px rgba(0,0,0,0.1);
 }
@@ -185,7 +183,6 @@ html, body {
   justify-content: space-between;
   padding: 0 25px;
   box-shadow: 0 2px 15px rgba(0,0,0,0.05);
-  transition: left 0.3s ease, right 0.3s ease;
 }
 
 .custom-topbar.sidebar-closed {
@@ -403,7 +400,6 @@ html, body {
   padding-bottom: 80px;
   min-height: calc(100vh - var(--topbar-height));
   background: #f5f7fa;
-  transition: margin-left 0.3s ease;
 }
 
 .main-content.sidebar-closed {
@@ -424,7 +420,6 @@ html, body {
   right: 0;
   z-index: 100;
   box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
-  transition: left 0.3s ease;
 }
 
 .custom-footer.sidebar-closed {
