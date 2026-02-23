@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import Dashboard from './pages/Dashboard';
 import Orders from './pages/Orders';
+import OrderDetail from './pages/OrderDetail';
 import Drivers from './pages/Drivers';
 import Dispatch from './pages/Dispatch';
 import Clients from './pages/Clients';
@@ -143,7 +144,7 @@ function App() {
         {/* Protected delivery routes */}
         <Route path="/dashboard"      element={<PrivateRoute><Dashboard /></PrivateRoute>} />
         <Route path="/orders"         element={<PrivateRoute><Orders /></PrivateRoute>} />
-        <Route path="/orders/:id"     element={<PrivateRoute><Orders /></PrivateRoute>} />
+        <Route path="/orders/:id"     element={<PrivateRoute><OrderDetail /></PrivateRoute>} />
         <Route path="/drivers"        element={<PrivateRoute><Drivers /></PrivateRoute>} />
         <Route path="/dispatch"       element={<PrivateRoute><Dispatch /></PrivateRoute>} />
         <Route path="/clients"        element={<PrivateRoute><Clients /></PrivateRoute>} />
