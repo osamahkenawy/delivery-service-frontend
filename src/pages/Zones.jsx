@@ -43,6 +43,24 @@ function ClickHandler({ onClick }) {
   return null;
 }
 
+function FitAllZones({ zones }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!zones || zones.length === 0) return;
+    const valid = zones.filter(z => z.center_lat && z.center_lng);
+    if (valid.length === 0) return;
+    const bounds = L.latLngBounds(valid.map(z => {
+      const r = parseFloat(z.radius) || 5000;
+      const lat = parseFloat(z.center_lat);
+      const lng = parseFloat(z.center_lng);
+      const offset = r / 111320;
+      return [L.latLng(lat - offset, lng - offset), L.latLng(lat + offset, lng + offset)];
+    }).flat());
+    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+  }, [zones, map]);
+  return null;
+}
+
 /* ── Location search with Nominatim ──────────────────────────── */
 function LocationSearch({ onSelect, initialQuery }) {
   const [query, setQuery] = useState(initialQuery || '');
@@ -280,7 +298,7 @@ export default function Zones() {
                   <>
                     <Circle
                       center={[parseFloat(form.center_lat), parseFloat(form.center_lng)]}
-                      radius={form.radius || 5000}
+                      radius={parseFloat(form.radius) || 5000}
                       pathOptions={{ color:form.color, fillColor:form.color, fillOpacity:0.15, weight:2.5, dashArray:'6 4' }}
                     />
                     <Marker position={[parseFloat(form.center_lat), parseFloat(form.center_lng)]} icon={MARKER_ICONS.zone}>
@@ -294,8 +312,8 @@ export default function Zones() {
                   z.center_lat && z.center_lng ? (
                     <Circle key={z.id}
                       center={[parseFloat(z.center_lat), parseFloat(z.center_lng)]}
-                      radius={z.radius || 5000}
-                      pathOptions={{ color: z.color||ZONE_COLORS[i%8], fillColor: z.color||ZONE_COLORS[i%8], fillOpacity:0.05, weight:1, opacity:0.25 }}
+                      radius={parseFloat(z.radius) || 5000}
+                      pathOptions={{ color: z.color||ZONE_COLORS[i%8], fillColor: z.color||ZONE_COLORS[i%8], fillOpacity:0.08, weight:1.5, opacity:0.35 }}
                     />
                   ) : null
                 ))}
@@ -524,6 +542,8 @@ export default function Zones() {
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
               {flyTarget && <FlyTo lat={flyTarget.lat} lng={flyTarget.lng} zoom={flyTarget.zoom} />}
 
+              <FitAllZones zones={zones} />
+
               {zones.map((z, i) => {
                 if (!z.center_lat || !z.center_lng) return null;
                 const col = z.color || ZONE_COLORS[i % 8];
@@ -531,8 +551,8 @@ export default function Zones() {
                 return (
                   <Circle key={z.id}
                     center={[parseFloat(z.center_lat), parseFloat(z.center_lng)]}
-                    radius={z.radius || 5000}
-                    pathOptions={{ color:col, fillColor:col, fillOpacity: act ? 0.22 : 0.08, weight: act ? 3 : 1.5, opacity: act ? 1 : 0.4 }}
+                    radius={parseFloat(z.radius) || 5000}
+                    pathOptions={{ color:col, fillColor:col, fillOpacity: act ? 0.28 : 0.15, weight: act ? 3.5 : 2, opacity: act ? 1 : 0.7 }}
                     eventHandlers={{ click: () => setActiveZone(z.id) }}
                   >
                     <Popup>
