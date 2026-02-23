@@ -18,6 +18,7 @@ import Wallet from './pages/Wallet';
 import Invoices from './pages/Invoices';
 import Reports from './pages/Reports';
 import LiveMap from './pages/LiveMap';
+import Barcode from './pages/Barcode';
 import Settings from './pages/Settings';
 import Integrations from './pages/Integrations';
 
@@ -156,6 +157,7 @@ function App() {
         <Route path="/invoices"       element={<PrivateRoute><Invoices /></PrivateRoute>} />
         <Route path="/reports"        element={<PrivateRoute><Reports /></PrivateRoute>} />
         <Route path="/live-map"       element={<PrivateRoute><LiveMap /></PrivateRoute>} />
+        <Route path="/barcode"        element={<PrivateRoute><Barcode /></PrivateRoute>} />
         <Route path="/settings"       element={<PrivateRoute><Settings /></PrivateRoute>} />
         <Route path="/api-keys"       element={<PrivateRoute><Integrations /></PrivateRoute>} />
 

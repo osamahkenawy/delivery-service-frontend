@@ -1886,3 +1886,35 @@ textarea.form-control {
   .drv-perf-row { grid-template-columns: repeat(2, 1fr); }
   .drv-order-row { grid-template-columns: 1fr 1fr; }
 }
+
+
+/* =================================================================
+   BARCODE & LABELS PAGE  (bc-)
+================================================================= */
+.bc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.bc-card-wrap { position: relative; cursor: pointer; border-radius: 12px; border: 2px solid transparent; transition: border-color .15s; user-select: none; }
+.bc-card-wrap:hover { border-color: var(--accent); }
+.bc-card-wrap.bc-selected { border-color: var(--accent); }
+.bc-select-box { position: absolute; top: 10px; right: 10px; font-size: 1.2rem; z-index: 1; color: var(--accent); }
+.bc-card { background: #fff; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.bc-card-header { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+.bc-order-number { font-size: 1rem; font-weight: 800; color: #1e293b; }
+.bc-meta { font-size: .75rem; color: #475569; margin-top: 2px; }
+.bc-body { padding: 12px 16px; display: flex; align-items: center; gap: 16px; }
+.bc-barcode-wrap { flex: 1; min-width: 0; }
+.bc-barcode-wrap svg { max-width: 100%; }
+.bc-qr-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.bc-qr-label { font-size: .65rem; color: #94a3b8; text-align: center; }
+.bc-footer { padding: 8px 16px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: #f8fafc; }
+.bc-token { font-family: monospace; font-size: .72rem; color: #64748b; }
+.bc-type { font-size: .72rem; font-weight: 700; color: #f97316; }
+.bc-print-only { display: none; }
+@media print {
+  .bc-screen { display: none !important; }
+  .bc-print-only { display: block; }
+  .bc-print-page { page-break-after: always; padding: 20mm; }
+  .bc-print-page .bc-card { border: 2px solid #1e293b; border-radius: 0; box-shadow: none; }
+  .bc-card-wrap { border: none; cursor: default; }
+  .bc-select-box { display: none; }
+}
+@media (max-width: 768px) { .bc-grid { grid-template-columns: 1fr; } }
