@@ -1,23 +1,27 @@
 import { useState, useEffect } from 'react';
 import {
-  Package, DeliveryTruck, MapPin, Refresh, Check, Xmark, WarningTriangle
+  Package, DeliveryTruck, MapPin, Refresh, Check, Xmark, WarningTriangle, Map as MapIcon, ViewGrid
 } from 'iconoir-react';
 import api from '../lib/api';
+import MapView from '../components/MapView';
 import './CRMPages.css';
 
 const STATUS_STYLE = {
-  pending:   { background: '#fef3c7', color: '#d97706' },
-  confirmed: { background: '#dbeafe', color: '#1d4ed8' },
-  assigned:  { background: '#ede9fe', color: '#7c3aed' },
+  pending:    { background: '#fef3c7', color: '#d97706' },
+  confirmed:  { background: '#dbeafe', color: '#1d4ed8' },
+  assigned:   { background: '#ede9fe', color: '#7c3aed' },
+  picked_up:  { background: '#fce7f3', color: '#be185d' },
+  in_transit: { background: '#e0f2fe', color: '#0369a1' },
 };
 
 export default function Dispatch() {
-  const [board, setBoard] = useState({ unassigned: [], assigned: [], available_drivers: [] });
-  const [loading, setLoading] = useState(true);
-  const [assigning, setAssigning] = useState(null);
+  const [board, setBoard]                 = useState({ unassigned: [], active_deliveries: [], available_drivers: [] });
+  const [loading, setLoading]             = useState(true);
+  const [assigning, setAssigning]         = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [selectedDriver, setSelectedDriver] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError]                 = useState('');
+  const [view, setView]                   = useState('board');          // 'board' | 'map'
 
   useEffect(() => {
     fetchBoard();
@@ -30,13 +34,10 @@ export default function Dispatch() {
       setLoading(true);
       const res = await api.get('/dispatch');
       if (res.success) {
-        setBoard(res.data || { unassigned: [], assigned: [], available_drivers: [] });
+        setBoard(res.data || { unassigned: [], active_deliveries: [], available_drivers: [] });
       }
-    } catch (e) {
-      console.error('Dispatch fetch error:', e);
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) { console.error('Dispatch fetch error:', e); }
+    finally { setLoading(false); }
   };
 
   const handleAssign = async () => {
@@ -45,33 +46,60 @@ export default function Dispatch() {
     setError('');
     try {
       const res = await api.post('/dispatch/assign', { order_id: selectedOrder, driver_id: selectedDriver });
-      if (res.success) {
-        setSelectedOrder(null);
-        setSelectedDriver('');
-        fetchBoard();
-      } else {
-        setError(res.message || 'Assignment failed');
-      }
-    } catch {
-      setError('Failed to assign. Please try again.');
-    } finally {
-      setAssigning(null);
-    }
+      if (res.success) { setSelectedOrder(null); setSelectedDriver(''); fetchBoard(); }
+      else { setError(res.message || 'Assignment failed'); }
+    } catch { setError('Failed to assign. Please try again.'); }
+    finally { setAssigning(null); }
   };
 
   const handleUnassign = async (orderId) => {
     if (!window.confirm('Unassign this driver?')) return;
-    try {
-      await api.post('/dispatch/unassign', { order_id: orderId });
-      fetchBoard();
-    } catch { /* ignore */ }
+    try { await api.post('/dispatch/unassign', { order_id: orderId }); fetchBoard(); }
+    catch { /* ignore */ }
   };
 
-  const OrderCard = ({ order, showUnassign }) => {
+  /* ── Build map data ── */
+  const buildMapMarkers = () => {
+    const markers = [];
+    (board.unassigned || []).forEach(o => {
+      if (o.recipient_lat && o.recipient_lng) {
+        markers.push({
+          lat: parseFloat(o.recipient_lat), lng: parseFloat(o.recipient_lng),
+          type: 'delivery', label: `#${o.id}`,
+          popup: `<strong>#${o.id}</strong><br/>${o.recipient_name}<br/>${o.recipient_address || ''}<br/><em style="color:#d97706">Unassigned</em>`,
+          id: `unassigned-${o.id}`,
+        });
+      }
+    });
+    (board.active_deliveries || []).forEach(o => {
+      if (o.recipient_lat && o.recipient_lng) {
+        markers.push({
+          lat: parseFloat(o.recipient_lat), lng: parseFloat(o.recipient_lng),
+          type: 'order', label: `#${o.id}`,
+          popup: `<strong>#${o.id}</strong><br/>${o.recipient_name}<br/>${o.driver_name || ''}<br/><em style="color:#3b82f6">${o.status}</em>`,
+          id: `active-${o.id}`,
+        });
+      }
+    });
+    (board.available_drivers || []).forEach(d => {
+      if (d.last_lat && d.last_lng) {
+        markers.push({
+          lat: parseFloat(d.last_lat), lng: parseFloat(d.last_lng),
+          type: 'driver', label: d.full_name?.split(' ')[0],
+          popup: `<strong>${d.full_name}</strong><br/>${d.vehicle_type} &bull; ${d.vehicle_plate}<br/><em style="color:#16a34a">Available</em>`,
+          id: `driver-${d.id}`,
+        });
+      }
+    });
+    return markers;
+  };
+
+  /* ── Order Card (used in board & sidebar) ── */
+  const OrderCard = ({ order, showUnassign, mini }) => {
     const sc = STATUS_STYLE[order.status] || STATUS_STYLE.pending;
     const isSelected = selectedOrder === order.id;
     return (
-      <div className="dispatch-card">
+      <div className={mini ? 'dispatch-mini-card' : 'dispatch-card'}>
         <div className="dispatch-card-header">
           <div>
             <div className="dispatch-order-id">#{order.id}</div>
@@ -79,11 +107,13 @@ export default function Dispatch() {
           </div>
           <span className="status-badge" style={sc}>{order.status}</span>
         </div>
-        <div className="dispatch-meta">
-          <span><MapPin width={13} height={13} /> {order.recipient_address}</span>
-          {order.zone_name && <span><MapPin width={13} height={13} /> {order.zone_name}</span>}
-          {order.driver_name && <span><DeliveryTruck width={13} height={13} /> {order.driver_name}</span>}
-        </div>
+        {!mini && (
+          <div className="dispatch-meta">
+            <span><MapPin width={13} height={13} /> {order.recipient_address}</span>
+            {order.zone_name && <span><MapPin width={13} height={13} /> {order.zone_name}</span>}
+            {order.driver_name && <span><DeliveryTruck width={13} height={13} /> {order.driver_name}</span>}
+          </div>
+        )}
         <div className="dispatch-actions">
           {!showUnassign && (
             <button
@@ -103,16 +133,29 @@ export default function Dispatch() {
     );
   };
 
+  const mapMarkers = view === 'map' ? buildMapMarkers() : [];
+
   return (
     <div className="page-container">
+      {/* ── Header ── */}
       <div className="page-header-row">
         <div>
           <h2 className="page-heading">Dispatch Board</h2>
           <p className="page-subheading">Assign drivers to orders in real time</p>
         </div>
-        <button className="btn-outline-action" onClick={fetchBoard}>
-          <Refresh width={16} height={16} /> Refresh
-        </button>
+        <div style={{ display:'flex', gap: 10, alignItems:'center' }}>
+          <div className="view-toggle">
+            <button className={`view-toggle-btn ${view === 'board' ? 'active' : ''}`} onClick={() => setView('board')}>
+              <ViewGrid width={15} height={15} /> Board
+            </button>
+            <button className={`view-toggle-btn ${view === 'map' ? 'active' : ''}`} onClick={() => setView('map')}>
+              <MapIcon width={15} height={15} /> Map
+            </button>
+          </div>
+          <button className="btn-outline-action" onClick={fetchBoard}>
+            <Refresh width={16} height={16} /> Refresh
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -121,18 +164,15 @@ export default function Dispatch() {
         </div>
       )}
 
-      {/* Assignment Panel */}
+      {/* ── Assignment Panel ── */}
       {selectedOrder && (
         <div className="assign-panel">
           <div className="assign-panel-label">
             <Package width={16} height={16} />
             Order <strong>#{selectedOrder}</strong> selected
           </div>
-          <select
-            className="assign-select"
-            value={selectedDriver}
-            onChange={e => setSelectedDriver(e.target.value)}
-          >
+          <select className="assign-select" value={selectedDriver}
+            onChange={e => setSelectedDriver(e.target.value)}>
             <option value="">Select Driver...</option>
             {board.available_drivers?.map(d => (
               <option key={d.id} value={d.id}>
@@ -140,17 +180,12 @@ export default function Dispatch() {
               </option>
             ))}
           </select>
-          <button
-            className="btn-primary-action"
-            onClick={handleAssign}
-            disabled={!selectedDriver || assigning}
-          >
+          <button className="btn-primary-action" onClick={handleAssign}
+            disabled={!selectedDriver || assigning}>
             {assigning ? 'Assigning...' : 'Assign Driver'}
           </button>
-          <button
-            className="btn-outline-action"
-            onClick={() => { setSelectedOrder(null); setSelectedDriver(''); }}
-          >
+          <button className="btn-outline-action"
+            onClick={() => { setSelectedOrder(null); setSelectedDriver(''); }}>
             Cancel
           </button>
         </div>
@@ -160,7 +195,8 @@ export default function Dispatch() {
         <div className="loading-rows">
           {[1,2,3].map(i => <div key={i} className="skeleton-card" />)}
         </div>
-      ) : (
+      ) : view === 'board' ? (
+        /* ═══════ BOARD VIEW ═══════ */
         <div className="dispatch-board">
           {/* Unassigned */}
           <div className="dispatch-col">
@@ -180,11 +216,11 @@ export default function Dispatch() {
             <div className="dispatch-col-header">
               <div className="col-dot" style={{ background: '#3b82f6' }} />
               <h3>In Progress</h3>
-              <span className="col-count blue">{board.assigned?.length || 0}</span>
+              <span className="col-count blue">{board.active_deliveries?.length || 0}</span>
             </div>
-            {board.assigned?.length === 0
+            {board.active_deliveries?.length === 0
               ? <div className="empty-col">No active orders</div>
-              : board.assigned.map(o => <OrderCard key={o.id} order={o} showUnassign={true} />)
+              : board.active_deliveries.map(o => <OrderCard key={o.id} order={o} showUnassign={true} />)
             }
           </div>
 
@@ -199,9 +235,7 @@ export default function Dispatch() {
               ? <div className="empty-col">No available drivers</div>
               : board.available_drivers.map(driver => (
                 <div key={driver.id} className="driver-card">
-                  <div className="driver-avatar">
-                    {driver.full_name?.charAt(0)}
-                  </div>
+                  <div className="driver-avatar">{driver.full_name?.charAt(0)}</div>
                   <div className="driver-info">
                     <div className="driver-name">{driver.full_name}</div>
                     <div className="driver-meta">{driver.vehicle_type} &bull; {driver.vehicle_plate}</div>
@@ -210,6 +244,54 @@ export default function Dispatch() {
                 </div>
               ))
             }
+          </div>
+        </div>
+      ) : (
+        /* ═══════ MAP VIEW ═══════ */
+        <div className="dispatch-map-layout">
+          <div className="dispatch-map-main">
+            {mapMarkers.length === 0 ? (
+              <div className="empty-state-mini" style={{ padding: '4rem 0', textAlign: 'center' }}>
+                <MapPin width={48} height={48} />
+                <p style={{ fontWeight: 600, marginTop: 12 }}>No locations to display</p>
+                <p style={{ color: 'var(--gray-400)', fontSize: '0.85rem' }}>
+                  Orders and drivers need GPS coordinates to appear on the map
+                </p>
+              </div>
+            ) : (
+              <MapView markers={mapMarkers} height={520} />
+            )}
+            {/* Legend */}
+            <div style={{ display:'flex', gap:20, marginTop:10, fontSize:'0.82rem', color:'var(--gray-500)' }}>
+              <span style={{ display:'flex', alignItems:'center', gap:5 }}>
+                <span style={{ width:10, height:10, borderRadius:'50%', background:'#f59e0b', display:'inline-block' }}/>
+                Unassigned
+              </span>
+              <span style={{ display:'flex', alignItems:'center', gap:5 }}>
+                <span style={{ width:10, height:10, borderRadius:'50%', background:'#3b82f6', display:'inline-block' }}/>
+                In Progress
+              </span>
+              <span style={{ display:'flex', alignItems:'center', gap:5 }}>
+                <span style={{ width:10, height:10, borderRadius:'50%', background:'#22c55e', display:'inline-block' }}/>
+                Drivers
+              </span>
+            </div>
+          </div>
+
+          {/* Sidebar mini cards */}
+          <div className="dispatch-map-sidebar">
+            <div style={{ fontWeight:700, fontSize:'0.85rem', marginBottom:8, color:'var(--gray-700)' }}>
+              Unassigned ({board.unassigned?.length || 0})
+            </div>
+            {board.unassigned?.map(o => (
+              <OrderCard key={o.id} order={o} showUnassign={false} mini />
+            ))}
+            <div style={{ fontWeight:700, fontSize:'0.85rem', margin:'12px 0 8px', color:'var(--gray-700)' }}>
+              Active ({board.active_deliveries?.length || 0})
+            </div>
+            {board.active_deliveries?.map(o => (
+              <OrderCard key={o.id} order={o} showUnassign={true} mini />
+            ))}
           </div>
         </div>
       )}

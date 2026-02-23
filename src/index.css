@@ -1,4 +1,7 @@
 /* Trasealla CRM - Global Styles */
+@import 'leaflet/dist/leaflet.css';
+@import './components/MapStyles.css';
+
 :root {
   --primary: #244066;
   --primary-light: #3a5a8a;

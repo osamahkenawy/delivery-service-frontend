@@ -1,15 +1,72 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import {
+  Plus, MapPin, EditPencil, Trash, Refresh,
+  Search, Xmark, Eye
+} from 'iconoir-react';
+import { MapContainer, TileLayer, Polygon, Marker, Popup, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import { MARKER_ICONS } from '../components/LocationPicker';
+import LocationPicker from '../components/LocationPicker';
 import api from '../lib/api';
+import 'leaflet/dist/leaflet.css';
+import './CRMPages.css';
 
 const EMIRATES = ['Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman', 'Ras Al Khaimah', 'Fujairah', 'Umm Al Quwain'];
+const ZONE_COLORS = ['#3b82f6', '#f97316', '#22c55e', '#8b5cf6', '#ec4899', '#14b8a6', '#f43f5e', '#eab308'];
+
+function FitBounds({ zones, activeId }) {
+  const map = useMap();
+  useEffect(() => {
+    if (activeId) {
+      const z = zones.find(z => z.id === activeId);
+      if (z && z.polygon) {
+        try {
+          const coords = typeof z.polygon === 'string' ? JSON.parse(z.polygon) : z.polygon;
+          if (coords.length > 0) {
+            map.fitBounds(L.latLngBounds(coords).pad(0.2), { duration: 0.6 });
+            return;
+          }
+        } catch (e) {}
+      }
+    }
+    const allCoords = [];
+    zones.forEach(z => {
+      if (z.polygon) {
+        try {
+          const coords = typeof z.polygon === 'string' ? JSON.parse(z.polygon) : z.polygon;
+          coords.forEach(c => allCoords.push(c));
+        } catch (e) {}
+      }
+    });
+    if (allCoords.length > 0) {
+      map.fitBounds(L.latLngBounds(allCoords).pad(0.15), { duration: 0.6 });
+    }
+  }, [zones, activeId, map]);
+  return null;
+}
+
+function getCentroid(polygon) {
+  if (!polygon || polygon.length === 0) return null;
+  const coords = typeof polygon === 'string' ? JSON.parse(polygon) : polygon;
+  if (!coords.length) return null;
+  const lat = coords.reduce((s, c) => s + c[0], 0) / coords.length;
+  const lng = coords.reduce((s, c) => s + c[1], 0) / coords.length;
+  return [lat, lng];
+}
 
 export default function Zones() {
   const [zones, setZones] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [selected, setSelected] = useState(null);
+  const [activeZone, setActiveZone] = useState(null);
   const [emirateFilter, setEmirateFilter] = useState('');
-  const [form, setForm] = useState({ name: '', city: '', emirate: 'Dubai', base_delivery_fee: '', extra_km_fee: '', max_weight_kg: '', estimated_minutes: '', is_active: true });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [form, setForm] = useState({
+    name: '', city: '', emirate: 'Dubai', base_delivery_fee: '',
+    extra_km_fee: '', max_weight_kg: '', estimated_minutes: '',
+    is_active: true, color: '#3b82f6', polygon: [], center_lat: '', center_lng: '',
+  });
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -17,139 +74,345 @@ export default function Zones() {
 
   const fetchZones = async () => {
     setLoading(true);
-    const res = await api.get('/zones');
-    if (res.success) setZones(res.data || []);
-    setLoading(false);
+    try {
+      const res = await api.get('/zones');
+      if (res.success) setZones(res.data || []);
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
     setError('');
-    const res = selected ? await api.put(`/zones/${selected.id}`, form) : await api.post('/zones', form);
-    if (res.success) { setShowForm(false); setSelected(null); resetForm(); fetchZones(); }
-    else setError(res.message || 'Failed to save');
+    const res = selected
+      ? await api.put(`/zones/${selected.id}`, form)
+      : await api.post('/zones', form);
+    if (res.success) {
+      setShowForm(false); setSelected(null); resetForm(); fetchZones();
+    } else {
+      setError(res.message || 'Failed to save');
+    }
     setSaving(false);
   };
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this zone?')) return;
     await api.delete(`/zones/${id}`);
+    if (activeZone === id) setActiveZone(null);
     fetchZones();
   };
 
-  const resetForm = () => setForm({ name: '', city: '', emirate: 'Dubai', base_delivery_fee: '', extra_km_fee: '', max_weight_kg: '', estimated_minutes: '', is_active: true });
-  const openEdit = (z) => { setSelected(z); setForm({ ...z }); setShowForm(true); };
+  const resetForm = () => setForm({
+    name: '', city: '', emirate: 'Dubai', base_delivery_fee: '',
+    extra_km_fee: '', max_weight_kg: '', estimated_minutes: '',
+    is_active: true, color: '#3b82f6', polygon: [], center_lat: '', center_lng: '',
+  });
 
-  const filtered = zones.filter(z => !emirateFilter || z.emirate === emirateFilter);
+  const openEdit = (z) => {
+    setSelected(z);
+    let poly = [];
+    try { poly = z.polygon ? (typeof z.polygon === 'string' ? JSON.parse(z.polygon) : z.polygon) : []; } catch (e) {}
+    setForm({
+      name: z.name || '', city: z.city || '', emirate: z.emirate || 'Dubai',
+      base_delivery_fee: z.base_delivery_fee || '', extra_km_fee: z.extra_km_fee || '',
+      max_weight_kg: z.max_weight_kg || '', estimated_minutes: z.estimated_minutes || '',
+      is_active: z.is_active !== false, color: z.color || '#3b82f6',
+      polygon: poly, center_lat: '', center_lng: '',
+    });
+    setShowForm(true);
+  };
+
+  const openNew = () => { resetForm(); setSelected(null); setError(''); setShowForm(true); };
+
+  const filtered = useMemo(() => {
+    return zones.filter(z => {
+      if (emirateFilter && z.emirate !== emirateFilter) return false;
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        return (z.name?.toLowerCase().includes(q) || z.city?.toLowerCase().includes(q) || z.emirate?.toLowerCase().includes(q));
+      }
+      return true;
+    });
+  }, [zones, emirateFilter, searchQuery]);
+
+  const mapPolygons = useMemo(() => {
+    return zones.map((z, i) => {
+      let coords = [];
+      try { coords = z.polygon ? (typeof z.polygon === 'string' ? JSON.parse(z.polygon) : z.polygon) : []; } catch (e) {}
+      return { ...z, coords, zoneColor: z.color || ZONE_COLORS[i % ZONE_COLORS.length] };
+    }).filter(z => z.coords.length > 2);
+  }, [zones]);
+
+  const zoneMarkers = useMemo(() => {
+    return zones.map((z, i) => {
+      let coords = [];
+      try { coords = z.polygon ? (typeof z.polygon === 'string' ? JSON.parse(z.polygon) : z.polygon) : []; } catch (e) {}
+      const centroid = getCentroid(coords);
+      if (centroid) return { id: z.id, lat: centroid[0], lng: centroid[1], name: z.name, emirate: z.emirate };
+      return null;
+    }).filter(Boolean);
+  }, [zones]);
 
   return (
     <div className="page-container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+      <div className="page-header-row">
         <div>
-          <h2 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>Delivery Zones</h2>
-          <p style={{ margin: 0, color: '#64748b', fontSize: 14 }}>{zones.length} zones configured</p>
+          <h2 className="page-heading">Delivery Zones</h2>
+          <p className="page-subheading">{zones.length} zones configured</p>
         </div>
-        <button onClick={() => { resetForm(); setSelected(null); setShowForm(true); }}
-          style={{ background: '#f97316', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 20px', fontWeight: 600, cursor: 'pointer', fontSize: 14 }}>
-          + Add Zone
-        </button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button className="btn-outline-action" onClick={fetchZones}>
+            <Refresh width={15} height={15} /> Refresh
+          </button>
+          <button className="btn-primary-action" onClick={openNew}>
+            <Plus width={16} height={16} /> Add Zone
+          </button>
+        </div>
       </div>
 
-      {/* Emirates filter */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-        <button onClick={() => setEmirateFilter('')}
-          style={{ padding: '6px 14px', borderRadius: 20, border: 'none', background: !emirateFilter ? '#f97316' : '#f1f5f9', color: !emirateFilter ? '#fff' : '#475569', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
-          All
-        </button>
-        {EMIRATES.map(em => (
-          <button key={em} onClick={() => setEmirateFilter(em)}
-            style={{ padding: '6px 14px', borderRadius: 20, border: 'none', background: emirateFilter === em ? '#f97316' : '#f1f5f9', color: emirateFilter === em ? '#fff' : '#475569', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
-            {em} ({zones.filter(z => z.emirate === em).length})
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div className="search-box" style={{ maxWidth: 220 }}>
+          <Search width={14} height={14} className="search-icon" />
+          <input type="text" placeholder="Search zones..." value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)} className="search-input" />
+        </div>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <button onClick={() => setEmirateFilter('')}
+            className={`summary-chip ${!emirateFilter ? 'active' : ''}`}
+            style={{ '--chip-color': '#244066', '--chip-bg': '#eff6ff' }}>
+            All ({zones.length})
           </button>
-        ))}
+          {EMIRATES.map(em => {
+            const cnt = zones.filter(z => z.emirate === em).length;
+            if (cnt === 0) return null;
+            return (
+              <button key={em} onClick={() => setEmirateFilter(emirateFilter === em ? '' : em)}
+                className={`summary-chip ${emirateFilter === em ? 'active' : ''}`}
+                style={{ '--chip-color': '#244066', '--chip-bg': '#eff6ff' }}>
+                {em} ({cnt})
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: 40, color: '#94a3b8' }}>Loading...</div>
+        <div className="loading-rows">
+          {[1,2,3].map(i => <div key={i} className="skeleton-card" style={{ height: 120 }} />)}
+        </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
-          {filtered.map(zone => (
-            <div key={zone.id} style={{ background: '#fff', borderRadius: 12, padding: 20, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', borderTop: `3px solid ${zone.is_active ? '#f97316' : '#cbd5e1'}` }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 16 }}>{zone.name}</div>
-                  <div style={{ fontSize: 13, color: '#64748b' }}>{zone.city}, {zone.emirate}</div>
-                </div>
-                <span style={{ padding: '3px 8px', borderRadius: 6, fontSize: 12, fontWeight: 600, background: zone.is_active ? '#dcfce7' : '#f1f5f9', color: zone.is_active ? '#16a34a' : '#64748b' }}>
-                  {zone.is_active ? 'Active' : 'Inactive'}
-                </span>
+        <div className="zones-layout">
+          <div className="zones-list-panel">
+            {filtered.length === 0 ? (
+              <div className="empty-state-mini" style={{ padding: '2rem 0' }}>
+                <MapPin width={40} height={40} />
+                <p style={{ fontWeight: 600, marginTop: 8 }}>No zones found</p>
+                <button className="btn-primary-action" onClick={openNew} style={{ marginTop: 8 }}>
+                  <Plus width={16} height={16} /> Add Zone
+                </button>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
-                {[
-                  { label: 'Base Fee', value: `AED ${zone.base_delivery_fee || 0}` },
-                  { label: 'Extra/km', value: zone.extra_km_fee ? `AED ${zone.extra_km_fee}` : '—' },
-                  { label: 'Max Weight', value: zone.max_weight_kg ? `${zone.max_weight_kg} kg` : '—' },
-                  { label: 'Est. Time', value: zone.estimated_minutes ? `${zone.estimated_minutes} min` : '—' },
-                ].map(item => (
-                  <div key={item.label} style={{ background: '#f8fafc', borderRadius: 8, padding: 10 }}>
-                    <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 2 }}>{item.label}</div>
-                    <div style={{ fontWeight: 600, fontSize: 14 }}>{item.value}</div>
+            ) : (
+              filtered.map((zone, i) => (
+                <div key={zone.id}
+                  className={`zone-card ${activeZone === zone.id ? 'active' : ''}`}
+                  onClick={() => setActiveZone(activeZone === zone.id ? null : zone.id)}>
+                  <div className="zone-card-header">
+                    <div>
+                      <div className="zone-card-name">
+                        <span style={{
+                          display: 'inline-block', width: 10, height: 10, borderRadius: '50%',
+                          background: zone.color || ZONE_COLORS[i % ZONE_COLORS.length],
+                          marginRight: 8, verticalAlign: 'middle'
+                        }} />
+                        {zone.name}
+                      </div>
+                      <div className="zone-card-sub">{zone.city ? `${zone.city}, ` : ''}{zone.emirate}</div>
+                    </div>
+                    <span className="status-badge" style={{
+                      background: zone.is_active ? '#dcfce7' : '#f1f5f9',
+                      color: zone.is_active ? '#16a34a' : '#64748b',
+                    }}>
+                      {zone.is_active ? 'Active' : 'Inactive'}
+                    </span>
                   </div>
-                ))}
-              </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => openEdit(zone)}
-                  style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontSize: 13 }}>Edit</button>
-                <button onClick={() => handleDelete(zone.id)}
-                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #fecaca', background: '#fff', color: '#dc2626', cursor: 'pointer', fontSize: 13 }}>Delete</button>
-              </div>
-            </div>
-          ))}
+                  <div className="zone-stats">
+                    <div className="zone-stat">
+                      <div className="zone-stat-label">Base Fee</div>
+                      <div className="zone-stat-value">AED {zone.base_delivery_fee || 0}</div>
+                    </div>
+                    <div className="zone-stat">
+                      <div className="zone-stat-label">Extra/km</div>
+                      <div className="zone-stat-value">{zone.extra_km_fee ? `AED ${zone.extra_km_fee}` : '—'}</div>
+                    </div>
+                    <div className="zone-stat">
+                      <div className="zone-stat-label">Max Weight</div>
+                      <div className="zone-stat-value">{zone.max_weight_kg ? `${zone.max_weight_kg} kg` : '—'}</div>
+                    </div>
+                    <div className="zone-stat">
+                      <div className="zone-stat-label">Drivers</div>
+                      <div className="zone-stat-value">{zone.driver_count || 0}</div>
+                    </div>
+                  </div>
+                  <div className="zone-card-actions" onClick={e => e.stopPropagation()}>
+                    <button onClick={() => setActiveZone(zone.id)}>
+                      <Eye width={13} height={13} /> View
+                    </button>
+                    <button onClick={() => openEdit(zone)}>
+                      <EditPencil width={13} height={13} /> Edit
+                    </button>
+                    <button className="danger" onClick={() => handleDelete(zone.id)}>
+                      <Trash width={13} height={13} />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className="zones-map-panel">
+            <MapContainer center={[25.2048, 55.2708]} zoom={9}
+              style={{ height: '100%', width: '100%', zIndex: 1 }}
+              scrollWheelZoom={true} attributionControl={false}>
+              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap" />
+              <FitBounds zones={zones} activeId={activeZone} />
+              {mapPolygons.map(z => (
+                <Polygon key={z.id} positions={z.coords}
+                  pathOptions={{
+                    color: z.zoneColor, fillColor: z.zoneColor,
+                    fillOpacity: activeZone === z.id ? 0.3 : 0.12,
+                    weight: activeZone === z.id ? 3.5 : 2,
+                  }}
+                  eventHandlers={{ click: () => setActiveZone(z.id) }}>
+                  <Popup>
+                    <div className="map-popup">
+                      <strong>{z.name}</strong>
+                      <div className="popup-detail">{z.emirate} &bull; AED {z.base_delivery_fee || 0}</div>
+                    </div>
+                  </Popup>
+                </Polygon>
+              ))}
+              {zoneMarkers.map(m => (
+                <Marker key={m.id} position={[m.lat, m.lng]} icon={MARKER_ICONS.zone}
+                  eventHandlers={{ click: () => setActiveZone(m.id) }}>
+                  <Popup>
+                    <div className="map-popup">
+                      <strong>{m.name}</strong>
+                      <div className="popup-detail">{m.emirate}</div>
+                    </div>
+                  </Popup>
+                </Marker>
+              ))}
+            </MapContainer>
+          </div>
         </div>
       )}
 
-      {/* Form Modal */}
       {showForm && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: '#fff', borderRadius: 16, padding: 32, width: '100%', maxWidth: 520, maxHeight: '90vh', overflowY: 'auto' }}>
-            <h3 style={{ margin: '0 0 20px', fontSize: 20, fontWeight: 700 }}>{selected ? 'Edit Zone' : 'Add Zone'}</h3>
-            {error && <div style={{ background: '#fee2e2', color: '#dc2626', padding: '10px 16px', borderRadius: 8, marginBottom: 16, fontSize: 14 }}>{error}</div>}
+        <div className="modal-overlay" onClick={() => { setShowForm(false); setSelected(null); }}>
+          <div className="modal-container large" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>{selected ? `Edit Zone — ${selected.name}` : 'New Zone'}</h3>
+              <button className="modal-close" onClick={() => { setShowForm(false); setSelected(null); }}>
+                <Xmark width={18} height={18} />
+              </button>
+            </div>
             <form onSubmit={handleSubmit}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                {[
-                  { field: 'name', label: 'Zone Name', required: true, full: true },
-                  { field: 'city', label: 'City', required: true },
-                  { field: 'base_delivery_fee', label: 'Base Fee (AED)', type: 'number', required: true },
-                  { field: 'extra_km_fee', label: 'Extra Fee/km (AED)', type: 'number' },
-                  { field: 'max_weight_kg', label: 'Max Weight (kg)', type: 'number' },
-                  { field: 'estimated_minutes', label: 'Est. Minutes', type: 'number' },
-                ].map(({ field, label, required, type, full }) => (
-                  <div key={field} style={full ? { gridColumn: '1 / -1' } : {}}>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>{label}{required && ' *'}</label>
-                    <input required={required} type={type || 'text'} value={form[field] || ''}
-                      onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))}
-                      style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14, boxSizing: 'border-box' }} />
+              <div className="modal-body">
+                {error && <div className="alert-error" style={{ marginBottom: '1rem' }}>{error}</div>}
+                <div className="form-section-title">Zone Information</div>
+                <div className="form-grid-2">
+                  <div className="form-field">
+                    <label>Zone Name *</label>
+                    <input required type="text" value={form.name}
+                      onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                      placeholder="e.g. Downtown Dubai" />
                   </div>
-                ))}
-                <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>Emirate *</label>
-                  <select required value={form.emirate} onChange={e => setForm(f => ({ ...f, emirate: e.target.value }))}
-                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14 }}>
-                    {EMIRATES.map(em => <option key={em} value={em}>{em}</option>)}
-                  </select>
+                  <div className="form-field">
+                    <label>City</label>
+                    <input type="text" value={form.city}
+                      onChange={e => setForm(f => ({ ...f, city: e.target.value }))}
+                      placeholder="e.g. Dubai" />
+                  </div>
+                  <div className="form-field">
+                    <label>Emirate *</label>
+                    <select required value={form.emirate}
+                      onChange={e => setForm(f => ({ ...f, emirate: e.target.value }))}>
+                      {EMIRATES.map(em => <option key={em} value={em}>{em}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-field">
+                    <label>Zone Color</label>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', paddingTop: 4 }}>
+                      {ZONE_COLORS.map(c => (
+                        <button key={c} type="button" onClick={() => setForm(f => ({ ...f, color: c }))}
+                          style={{
+                            width: 28, height: 28, borderRadius: '50%', background: c,
+                            border: form.color === c ? '3px solid #244066' : '2px solid #e2e8f0',
+                            cursor: 'pointer', transition: 'transform 0.15s',
+                            transform: form.color === c ? 'scale(1.2)' : 'scale(1)',
+                          }} />
+                      ))}
+                    </div>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <input type="checkbox" id="is_active" checked={form.is_active} onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))} style={{ width: 16, height: 16, cursor: 'pointer' }} />
-                  <label htmlFor="is_active" style={{ fontSize: 14, cursor: 'pointer', fontWeight: 500 }}>Active</label>
+                <div className="form-section-title" style={{ marginTop: '1rem' }}>Pricing & Limits</div>
+                <div className="form-grid-2">
+                  <div className="form-field">
+                    <label>Base Fee (AED) *</label>
+                    <input required type="number" min="0" step="0.01" value={form.base_delivery_fee}
+                      onChange={e => setForm(f => ({ ...f, base_delivery_fee: e.target.value }))}
+                      placeholder="25.00" />
+                  </div>
+                  <div className="form-field">
+                    <label>Extra Fee/km (AED)</label>
+                    <input type="number" min="0" step="0.01" value={form.extra_km_fee}
+                      onChange={e => setForm(f => ({ ...f, extra_km_fee: e.target.value }))}
+                      placeholder="2.50" />
+                  </div>
+                  <div className="form-field">
+                    <label>Max Weight (kg)</label>
+                    <input type="number" min="0" step="0.1" value={form.max_weight_kg}
+                      onChange={e => setForm(f => ({ ...f, max_weight_kg: e.target.value }))}
+                      placeholder="50" />
+                  </div>
+                  <div className="form-field">
+                    <label>Est. Minutes</label>
+                    <input type="number" min="0" value={form.estimated_minutes}
+                      onChange={e => setForm(f => ({ ...f, estimated_minutes: e.target.value }))}
+                      placeholder="45" />
+                  </div>
+                  <div className="form-field" style={{ display: 'flex', alignItems: 'center', gap: 10, paddingTop: 24 }}>
+                    <input type="checkbox" id="zone_active" checked={form.is_active}
+                      onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))}
+                      style={{ width: 18, height: 18, cursor: 'pointer', accentColor: 'var(--primary)' }} />
+                    <label htmlFor="zone_active" style={{ cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem' }}>Active Zone</label>
+                  </div>
+                </div>
+                <div className="form-section-title" style={{ marginTop: '1rem' }}>
+                  Zone Location
+                  <span style={{ fontSize: '0.75rem', fontWeight: 400, color: 'var(--gray-400)', marginLeft: 8 }}>
+                    Click map to set center point
+                  </span>
+                </div>
+                <div className="form-map-wrapper">
+                  <LocationPicker
+                    lat={form.center_lat}
+                    lng={form.center_lng}
+                    onChange={({ lat, lng, address }) => setForm(f => ({
+                      ...f, center_lat: lat, center_lng: lng,
+                      city: address?.split(',')[1]?.trim() || f.city
+                    }))}
+                    height={250}
+                    markerType="zone"
+                  />
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 12, marginTop: 24, justifyContent: 'flex-end' }}>
-                <button type="button" onClick={() => { setShowForm(false); setSelected(null); }}
-                  style={{ padding: '10px 20px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontWeight: 500 }}>Cancel</button>
-                <button type="submit" disabled={saving}
-                  style={{ padding: '10px 24px', borderRadius: 8, border: 'none', background: '#f97316', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
-                  {saving ? 'Saving...' : selected ? 'Update' : 'Create'}
+              <div className="modal-footer">
+                <button type="button" className="btn-outline-action"
+                  onClick={() => { setShowForm(false); setSelected(null); }}>Cancel</button>
+                <button type="submit" className="btn-primary-action" disabled={saving}>
+                  {saving ? 'Saving...' : selected ? 'Update Zone' : 'Create Zone'}
                 </button>
               </div>
             </form>

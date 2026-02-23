@@ -7,6 +7,8 @@ import {
 } from 'iconoir-react';
 import { AuthContext } from '../App';
 import api from '../lib/api';
+import LocationPicker from '../components/LocationPicker';
+import MapView from '../components/MapView';
 import './CRMPages.css';
 
 /* ─── Constants ─────────────────────────────────────────────── */
@@ -27,7 +29,8 @@ const PAYMENT_LABELS = { cod: 'Cash on Delivery', prepaid: 'Prepaid', credit: 'C
 const EMPTY_FORM   = {
   client_id: '', zone_id: '', order_type: 'standard', payment_method: 'cod',
   recipient_name: '', recipient_phone: '', recipient_address: '',
-  recipient_emirate: 'Dubai', cod_amount: '', weight_kg: '', notes: '',
+  recipient_emirate: 'Dubai', recipient_lat: '', recipient_lng: '',
+  cod_amount: '', weight_kg: '', notes: '',
 };
 
 /* ─── Sub-components ─────────────────────────────────────────── */
@@ -150,6 +153,8 @@ export default function Orders() {
       recipient_phone:  order.recipient_phone  || '',
       recipient_address:order.recipient_address|| '',
       recipient_emirate:order.recipient_emirate|| 'Dubai',
+      recipient_lat:    order.recipient_lat    || '',
+      recipient_lng:    order.recipient_lng    || '',
       cod_amount:       order.cod_amount       || '',
       weight_kg:        order.weight_kg        || '',
       notes:            order.notes            || '',
@@ -421,6 +426,21 @@ export default function Orders() {
                   <span className="detail-label"><MapPin width={14} height={14} /> Address</span>
                   <span className="detail-value">{viewOrder.recipient_address}</span>
                 </div>
+                {viewOrder.recipient_lat && viewOrder.recipient_lng && (
+                  <div style={{ margin: '8px 0 12px', borderRadius: 10, overflow: 'hidden', border: '1px solid var(--gray-200)' }}>
+                    <MapView
+                      markers={[{
+                        lat: parseFloat(viewOrder.recipient_lat),
+                        lng: parseFloat(viewOrder.recipient_lng),
+                        type: 'delivery',
+                        label: viewOrder.recipient_name,
+                        popup: `<strong>${viewOrder.recipient_name}</strong><br/>${viewOrder.recipient_address || ''}`
+                      }]}
+                      height={180}
+                      zoom={15}
+                    />
+                  </div>
+                )}
                 <div className="detail-row">
                   <span className="detail-label"><MapPin width={14} height={14} /> Zone</span>
                   <span className="detail-value">{viewOrder.zone_name || '—'} ({viewOrder.recipient_emirate})</span>
@@ -508,9 +528,18 @@ export default function Orders() {
                   </div>
                   <div className="form-field span-2">
                     <label>Delivery Address *</label>
-                    <input required type="text" value={form.recipient_address}
-                      onChange={e => setForm(f => ({ ...f, recipient_address: e.target.value }))}
-                      placeholder="Building, street, area..." />
+                    <div className="form-map-wrapper">
+                      <LocationPicker
+                        lat={form.recipient_lat}
+                        lng={form.recipient_lng}
+                        address={form.recipient_address}
+                        markerType="delivery"
+                        height={220}
+                        onChange={({ lat, lng, address }) =>
+                          setForm(f => ({ ...f, recipient_lat: lat, recipient_lng: lng, recipient_address: address }))
+                        }
+                      />
+                    </div>
                   </div>
                   <div className="form-field">
                     <label>Emirate</label>
