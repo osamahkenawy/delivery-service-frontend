@@ -2,7 +2,6 @@ import { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeClosed, DeliveryTruck, Check, WarningTriangle } from 'iconoir-react';
 import { AuthContext } from '../App';
-import logoColored from '../assets/images/theme/logo/GoLineDeliveryServiceLogoColored.png';
 import './LoginPage.css';
 
 export default function LoginPage() {
@@ -40,7 +39,7 @@ export default function LoginPage() {
           <div className="login-header">
             <div className="logo">
               <img
-                src={logoColored}
+                src="/assets/images/logos/full_logo_colored.png"
                 alt="Trasealla Delivery"
                 onError={e => {
                   e.target.style.display = 'none';
@@ -54,7 +53,7 @@ export default function LoginPage() {
           </div>
 
           <div className="lp-view lp-view-enter">
-            <h1>Welcome Back</h1>
+            <h1>Welcome To Go Line</h1>
             <p className="lp-subtitle">Sign in to your Delivery Management account</p>
 
             <form onSubmit={handleSubmit} className="login-form">

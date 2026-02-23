@@ -595,3 +595,310 @@
   overflow: hidden;
   box-shadow: none !important;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   Zone Page — Enhanced Styles
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Location Search (in-form) ───────────────────────────────── */
+.loc-search-wrap { position: relative; z-index: 600; }
+.loc-search-bar {
+  display: flex; align-items: center; gap: 8px;
+  background: #fff; border: 1.5px solid var(--gray-200, #e2e8f0);
+  border-radius: 10px; padding: 9px 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.loc-search-bar:focus-within {
+  border-color: var(--primary, #244066);
+  box-shadow: 0 0 0 3px rgba(36,64,102,0.08);
+}
+.loc-search-bar svg { color: var(--gray-400, #94a3b8); flex-shrink: 0; }
+.loc-search-bar input {
+  flex: 1; border: none; outline: none; font-size: 0.85rem;
+  background: transparent; font-family: inherit; color: var(--gray-700, #334155);
+}
+.loc-search-bar input::placeholder { color: var(--gray-400, #94a3b8); }
+.loc-search-bar button {
+  background: none; border: none; color: var(--gray-400, #94a3b8);
+  cursor: pointer; padding: 2px 4px; border-radius: 4px;
+}
+.loc-search-bar button:hover { color: var(--danger, #ef4444); }
+.loc-search-spin {
+  width: 14px; height: 14px;
+  border: 2px solid var(--gray-200, #e2e8f0);
+  border-top-color: var(--primary, #244066);
+  border-radius: 50%; animation: spin 0.6s linear infinite;
+}
+.loc-search-list {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+  background: #fff; border: 1px solid var(--gray-200, #e2e8f0);
+  border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.13);
+  max-height: 240px; overflow-y: auto; list-style: none;
+  margin: 0; padding: 6px; z-index: 700;
+}
+.loc-search-list li {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 12px; border-radius: 8px; cursor: pointer;
+  transition: background 0.12s;
+}
+.loc-search-list li:hover { background: var(--gray-50, #f8fafc); }
+.loc-search-list li svg { color: var(--primary, #244066); }
+.loc-name { font-weight: 600; font-size: 0.84rem; color: var(--gray-800, #1e293b); line-height: 1.3; }
+.loc-detail {
+  font-size: 0.72rem; color: var(--gray-400, #94a3b8); line-height: 1.3;
+  margin-top: 2px; white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; max-width: 360px;
+}
+
+/* ── Zone Form Header ────────────────────────────────────────── */
+.zf-header {
+  display: flex; align-items: center; gap: 14px;
+  margin-bottom: 20px; padding-bottom: 16px;
+  border-bottom: 1px solid var(--gray-200, #e2e8f0);
+}
+.zf-back {
+  width: 38px; height: 38px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--gray-100, #f1f5f9); border: none;
+  color: var(--gray-600, #475569); cursor: pointer;
+  transition: all 0.15s;
+}
+.zf-back:hover { background: var(--gray-200, #e2e8f0); color: var(--gray-800, #1e293b); }
+.zf-header-text { flex: 1; }
+.zf-header-text h2 { margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--gray-800, #1e293b); }
+.zf-header-text p { margin: 2px 0 0; font-size: 0.8rem; color: var(--gray-400, #94a3b8); }
+.zf-header-actions { display: flex; gap: 8px; }
+
+/* ── Zone Form Layout — Map left, form right ─────────────────── */
+.zf-layout {
+  display: grid; grid-template-columns: 1fr 340px;
+  gap: 20px; height: calc(100vh - 200px); min-height: 480px;
+}
+@media (max-width: 1100px) {
+  .zf-layout { grid-template-columns: 1fr; height: auto; }
+}
+
+/* Map column */
+.zf-map-col {
+  display: flex; flex-direction: column; gap: 0; position: relative;
+}
+.zf-map-search {
+  position: absolute; top: 12px; left: 12px; right: 12px;
+  z-index: 600;
+}
+.zf-map-wrap {
+  flex: 1; border-radius: 14px; overflow: hidden; position: relative;
+  border: 2px solid var(--gray-200, #e2e8f0);
+  box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+}
+.zf-map-hint {
+  position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
+  background: rgba(36,64,102,0.88); color: #fff;
+  padding: 10px 22px; border-radius: 24px; font-size: 0.82rem;
+  font-weight: 500; z-index: 500; pointer-events: none;
+  white-space: nowrap; backdrop-filter: blur(4px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  display: flex; align-items: center; gap: 8px;
+}
+.zf-radius-bar {
+  display: flex; align-items: center; gap: 12px;
+  background: #fff; padding: 10px 16px; margin-top: 8px;
+  border-radius: 10px; border: 1px solid var(--gray-200, #e2e8f0);
+}
+.zf-radius-bar label {
+  font-size: 0.78rem; font-weight: 600; color: var(--gray-500, #64748b);
+  white-space: nowrap;
+}
+.zf-radius-bar .radius-slider { flex: 1; margin: 0; }
+.zf-radius-val {
+  font-size: 0.82rem; font-weight: 700;
+  color: var(--primary, #244066); min-width: 52px; text-align: right;
+}
+
+/* Form column */
+.zf-form-col {
+  display: flex; flex-direction: column; gap: 12px;
+  overflow-y: auto; padding-right: 4px;
+}
+.zf-form-col::-webkit-scrollbar { width: 4px; }
+.zf-form-col::-webkit-scrollbar-thumb { background: var(--gray-300, #cbd5e1); border-radius: 4px; }
+
+.zf-card {
+  background: #fff; border-radius: 12px; padding: 14px 16px;
+  border: 1px solid var(--gray-200, #e2e8f0);
+}
+.zf-card-label {
+  font-size: 0.72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.4px; color: var(--gray-400, #94a3b8);
+  margin-bottom: 5px;
+}
+.zf-card-title {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.8rem; font-weight: 700; color: var(--gray-700, #334155);
+  margin-bottom: 10px; padding-bottom: 6px;
+  border-bottom: 1px solid var(--gray-100, #f1f5f9);
+}
+.zf-card-title svg { color: var(--primary, #244066); }
+.zf-input-lg {
+  width: 100%; border: 1.5px solid var(--gray-200, #e2e8f0);
+  border-radius: 8px; padding: 9px 12px; font-size: 0.92rem;
+  font-weight: 600; font-family: inherit; color: var(--gray-800, #1e293b);
+  outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+}
+.zf-input-lg:focus {
+  border-color: var(--primary, #244066);
+  box-shadow: 0 0 0 3px rgba(36,64,102,0.08);
+}
+.zf-input-lg::placeholder { color: var(--gray-400, #94a3b8); font-weight: 400; }
+
+.zf-color-row {
+  display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap;
+}
+.zf-color-dot {
+  width: 26px; height: 26px; border-radius: 50%; border: 2.5px solid transparent;
+  background: var(--dot-color); cursor: pointer; transition: all 0.15s;
+  padding: 0;
+}
+.zf-color-dot:hover { transform: scale(1.15); }
+.zf-color-dot.selected {
+  border-color: var(--dot-color);
+  box-shadow: 0 0 0 3px rgba(0,0,0,0.06);
+  background: var(--dot-color);
+  outline: 2.5px solid #fff;
+  outline-offset: -4px;
+}
+
+.zf-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.zf-field {}
+.zf-field input, .zf-field select {
+  width: 100%; border: 1.5px solid var(--gray-200, #e2e8f0);
+  border-radius: 8px; padding: 8px 10px; font-size: 0.82rem;
+  font-family: inherit; color: var(--gray-700, #334155); outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s; background: #fff;
+}
+.zf-field input:focus, .zf-field select:focus {
+  border-color: var(--primary, #244066);
+  box-shadow: 0 0 0 3px rgba(36,64,102,0.08);
+}
+.zf-field input::placeholder { color: var(--gray-400, #94a3b8); }
+.zf-field select { cursor: pointer; }
+
+.zf-coords {
+  display: flex; align-items: center; gap: 6px; margin-top: 8px;
+  background: var(--gray-50, #f8fafc); padding: 6px 10px; border-radius: 6px;
+  font-size: 0.75rem; color: var(--gray-500, #64748b);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+.zf-coords svg { flex-shrink: 0; color: var(--primary, #244066); }
+.zf-coords span { flex: 1; }
+.zf-coords button {
+  background: none; border: 1px solid var(--danger, #ef4444);
+  color: var(--danger, #ef4444); font-size: 0.68rem; font-weight: 600;
+  padding: 2px 8px; border-radius: 5px; cursor: pointer;
+  transition: all 0.15s;
+}
+.zf-coords button:hover { background: var(--danger, #ef4444); color: #fff; }
+
+.zf-status-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
+}
+.zf-notes {
+  width: 100%; border: 1.5px solid var(--gray-200, #e2e8f0);
+  border-radius: 8px; padding: 8px 10px; font-size: 0.82rem;
+  font-family: inherit; color: var(--gray-700, #334155); outline: none;
+  resize: none; transition: border-color 0.2s, box-shadow 0.2s;
+}
+.zf-notes:focus {
+  border-color: var(--primary, #244066);
+  box-shadow: 0 0 0 3px rgba(36,64,102,0.08);
+}
+.zf-notes::placeholder { color: var(--gray-400, #94a3b8); }
+
+/* ── Zone List Filters ───────────────────────────────────────── */
+.zl-filters {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 16px; flex-wrap: wrap;
+}
+.zl-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ── Zone List Empty ─────────────────────────────────────────── */
+.zl-empty {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 10px; padding: 60px 20px;
+  color: var(--gray-400, #94a3b8); text-align: center;
+}
+.zl-empty p { margin: 0; font-size: 0.9rem; font-weight: 500; }
+
+/* ── Zone List Cards — Enhanced ──────────────────────────────── */
+.zl-card {
+  display: flex; background: #fff; border-radius: 12px;
+  border: 1.5px solid var(--gray-200, #e2e8f0);
+  overflow: hidden; cursor: pointer; transition: all 0.2s;
+}
+.zl-card:hover {
+  border-color: var(--primary, #244066);
+  box-shadow: 0 3px 14px rgba(36,64,102,0.08);
+}
+.zl-card.active {
+  border-color: var(--secondary, #f2421b);
+  box-shadow: 0 4px 16px rgba(242,66,27,0.1);
+}
+.zl-card.dim { opacity: 0.55; }
+.zl-card-accent {
+  width: 5px; flex-shrink: 0;
+}
+.zl-card-body {
+  flex: 1; padding: 12px 14px; min-width: 0;
+}
+.zl-card-top {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: 8px;
+}
+.zl-card-name {
+  font-weight: 700; font-size: 0.9rem; color: var(--gray-800, #1e293b);
+}
+.zl-card-sub {
+  font-size: 0.75rem; color: var(--gray-500, #64748b); margin-top: 2px;
+}
+.zl-card-right { flex-shrink: 0; margin-left: 8px; }
+
+.zl-card-stats {
+  display: flex; gap: 10px; margin-bottom: 8px; flex-wrap: wrap;
+}
+.zl-stat {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 0.72rem; color: var(--gray-500, #64748b); font-weight: 500;
+}
+.zl-stat svg { color: var(--gray-400, #94a3b8); }
+
+.zl-card-actions {
+  display: flex; gap: 6px;
+}
+.zl-card-actions button {
+  display: flex; align-items: center; gap: 4px;
+  padding: 4px 10px; border-radius: 6px;
+  font-size: 0.72rem; font-weight: 600; cursor: pointer;
+  border: 1px solid var(--gray-200, #e2e8f0); background: #fff;
+  color: var(--gray-600, #475569); transition: all 0.15s;
+}
+.zl-card-actions button:hover {
+  background: var(--gray-50, #f8fafc); border-color: var(--gray-300, #cbd5e1);
+}
+.zl-card-actions button.danger { color: var(--danger, #ef4444); border-color: #fecaca; }
+.zl-card-actions button.danger:hover { background: #fef2f2; }
+
+/* ── Small toggle variant ────────────────────────────────────── */
+.toggle-switch.sm {
+  width: 36px; height: 20px; border-radius: 10px;
+}
+.toggle-switch.sm .toggle-knob {
+  width: 14px; height: 14px; top: 3px; left: 3px;
+}
+.toggle-switch.sm.active .toggle-knob {
+  transform: translateX(16px);
+}
+
+/* ── Loading skeleton ────────────────────────────────────────── */
+.loading-rows {
+  display: flex; flex-direction: column; gap: 12px; padding: 20px 0;
+}
