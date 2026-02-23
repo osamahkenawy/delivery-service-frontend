@@ -586,7 +586,7 @@ export default function Zones() {
                         </div>
                         {!hasLoc && (
                           <div style={{ fontSize:'0.7rem', color:'#d97706', fontWeight:600, marginTop:2 }}>
-                            \u26a0 No location — edit to set coordinates
+                            {'\u26a0'} No location — edit to set coordinates
                           </div>
                         )}
                       </div>
