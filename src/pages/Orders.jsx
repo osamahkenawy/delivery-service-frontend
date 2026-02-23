@@ -1,363 +1,586 @@
-import { useState, useEffect, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useContext, useRef } from 'react';
+import {
+  Package, Plus, Search, XmarkCircle, Eye, EditPencil, DeliveryTruck,
+  Check, Xmark, ArrowLeft, ArrowRight, Filter,
+  Clock, MapPin, User, Phone, DollarCircle,
+  Weight, Prohibition, Refresh
+} from 'iconoir-react';
 import { AuthContext } from '../App';
 import api from '../lib/api';
+import './CRMPages.css';
 
-const STATUS_COLORS = {
-  pending:    { bg: '#fef3c7', color: '#d97706' },
-  confirmed:  { bg: '#dbeafe', color: '#2563eb' },
-  assigned:   { bg: '#e0f2fe', color: '#0369a1' },
-  picked_up:  { bg: '#f3e8ff', color: '#7c3aed' },
-  in_transit: { bg: '#fce7f3', color: '#be185d' },
-  delivered:  { bg: '#dcfce7', color: '#16a34a' },
-  failed:     { bg: '#fee2e2', color: '#dc2626' },
-  returned:   { bg: '#fff7ed', color: '#ea580c' },
-  cancelled:  { bg: '#f1f5f9', color: '#64748b' },
+/* ─── Constants ─────────────────────────────────────────────── */
+const STATUS_META = {
+  pending:    { label: 'Pending',    bg: '#fef3c7', color: '#d97706' },
+  confirmed:  { label: 'Confirmed',  bg: '#dbeafe', color: '#2563eb' },
+  assigned:   { label: 'Assigned',   bg: '#ede9fe', color: '#7c3aed' },
+  picked_up:  { label: 'Picked Up',  bg: '#fce7f3', color: '#be185d' },
+  in_transit: { label: 'In Transit', bg: '#e0f2fe', color: '#0369a1' },
+  delivered:  { label: 'Delivered',  bg: '#dcfce7', color: '#16a34a' },
+  failed:     { label: 'Failed',     bg: '#fee2e2', color: '#dc2626' },
+  returned:   { label: 'Returned',   bg: '#fff7ed', color: '#ea580c' },
+  cancelled:  { label: 'Cancelled',  bg: '#f1f5f9', color: '#64748b' },
+};
+const ORDER_TYPES  = ['standard', 'express', 'same_day', 'scheduled', 'cod', 'return'];
+const EMIRATES     = ['Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman', 'Ras Al Khaimah', 'Fujairah', 'Umm Al Quwain'];
+const EMPTY_FORM   = {
+  client_id: '', zone_id: '', order_type: 'standard', payment_method: 'cash',
+  recipient_name: '', recipient_phone: '', recipient_address: '',
+  recipient_emirate: 'Dubai', cod_amount: '', weight_kg: '', notes: '',
 };
 
-const ORDER_TYPES = ['standard', 'express', 'same_day', 'scheduled', 'cod', 'return'];
+/* ─── Sub-components ─────────────────────────────────────────── */
+const StatusBadge = ({ status }) => {
+  const m = STATUS_META[status] || STATUS_META.pending;
+  return (
+    <span className="status-badge" style={{ background: m.bg, color: m.color }}>
+      {m.label}
+    </span>
+  );
+};
 
+const SkeletonRows = () => (
+  <>
+    {[1,2,3,4,5].map(i => (
+      <tr key={i}>
+        {Array(9).fill(0).map((_, j) => (
+          <td key={j} style={{ padding: '14px 16px' }}>
+            <div className="skeleton-card" style={{ height: 16, borderRadius: 4, width: j === 0 ? 80 : j === 2 ? 120 : 60 }} />
+          </td>
+        ))}
+      </tr>
+    ))}
+  </>
+);
+
+/* ─── Main component ─────────────────────────────────────────── */
 export default function Orders() {
   const { user } = useContext(AuthContext);
-  const navigate = useNavigate();
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [orders,     setOrders]     = useState([]);
+  const [loading,    setLoading]    = useState(true);
   const [pagination, setPagination] = useState({ page: 1, total: 0, limit: 20 });
-  const [filters, setFilters] = useState({ status: '', search: '', date_from: '', date_to: '' });
-  const [showForm, setShowForm] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState(null);
-  const [form, setForm] = useState({
-    client_id: '', zone_id: '', order_type: 'standard', payment_method: 'cash',
-    recipient_name: '', recipient_phone: '', recipient_address: '', recipient_emirate: 'Dubai',
-    cod_amount: '', weight_kg: '', notes: '',
-  });
-  const [zones, setZones] = useState([]);
-  const [clients, setClients] = useState([]);
-  const [savingStatus, setSavingStatus] = useState('');
-  const [error, setError] = useState('');
+  const [filters,    setFilters]    = useState({ status: '', search: '', date_from: '', date_to: '' });
+  const [showForm,   setShowForm]   = useState(false);
+  const [viewOrder,  setViewOrder]  = useState(null);
+  const [selected,   setSelected]   = useState(null);
+  const [form,       setForm]       = useState(EMPTY_FORM);
+  const [zones,      setZones]      = useState([]);
+  const [clients,    setClients]    = useState([]);
+  const [saving,     setSaving]     = useState(false);
+  const [error,      setError]      = useState('');
+  const [summary,    setSummary]    = useState({});
+  const searchRef = useRef(null);
 
-  useEffect(() => {
-    fetchOrders();
-    fetchZones();
-    fetchClients();
-  }, [pagination.page, filters]);
+  useEffect(() => { fetchOrders(); }, [pagination.page, filters]);
+  useEffect(() => { fetchDropdowns(); }, []);
 
   const fetchOrders = async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({ page: pagination.page, limit: pagination.limit });
-      if (filters.status) params.append('status', filters.status);
-      if (filters.search) params.append('search', filters.search);
+      if (filters.status)    params.append('status',    filters.status);
+      if (filters.search)    params.append('search',    filters.search);
       if (filters.date_from) params.append('date_from', filters.date_from);
-      if (filters.date_to) params.append('date_to', filters.date_to);
+      if (filters.date_to)   params.append('date_to',   filters.date_to);
       const res = await api.get(`/orders?${params}`);
       if (res.success) {
         setOrders(res.data || []);
         setPagination(p => ({ ...p, total: res.pagination?.total || 0 }));
+        buildSummary(res.data || []);
       }
     } catch (e) { console.error(e); }
-    setLoading(false);
+    finally { setLoading(false); }
   };
 
-  const fetchZones = async () => {
-    const res = await api.get('/zones');
-    if (res.success) setZones(res.data || []);
+  const buildSummary = (data) => {
+    const s = {};
+    data.forEach(o => { s[o.status] = (s[o.status] || 0) + 1; });
+    setSummary(s);
   };
 
-  const fetchClients = async () => {
-    const res = await api.get('/clients?limit=100');
-    if (res.success) setClients(res.data || []);
+  const fetchDropdowns = async () => {
+    try {
+      const [zRes, cRes] = await Promise.all([api.get('/zones'), api.get('/clients?limit=200')]);
+      if (zRes.success) setZones(zRes.data || []);
+      if (cRes.success) setClients(cRes.data || []);
+    } catch (e) { console.error(e); }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setSavingStatus('Saving...');
+    setSaving(true);
     try {
-      const res = selectedOrder
-        ? await api.put(`/orders/${selectedOrder.id}`, form)
+      const res = selected
+        ? await api.put(`/orders/${selected.id}`, form)
         : await api.post('/orders', form);
       if (res.success) {
-        setSavingStatus('Saved!');
-        setShowForm(false);
-        setSelectedOrder(null);
-        resetForm();
+        closeForm();
         fetchOrders();
       } else {
-        setError(res.message || 'Failed to save order');
-        setSavingStatus('');
+        setError(res.message || 'Failed to save');
       }
-    } catch (e) {
-      setError('Network error');
-      setSavingStatus('');
-    }
+    } catch { setError('Network error. Please try again.'); }
+    finally { setSaving(false); }
   };
 
   const handleStatusChange = async (orderId, newStatus) => {
-    await api.patch(`/orders/${orderId}/status`, { status: newStatus });
-    fetchOrders();
+    try {
+      await api.patch(`/orders/${orderId}/status`, { status: newStatus });
+      fetchOrders();
+    } catch (e) { console.error(e); }
   };
 
-  const resetForm = () => {
-    setForm({
-      client_id: '', zone_id: '', order_type: 'standard', payment_method: 'cash',
-      recipient_name: '', recipient_phone: '', recipient_address: '', recipient_emirate: 'Dubai',
-      cod_amount: '', weight_kg: '', notes: '',
-    });
-  };
-
-  const openEdit = (order) => {
-    setSelectedOrder(order);
-    setForm({
-      client_id: order.client_id || '',
-      zone_id: order.zone_id || '',
-      order_type: order.order_type || 'standard',
-      payment_method: order.payment_method || 'cash',
-      recipient_name: order.recipient_name || '',
-      recipient_phone: order.recipient_phone || '',
-      recipient_address: order.recipient_address || '',
-      recipient_emirate: order.recipient_emirate || 'Dubai',
-      cod_amount: order.cod_amount || '',
-      weight_kg: order.weight_kg || '',
-      notes: order.notes || '',
-    });
+  const openNew = () => {
+    setSelected(null);
+    setForm(EMPTY_FORM);
+    setError('');
     setShowForm(true);
   };
 
-  const totalPages = Math.ceil(pagination.total / pagination.limit);
+  const openEdit = (order) => {
+    setSelected(order);
+    setForm({
+      client_id:        order.client_id        || '',
+      zone_id:          order.zone_id          || '',
+      order_type:       order.order_type       || 'standard',
+      payment_method:   order.payment_method   || 'cash',
+      recipient_name:   order.recipient_name   || '',
+      recipient_phone:  order.recipient_phone  || '',
+      recipient_address:order.recipient_address|| '',
+      recipient_emirate:order.recipient_emirate|| 'Dubai',
+      cod_amount:       order.cod_amount       || '',
+      weight_kg:        order.weight_kg        || '',
+      notes:            order.notes            || '',
+    });
+    setError('');
+    setShowForm(true);
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setSelected(null);
+    setForm(EMPTY_FORM);
+    setError('');
+  };
+
+  const clearFilters = () => setFilters({ status: '', search: '', date_from: '', date_to: '' });
+  const hasFilters   = filters.status || filters.search || filters.date_from || filters.date_to;
+  const totalPages   = Math.ceil(pagination.total / pagination.limit);
+  const fmtDate      = d => d ? new Date(d).toLocaleDateString('en-AE', { day:'2-digit', month:'short', year:'numeric' }) : '—';
+  const fmtAED       = v => v ? `AED ${parseFloat(v).toFixed(2)}` : '—';
 
   return (
     <div className="page-container">
-      {/* Header */}
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+
+      {/* ── Header ── */}
+      <div className="page-header-row">
         <div>
-          <h2 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>Orders</h2>
-          <p style={{ margin: 0, color: '#64748b', fontSize: 14 }}>Manage all delivery orders</p>
+          <h2 className="page-heading">Orders</h2>
+          <p className="page-subheading">
+            {pagination.total > 0 ? `${pagination.total} total orders` : 'Manage all delivery orders'}
+          </p>
         </div>
-        <button
-          className="btn-primary"
-          onClick={() => { resetForm(); setSelectedOrder(null); setShowForm(true); }}
-          style={{ background: '#f97316', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 20px', fontWeight: 600, cursor: 'pointer' }}
-        >
-          + New Order
-        </button>
+        <div style={{ display:'flex', gap:10 }}>
+          <button className="btn-outline-action" onClick={fetchOrders}>
+            <Refresh width={15} height={15} /> Refresh
+          </button>
+          <button className="btn-primary-action" onClick={openNew}>
+            <Plus width={16} height={16} /> New Order
+          </button>
+        </div>
       </div>
 
-      {/* Filters */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
-        <input
-          type="text"
-          placeholder="Search order #, recipient..."
-          value={filters.search}
-          onChange={e => setFilters(f => ({ ...f, search: e.target.value }))}
-          style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', minWidth: 200, fontSize: 14 }}
-        />
-        <select
-          value={filters.status}
-          onChange={e => setFilters(f => ({ ...f, status: e.target.value }))}
-          style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14 }}
-        >
-          <option value="">All Status</option>
-          {Object.keys(STATUS_COLORS).map(s => (
-            <option key={s} value={s}>{s.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}</option>
-          ))}
-        </select>
-        <input
-          type="date"
-          value={filters.date_from}
-          onChange={e => setFilters(f => ({ ...f, date_from: e.target.value }))}
-          style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14 }}
-        />
-        <input
-          type="date"
-          value={filters.date_to}
-          onChange={e => setFilters(f => ({ ...f, date_to: e.target.value }))}
-          style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14 }}
-        />
-        <button
-          onClick={() => setFilters({ status: '', search: '', date_from: '', date_to: '' })}
-          style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontSize: 14 }}
-        >
-          Clear
-        </button>
-      </div>
-
-      {/* Table */}
-      <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
-        {loading ? (
-          <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>Loading orders...</div>
-        ) : orders.length === 0 ? (
-          <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>No orders found</div>
-        ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: '2px solid #f1f5f9' }}>
-                {['Order #', 'Tracking', 'Recipient', 'Zone', 'Type', 'Status', 'Fee', 'Driver', 'Date', 'Actions'].map(h => (
-                  <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map(order => {
-                const sc = STATUS_COLORS[order.status] || STATUS_COLORS.pending;
-                return (
-                  <tr key={order.id} style={{ borderBottom: '1px solid #f8fafc' }}>
-                    <td style={{ padding: '12px 16px', fontWeight: 600, fontSize: 14 }}>{order.order_number}</td>
-                    <td style={{ padding: '12px 16px', fontFamily: 'monospace', fontSize: 12, color: '#64748b' }}>{order.tracking_token}</td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <div style={{ fontWeight: 500, fontSize: 14 }}>{order.recipient_name}</div>
-                      <div style={{ fontSize: 12, color: '#64748b' }}>{order.recipient_phone}</div>
-                    </td>
-                    <td style={{ padding: '12px 16px', fontSize: 14, color: '#475569' }}>{order.zone_name || '—'}</td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <span style={{ fontSize: 12, background: '#f1f5f9', padding: '2px 8px', borderRadius: 4 }}>{order.order_type}</span>
-                    </td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <select
-                        value={order.status}
-                        onChange={e => handleStatusChange(order.id, e.target.value)}
-                        style={{ fontSize: 12, padding: '4px 8px', borderRadius: 6, border: 'none', background: sc.bg, color: sc.color, fontWeight: 600, cursor: 'pointer' }}
-                      >
-                        {Object.keys(STATUS_COLORS).map(s => (
-                          <option key={s} value={s}>{s.replace('_', ' ')}</option>
-                        ))}
-                      </select>
-                    </td>
-                    <td style={{ padding: '12px 16px', fontSize: 14, color: '#1e293b' }}>
-                      {order.delivery_fee ? `AED ${parseFloat(order.delivery_fee).toFixed(2)}` : '—'}
-                    </td>
-                    <td style={{ padding: '12px 16px', fontSize: 13, color: '#64748b' }}>{order.driver_name || 'Unassigned'}</td>
-                    <td style={{ padding: '12px 16px', fontSize: 12, color: '#64748b' }}>
-                      {order.created_at ? new Date(order.created_at).toLocaleDateString() : '—'}
-                    </td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <button
-                        onClick={() => openEdit(order)}
-                        style={{ padding: '4px 12px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontSize: 12 }}
-                      >
-                        Edit
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 20 }}>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-            <button
-              key={p}
-              onClick={() => setPagination(prev => ({ ...prev, page: p }))}
-              style={{
-                padding: '6px 14px', borderRadius: 6, border: '1px solid #e2e8f0',
-                background: pagination.page === p ? '#f97316' : '#fff',
-                color: pagination.page === p ? '#fff' : '#374151',
-                cursor: 'pointer', fontWeight: pagination.page === p ? 600 : 400
-              }}
-            >
-              {p}
-            </button>
-          ))}
+      {/* ── Summary chips ── */}
+      {!loading && Object.keys(summary).length > 0 && (
+        <div className="orders-summary-bar">
+          {Object.entries(STATUS_META)
+            .filter(([k]) => summary[k])
+            .map(([k, m]) => (
+              <button
+                key={k}
+                className={`summary-chip ${filters.status === k ? 'active' : ''}`}
+                style={{ '--chip-color': m.color, '--chip-bg': m.bg }}
+                onClick={() => setFilters(f => ({ ...f, status: f.status === k ? '' : k }))}
+              >
+                <span className="chip-dot" style={{ background: m.color }} />
+                {m.label}
+                <span className="chip-count">{summary[k]}</span>
+              </button>
+            ))
+          }
         </div>
       )}
 
-      {/* Form Modal */}
+      {/* ── Filter bar ── */}
+      <div className="filter-bar">
+        <div className="search-box">
+          <Search width={15} height={15} className="search-icon" />
+          <input
+            ref={searchRef}
+            type="text"
+            placeholder="Search order #, recipient, phone..."
+            value={filters.search}
+            onChange={e => setFilters(f => ({ ...f, search: e.target.value }))}
+            className="search-input"
+          />
+          {filters.search && (
+            <button className="search-clear" onClick={() => setFilters(f => ({ ...f, search: '' }))}>
+              <XmarkCircle width={15} height={15} />
+            </button>
+          )}
+        </div>
+        <select
+          className="filter-select"
+          value={filters.status}
+          onChange={e => setFilters(f => ({ ...f, status: e.target.value }))}
+        >
+          <option value="">All Statuses</option>
+          {Object.entries(STATUS_META).map(([k, m]) => (
+            <option key={k} value={k}>{m.label}</option>
+          ))}
+        </select>
+        <input type="date" className="filter-date" value={filters.date_from}
+          onChange={e => setFilters(f => ({ ...f, date_from: e.target.value }))} />
+        <span className="date-sep">to</span>
+        <input type="date" className="filter-date" value={filters.date_to}
+          onChange={e => setFilters(f => ({ ...f, date_to: e.target.value }))} />
+        {hasFilters && (
+          <button className="btn-outline-action" onClick={clearFilters}>
+            <Xmark width={14} height={14} /> Clear
+          </button>
+        )}
+      </div>
+
+      {/* ── Table ── */}
+      <div className="table-responsive">
+        <table className="contacts-table">
+          <thead>
+            <tr>
+              <th>Order #</th>
+              <th>Recipient</th>
+              <th>Zone / Emirate</th>
+              <th>Type</th>
+              <th>Status</th>
+              <th>Fee / COD</th>
+              <th>Driver</th>
+              <th>Date</th>
+              <th style={{ textAlign: 'center' }}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? <SkeletonRows /> :
+             orders.length === 0 ? (
+              <tr>
+                <td colSpan={9}>
+                  <div className="empty-state-mini" style={{ padding: '3.5rem 0' }}>
+                    <Package width={48} height={48} />
+                    <p style={{ fontWeight: 600, fontSize: '1rem', marginTop: 12 }}>No orders found</p>
+                    <p style={{ margin: '4px 0 16px' }}>
+                      {hasFilters ? 'Try adjusting your filters' : 'Create your first order to get started'}
+                    </p>
+                    {!hasFilters && (
+                      <button className="btn-primary-action" onClick={openNew}>
+                        <Plus width={16} height={16} /> New Order
+                      </button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              orders.map(order => (
+                <tr key={order.id}>
+                  <td>
+                    <div style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.875rem' }}>{order.order_number}</div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--gray-400)', fontFamily: 'monospace', marginTop: 2 }}>
+                      {order.tracking_token}
+                    </div>
+                  </td>
+                  <td>
+                    <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>{order.recipient_name}</div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--gray-500)' }}>{order.recipient_phone}</div>
+                  </td>
+                  <td>
+                    <div style={{ fontSize: '0.875rem', fontWeight: 500 }}>{order.zone_name || '—'}</div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--gray-500)' }}>{order.recipient_emirate}</div>
+                  </td>
+                  <td>
+                    <span className="status-badge" style={{ background: '#f1f5f9', color: 'var(--gray-600)' }}>
+                      {order.order_type?.replace('_', ' ')}
+                    </span>
+                  </td>
+                  <td>
+                    <select
+                      value={order.status}
+                      onChange={e => handleStatusChange(order.id, e.target.value)}
+                      className="inline-status-select"
+                      style={{
+                        background: STATUS_META[order.status]?.bg || '#f1f5f9',
+                        color:      STATUS_META[order.status]?.color || '#64748b',
+                      }}
+                    >
+                      {Object.entries(STATUS_META).map(([k, m]) => (
+                        <option key={k} value={k}>{m.label}</option>
+                      ))}
+                    </select>
+                  </td>
+                  <td>
+                    <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>{fmtAED(order.delivery_fee)}</div>
+                    {order.cod_amount > 0 && (
+                      <div style={{ fontSize: '0.75rem', color: 'var(--warning)' }}>COD {fmtAED(order.cod_amount)}</div>
+                    )}
+                  </td>
+                  <td>
+                    <div style={{ fontSize: '0.875rem', color: order.driver_name ? 'var(--gray-700)' : 'var(--gray-400)' }}>
+                      {order.driver_name || 'Unassigned'}
+                    </div>
+                  </td>
+                  <td>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--gray-600)' }}>{fmtDate(order.created_at)}</div>
+                  </td>
+                  <td>
+                    <div className="action-btns">
+                      <button className="action-btn view"   title="View"  onClick={() => setViewOrder(order)}><Eye width={14} height={14} /></button>
+                      <button className="action-btn edit"   title="Edit"  onClick={() => openEdit(order)}><EditPencil width={14} height={14} /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* ── Pagination ── */}
+      {totalPages > 1 && (
+        <div className="pagination-bar">
+          <button
+            className="page-btn"
+            disabled={pagination.page === 1}
+            onClick={() => setPagination(p => ({ ...p, page: p.page - 1 }))}
+          >
+            <ArrowLeft width={14} height={14} />
+          </button>
+          {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+            const p = pagination.page <= 4 ? i + 1 :
+                      pagination.page >= totalPages - 3 ? totalPages - 6 + i :
+                      pagination.page - 3 + i;
+            return p >= 1 && p <= totalPages ? (
+              <button
+                key={p}
+                className={`page-btn ${pagination.page === p ? 'active' : ''}`}
+                onClick={() => setPagination(prev => ({ ...prev, page: p }))}
+              >
+                {p}
+              </button>
+            ) : null;
+          })}
+          <button
+            className="page-btn"
+            disabled={pagination.page === totalPages}
+            onClick={() => setPagination(p => ({ ...p, page: p.page + 1 }))}
+          >
+            <ArrowRight width={14} height={14} />
+          </button>
+          <span className="page-info">
+            {((pagination.page - 1) * pagination.limit) + 1}–
+            {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total}
+          </span>
+        </div>
+      )}
+
+      {/* ── View Drawer ── */}
+      {viewOrder && (
+        <div className="modal-overlay" onClick={() => setViewOrder(null)}>
+          <div className="modal-container" style={{ maxWidth: 560 }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <h3>{viewOrder.order_number}</h3>
+                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--gray-400)' }}>
+                  Tracking: {viewOrder.tracking_token}
+                </p>
+              </div>
+              <button className="modal-close" onClick={() => setViewOrder(null)}><Xmark width={18} height={18} /></button>
+            </div>
+            <div className="modal-body">
+              <div className="detail-section">
+                <div className="detail-row">
+                  <span className="detail-label">Status</span>
+                  <StatusBadge status={viewOrder.status} />
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label"><User width={14} height={14} /> Recipient</span>
+                  <span className="detail-value">{viewOrder.recipient_name}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label"><Phone width={14} height={14} /> Phone</span>
+                  <span className="detail-value">{viewOrder.recipient_phone}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label"><MapPin width={14} height={14} /> Address</span>
+                  <span className="detail-value">{viewOrder.recipient_address}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label"><MapPin width={14} height={14} /> Zone</span>
+                  <span className="detail-value">{viewOrder.zone_name || '—'} ({viewOrder.recipient_emirate})</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label"><DeliveryTruck width={14} height={14} /> Driver</span>
+                  <span className="detail-value">{viewOrder.driver_name || 'Unassigned'}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label"><DollarCircle width={14} height={14} /> Fee</span>
+                  <span className="detail-value">{fmtAED(viewOrder.delivery_fee)}</span>
+                </div>
+                {viewOrder.cod_amount > 0 && (
+                  <div className="detail-row">
+                    <span className="detail-label">COD Amount</span>
+                    <span className="detail-value" style={{ color: 'var(--warning)', fontWeight: 600 }}>{fmtAED(viewOrder.cod_amount)}</span>
+                  </div>
+                )}
+                <div className="detail-row">
+                  <span className="detail-label">Type</span>
+                  <span className="detail-value">{viewOrder.order_type?.replace('_', ' ')}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Payment</span>
+                  <span className="detail-value">{viewOrder.payment_method}</span>
+                </div>
+                {viewOrder.weight_kg && (
+                  <div className="detail-row">
+                    <span className="detail-label"><Weight width={14} height={14} /> Weight</span>
+                    <span className="detail-value">{viewOrder.weight_kg} kg</span>
+                  </div>
+                )}
+                <div className="detail-row">
+                  <span className="detail-label"><Clock width={14} height={14} /> Created</span>
+                  <span className="detail-value">{fmtDate(viewOrder.created_at)}</span>
+                </div>
+                {viewOrder.notes && (
+                  <div className="detail-row" style={{ alignItems: 'flex-start' }}>
+                    <span className="detail-label">Notes</span>
+                    <span className="detail-value" style={{ whiteSpace: 'pre-wrap' }}>{viewOrder.notes}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-outline-action" onClick={() => setViewOrder(null)}>Close</button>
+              <button className="btn-primary-action" onClick={() => { setViewOrder(null); openEdit(viewOrder); }}>
+                <EditPencil width={14} height={14} /> Edit Order
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Create / Edit Modal ── */}
       {showForm && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: '#fff', borderRadius: 16, padding: 32, width: '100%', maxWidth: 600, maxHeight: '90vh', overflowY: 'auto', position: 'relative' }}>
-            <h3 style={{ margin: '0 0 20px', fontSize: 20, fontWeight: 700 }}>
-              {selectedOrder ? 'Edit Order' : 'New Order'}
-            </h3>
-            {error && <div style={{ background: '#fee2e2', color: '#dc2626', padding: '10px 16px', borderRadius: 8, marginBottom: 16, fontSize: 14 }}>{error}</div>}
+        <div className="modal-overlay" onClick={closeForm}>
+          <div className="modal-container large" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>{selected ? `Edit Order — ${selected.order_number}` : 'New Order'}</h3>
+              <button className="modal-close" onClick={closeForm}><Xmark width={18} height={18} /></button>
+            </div>
+
             <form onSubmit={handleSubmit}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>Client</label>
-                  <select value={form.client_id} onChange={e => setForm(f => ({ ...f, client_id: e.target.value }))}
-                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14 }}>
-                    <option value="">Select client...</option>
-                    {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
+              <div className="modal-body">
+                {error && (
+                  <div className="alert-error" style={{ marginBottom: '1rem' }}>
+                    <Prohibition width={16} height={16} /> {error}
+                  </div>
+                )}
+
+                <div className="form-section-title">Recipient</div>
+                <div className="form-grid-2">
+                  <div className="form-field">
+                    <label>Recipient Name *</label>
+                    <input required type="text" value={form.recipient_name}
+                      onChange={e => setForm(f => ({ ...f, recipient_name: e.target.value }))}
+                      placeholder="Full name" />
+                  </div>
+                  <div className="form-field">
+                    <label>Phone *</label>
+                    <input required type="text" value={form.recipient_phone}
+                      onChange={e => setForm(f => ({ ...f, recipient_phone: e.target.value }))}
+                      placeholder="+971 50 000 0000" />
+                  </div>
+                  <div className="form-field span-2">
+                    <label>Delivery Address *</label>
+                    <input required type="text" value={form.recipient_address}
+                      onChange={e => setForm(f => ({ ...f, recipient_address: e.target.value }))}
+                      placeholder="Building, street, area..." />
+                  </div>
+                  <div className="form-field">
+                    <label>Emirate</label>
+                    <select value={form.recipient_emirate}
+                      onChange={e => setForm(f => ({ ...f, recipient_emirate: e.target.value }))}>
+                      {EMIRATES.map(em => <option key={em} value={em}>{em}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-field">
+                    <label>Zone *</label>
+                    <select required value={form.zone_id}
+                      onChange={e => setForm(f => ({ ...f, zone_id: e.target.value }))}>
+                      <option value="">Select zone...</option>
+                      {zones.map(z => <option key={z.id} value={z.id}>{z.name}</option>)}
+                    </select>
+                  </div>
                 </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>Zone *</label>
-                  <select required value={form.zone_id} onChange={e => setForm(f => ({ ...f, zone_id: e.target.value }))}
-                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14 }}>
-                    <option value="">Select zone...</option>
-                    {zones.map(z => <option key={z.id} value={z.id}>{z.name}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>Recipient Name *</label>
-                  <input required type="text" value={form.recipient_name} onChange={e => setForm(f => ({ ...f, recipient_name: e.target.value }))}
-                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14, boxSizing: 'border-box' }} />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>Recipient Phone *</label>
-                  <input required type="text" value={form.recipient_phone} onChange={e => setForm(f => ({ ...f, recipient_phone: e.target.value }))}
-                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14, boxSizing: 'border-box' }} />
-                </div>
-                <div style={{ gridColumn: 'span 2' }}>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>Recipient Address *</label>
-                  <input required type="text" value={form.recipient_address} onChange={e => setForm(f => ({ ...f, recipient_address: e.target.value }))}
-                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14, boxSizing: 'border-box' }} />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>Emirate</label>
-                  <select value={form.recipient_emirate} onChange={e => setForm(f => ({ ...f, recipient_emirate: e.target.value }))}
-                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14 }}>
-                    {['Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman', 'Ras Al Khaimah', 'Fujairah', 'Umm Al Quwain'].map(e => (
-                      <option key={e} value={e}>{e}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>Order Type</label>
-                  <select value={form.order_type} onChange={e => setForm(f => ({ ...f, order_type: e.target.value }))}
-                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14 }}>
-                    {ORDER_TYPES.map(t => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>Payment Method</label>
-                  <select value={form.payment_method} onChange={e => setForm(f => ({ ...f, payment_method: e.target.value }))}
-                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14 }}>
-                    <option value="cash">Cash</option>
-                    <option value="cod">COD</option>
-                    <option value="card">Card</option>
-                    <option value="wallet">Wallet</option>
-                    <option value="invoice">Invoice</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>COD Amount (AED)</label>
-                  <input type="number" value={form.cod_amount} onChange={e => setForm(f => ({ ...f, cod_amount: e.target.value }))}
-                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14, boxSizing: 'border-box' }} />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>Weight (kg)</label>
-                  <input type="number" step="0.1" value={form.weight_kg} onChange={e => setForm(f => ({ ...f, weight_kg: e.target.value }))}
-                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14, boxSizing: 'border-box' }} />
-                </div>
-                <div style={{ gridColumn: 'span 2' }}>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>Notes</label>
-                  <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3}
-                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14, boxSizing: 'border-box', resize: 'vertical' }} />
+
+                <div className="form-section-title" style={{ marginTop: '1.25rem' }}>Order Details</div>
+                <div className="form-grid-2">
+                  <div className="form-field">
+                    <label>Client</label>
+                    <select value={form.client_id}
+                      onChange={e => setForm(f => ({ ...f, client_id: e.target.value }))}>
+                      <option value="">No client (walk-in)</option>
+                      {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-field">
+                    <label>Order Type</label>
+                    <select value={form.order_type}
+                      onChange={e => setForm(f => ({ ...f, order_type: e.target.value }))}>
+                      {ORDER_TYPES.map(t => (
+                        <option key={t} value={t}>{t.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-field">
+                    <label>Payment Method</label>
+                    <select value={form.payment_method}
+                      onChange={e => setForm(f => ({ ...f, payment_method: e.target.value }))}>
+                      {['cash', 'cod', 'card', 'wallet', 'invoice'].map(p => (
+                        <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-field">
+                    <label>COD Amount (AED)</label>
+                    <input type="number" min="0" step="0.01" value={form.cod_amount}
+                      onChange={e => setForm(f => ({ ...f, cod_amount: e.target.value }))}
+                      placeholder="0.00" />
+                  </div>
+                  <div className="form-field">
+                    <label>Weight (kg)</label>
+                    <input type="number" min="0" step="0.1" value={form.weight_kg}
+                      onChange={e => setForm(f => ({ ...f, weight_kg: e.target.value }))}
+                      placeholder="0.0" />
+                  </div>
+                  <div className="form-field span-2">
+                    <label>Notes</label>
+                    <textarea rows={3} value={form.notes}
+                      onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                      placeholder="Special instructions, landmarks, etc..." />
+                  </div>
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 12, marginTop: 24, justifyContent: 'flex-end' }}>
-                <button type="button" onClick={() => { setShowForm(false); setSelectedOrder(null); }} 
-                  style={{ padding: '10px 20px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontWeight: 500 }}>
-                  Cancel
-                </button>
-                <button type="submit"
-                  style={{ padding: '10px 24px', borderRadius: 8, border: 'none', background: '#f97316', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
-                  {savingStatus || (selectedOrder ? 'Update Order' : 'Create Order')}
+
+              <div className="modal-footer">
+                <button type="button" className="btn-outline-action" onClick={closeForm}>Cancel</button>
+                <button type="submit" className="btn-primary-action" disabled={saving}>
+                  {saving ? 'Saving...' : selected ? 'Update Order' : 'Create Order'}
                 </button>
               </div>
             </form>
