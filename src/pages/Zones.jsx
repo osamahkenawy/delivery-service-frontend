@@ -20,8 +20,12 @@ const EMPTY_FORM = {
   name:'', city:'', emirate:'Dubai', base_delivery_fee:'',
   extra_km_fee:'', max_weight_kg:'', estimated_minutes:'',
   is_active:true, color:'#3b82f6', notes:'',
-  center_lat:'', center_lng:'', radius:5000,
+  center_lat:null, center_lng:null, radius:5000,
 };
+
+/* ── Helpers ─────────────────────────────────────────────────── */
+const pf = (v) => { const n = parseFloat(v); return isNaN(n) ? null : n; };
+const hasCoords = (lat, lng) => pf(lat) !== null && pf(lng) !== null;
 
 /* ── Icons ───────────────────────────────────────────────────── */
 const myLocIcon = L.divIcon({
@@ -33,7 +37,7 @@ const myLocIcon = L.divIcon({
 function FlyTo({ lat, lng, zoom }) {
   const map = useMap();
   useEffect(() => {
-    if (lat && lng) map.flyTo([lat, lng], zoom || 13, { duration: 0.6 });
+    if (lat != null && lng != null) map.flyTo([lat, lng], zoom || 13, { duration: 0.6 });
   }, [lat, lng, zoom, map]);
   return null;
 }
@@ -45,18 +49,24 @@ function ClickHandler({ onClick }) {
 
 function FitAllZones({ zones }) {
   const map = useMap();
+  const fitted = useRef(false);
   useEffect(() => {
+    if (fitted.current) return;
     if (!zones || zones.length === 0) return;
-    const valid = zones.filter(z => z.center_lat && z.center_lng);
+    const valid = zones.filter(z => hasCoords(z.center_lat, z.center_lng));
     if (valid.length === 0) return;
     const bounds = L.latLngBounds(valid.map(z => {
-      const r = parseFloat(z.radius) || 5000;
-      const lat = parseFloat(z.center_lat);
-      const lng = parseFloat(z.center_lng);
-      const offset = r / 111320;
-      return [L.latLng(lat - offset, lng - offset), L.latLng(lat + offset, lng + offset)];
+      const r = pf(z.radius) || 5000;
+      const lat = pf(z.center_lat);
+      const lng = pf(z.center_lng);
+      const latOff = r / 111320;
+      const lngOff = r / (111320 * Math.cos(lat * Math.PI / 180));
+      return [L.latLng(lat - latOff, lng - lngOff), L.latLng(lat + latOff, lng + lngOff)];
     }).flat());
-    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+    if (bounds.isValid()) {
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 13 });
+      fitted.current = true;
+    }
   }, [zones, map]);
   return null;
 }
@@ -93,7 +103,7 @@ function LocationSearch({ onSelect, initialQuery }) {
         setOpen(data.length > 0);
       } catch { setResults([]); }
       finally { setLoading(false); }
-    }, 300);
+    }, 350);
   }, []);
 
   return (
@@ -122,6 +132,7 @@ function LocationSearch({ onSelect, initialQuery }) {
                 lat: parseFloat(item.lat), lng: parseFloat(item.lon),
                 address: item.display_name,
                 city: item.address?.city || item.address?.town || item.address?.village || '',
+                emirate: item.address?.state || '',
               });
             }}>
               <MapPin width={14} height={14} style={{ flexShrink:0, marginTop:2 }} />
@@ -164,45 +175,88 @@ export default function Zones() {
 
   const fetchZones = async () => {
     setLoading(true);
-    try { const r = await api.get('/zones'); if (r.success) setZones(r.data || []); }
-    catch (e) { console.error(e); }
+    try {
+      const r = await api.get('/zones');
+      if (r.success) setZones(r.data || []);
+    } catch (e) { console.error('fetchZones error:', e); }
     finally { setLoading(false); }
   };
 
-  const canSubmit = form.name && form.emirate && form.center_lat !== '' && form.center_lng !== '' &&
-    form.center_lat !== null && form.center_lng !== null && !isNaN(Number(form.center_lat)) && !isNaN(Number(form.center_lng));
+  /* ── Form validation ─────────────────────────────────────────── */
+  const formCenterLat = pf(form.center_lat);
+  const formCenterLng = pf(form.center_lng);
+  const formHasCenter = formCenterLat !== null && formCenterLng !== null;
+  const canSubmit = !!(form.name && form.emirate && formHasCenter);
 
+  /* ── Submit zone ─────────────────────────────────────────────── */
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
-    if (!canSubmit) { setError('Set the zone center on the map or search a location'); return; }
+    if (!canSubmit) { setError('Enter a name and set the zone center on the map'); return; }
     setSaving(true); setError('');
     try {
       const payload = {
-        ...form,
-        center_lat: parseFloat(form.center_lat),
-        center_lng: parseFloat(form.center_lng),
-        radius: parseFloat(form.radius) || 5000,
+        name: form.name,
+        emirate: form.emirate,
+        city: form.city || null,
+        color: form.color || '#3b82f6',
+        notes: form.notes || null,
+        is_active: form.is_active !== false,
+        center_lat: formCenterLat,
+        center_lng: formCenterLng,
+        radius: pf(form.radius) || 5000,
+        base_delivery_fee: pf(form.base_delivery_fee) || 0,
+        extra_km_fee: pf(form.extra_km_fee) || 0,
+        max_weight_kg: pf(form.max_weight_kg) || null,
+        estimated_minutes: pf(form.estimated_minutes) || null,
         polygon: null,
       };
+      console.log('Zone payload:', JSON.stringify(payload));
       const res = selected
         ? await api.put(`/zones/${selected.id}`, payload)
         : await api.post('/zones', payload);
-      if (res.success) { closeForm(); fetchZones(); }
-      else { setError(res.message || 'Failed to save'); }
-    } catch { setError('Network error'); }
+      if (res.success) {
+        closeForm();
+        fetchZones();
+      } else {
+        setError(res.message || 'Failed to save zone');
+      }
+    } catch (err) {
+      console.error('Zone save error:', err);
+      setError('Network error — please try again');
+    }
     finally { setSaving(false); }
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Delete this zone?')) return;
-    await api.delete(`/zones/${id}`);
-    if (activeZone === id) setActiveZone(null);
-    fetchZones();
+    if (!confirm('Delete this zone permanently?')) return;
+    try {
+      await api.delete(`/zones/${id}`);
+      if (activeZone === id) setActiveZone(null);
+      fetchZones();
+    } catch (e) { console.error('Delete error:', e); }
   };
 
+  /* Toggle active — only send is_active + required fields, NOT the full zone */
   const handleToggleActive = async (zone) => {
-    try { await api.put(`/zones/${zone.id}`, { ...zone, is_active: !zone.is_active }); fetchZones(); }
-    catch (e) { console.error(e); }
+    try {
+      await api.put(`/zones/${zone.id}`, {
+        name: zone.name,
+        emirate: zone.emirate,
+        city: zone.city || null,
+        color: zone.color || '#3b82f6',
+        notes: zone.notes || null,
+        is_active: zone.is_active ? false : true,
+        center_lat: pf(zone.center_lat),
+        center_lng: pf(zone.center_lng),
+        radius: pf(zone.radius) || 5000,
+        base_delivery_fee: pf(zone.base_delivery_fee) || 0,
+        extra_km_fee: pf(zone.extra_km_fee) || 0,
+        max_weight_kg: pf(zone.max_weight_kg) || null,
+        estimated_minutes: pf(zone.estimated_minutes) || null,
+        polygon: null,
+      });
+      fetchZones();
+    } catch (e) { console.error('Toggle error:', e); }
   };
 
   const openEdit = (z) => {
@@ -211,14 +265,16 @@ export default function Zones() {
       name: z.name||'', city: z.city||'', emirate: z.emirate||'Dubai',
       base_delivery_fee: z.base_delivery_fee||'', extra_km_fee: z.extra_km_fee||'',
       max_weight_kg: z.max_weight_kg||'', estimated_minutes: z.estimated_minutes||'',
-      is_active: z.is_active !== false, color: z.color||'#3b82f6', notes: z.notes||'',
-      center_lat: z.center_lat||'', center_lng: z.center_lng||'', radius: z.radius||5000,
+      is_active: z.is_active !== 0 && z.is_active !== false,
+      color: z.color||'#3b82f6', notes: z.notes||'',
+      center_lat: pf(z.center_lat), center_lng: pf(z.center_lng),
+      radius: pf(z.radius) || 5000,
     });
     setError(''); setShowForm(true);
   };
 
-  const openNew = () => { setForm(EMPTY_FORM); setSelected(null); setError(''); setShowForm(true); };
-  const closeForm = () => { setShowForm(false); setSelected(null); setForm(EMPTY_FORM); setError(''); };
+  const openNew = () => { setForm({...EMPTY_FORM}); setSelected(null); setError(''); setShowForm(true); };
+  const closeForm = () => { setShowForm(false); setSelected(null); setForm({...EMPTY_FORM}); setError(''); };
 
   const filtered = useMemo(() => zones.filter(z => {
     if (emirateFilter && z.emirate !== emirateFilter) return false;
@@ -232,33 +288,48 @@ export default function Zones() {
   const activeData = useMemo(() => activeZone ? zones.find(z => z.id === activeZone) : null, [zones, activeZone]);
 
   const flyTarget = useMemo(() => {
-    if (activeData?.center_lat && activeData?.center_lng) {
-      const km = (activeData.radius || 5000) / 1000;
+    if (activeData && hasCoords(activeData.center_lat, activeData.center_lng)) {
+      const km = (pf(activeData.radius) || 5000) / 1000;
       const zoom = km > 20 ? 10 : km > 10 ? 11 : km > 5 ? 12 : km > 2 ? 13 : 14;
-      return { lat: parseFloat(activeData.center_lat), lng: parseFloat(activeData.center_lng), zoom };
+      return { lat: pf(activeData.center_lat), lng: pf(activeData.center_lng), zoom };
     }
     return null;
   }, [activeData]);
 
-  const formHasCenter = form.center_lat && form.center_lng && !isNaN(form.center_lat) && !isNaN(form.center_lng);
-
   const handleFormMapClick = async (latlng) => {
     setForm(f => ({ ...f, center_lat: latlng.lat, center_lng: latlng.lng }));
     try {
-      const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latlng.lat}&lon=${latlng.lng}&format=json&addressdetails=1`, { headers: { 'Accept-Language': 'en' } });
+      const r = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${latlng.lat}&lon=${latlng.lng}&format=json&addressdetails=1`,
+        { headers: { 'Accept-Language': 'en' } }
+      );
       const d = await r.json();
-      if (d?.address) setForm(f => ({ ...f, city: d.address.city||d.address.town||d.address.village||f.city }));
+      if (d?.address) {
+        const city = d.address.city || d.address.town || d.address.village || '';
+        const emirate = d.address.state || '';
+        setForm(f => ({
+          ...f,
+          city: city || f.city,
+          emirate: EMIRATES.find(e => emirate.toLowerCase().includes(e.toLowerCase())) || f.emirate,
+        }));
+      }
     } catch {}
   };
 
-  const handleLocationSelect = ({ lat, lng, city }) => {
-    setForm(f => ({ ...f, center_lat: lat, center_lng: lng, city: city || f.city }));
+  const handleLocationSelect = ({ lat, lng, city, emirate }) => {
+    setForm(f => ({
+      ...f,
+      center_lat: lat,
+      center_lng: lng,
+      city: city || f.city,
+      emirate: EMIRATES.find(e => (emirate||'').toLowerCase().includes(e.toLowerCase())) || f.emirate,
+    }));
   };
 
-  const fmtFee = v => v && parseFloat(v) > 0 ? `${parseFloat(v).toFixed(0)}` : '0';
+  const fmtFee = v => { const n = pf(v); return n && n > 0 ? n.toFixed(0) : '0'; };
 
   /* ═══════════════════════════════════════════════════════════════
-     CREATION / EDIT FORM — full-page two-column
+     CREATION / EDIT FORM
      ═══════════════════════════════════════════════════════════════ */
   if (showForm) {
     return (
@@ -275,7 +346,7 @@ export default function Zones() {
           <div className="zf-header-actions">
             <button type="button" className="btn-outline-action" onClick={closeForm}>Discard</button>
             <button className="btn-primary-action" onClick={handleSubmit} disabled={saving || !canSubmit}
-              title={!canSubmit ? 'Set a location on the map first' : ''}>
+              title={!canSubmit ? 'Enter a name and click the map to set a location' : ''}>
               {saving ? 'Saving...' : selected ? 'Save Changes' : 'Create Zone'}
             </button>
           </div>
@@ -286,7 +357,6 @@ export default function Zones() {
         <div className="zf-layout">
           {/* ── LEFT: Map ── */}
           <div className="zf-map-col">
-            {/* Search bar floating on top of map */}
             <div className="zf-map-search">
               <LocationSearch
                 onSelect={handleLocationSelect}
@@ -295,38 +365,39 @@ export default function Zones() {
             </div>
             <div className="zf-map-wrap">
               <MapContainer
-                center={formHasCenter ? [parseFloat(form.center_lat), parseFloat(form.center_lng)] : (myLocation || UAE_CENTER)}
+                center={formHasCenter ? [formCenterLat, formCenterLng] : (myLocation || UAE_CENTER)}
                 zoom={formHasCenter ? 13 : 10}
                 style={{ height:'100%', width:'100%', zIndex:1 }}
                 scrollWheelZoom={true} attributionControl={false}
               >
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                 <ClickHandler onClick={handleFormMapClick} />
-                {formHasCenter && <FlyTo lat={parseFloat(form.center_lat)} lng={parseFloat(form.center_lng)} zoom={13} />}
+                {formHasCenter && <FlyTo lat={formCenterLat} lng={formCenterLng} zoom={13} />}
 
                 {formHasCenter && (
                   <>
                     <Circle
-                      center={[parseFloat(form.center_lat), parseFloat(form.center_lng)]}
-                      radius={parseFloat(form.radius) || 5000}
-                      pathOptions={{ color:form.color, fillColor:form.color, fillOpacity:0.15, weight:2.5, dashArray:'6 4' }}
+                      center={[formCenterLat, formCenterLng]}
+                      radius={pf(form.radius) || 5000}
+                      pathOptions={{ color:form.color, fillColor:form.color, fillOpacity:0.18, weight:2.5, dashArray:'6 4' }}
                     />
-                    <Marker position={[parseFloat(form.center_lat), parseFloat(form.center_lng)]} icon={MARKER_ICONS.zone}>
+                    <Marker position={[formCenterLat, formCenterLng]} icon={MARKER_ICONS.zone}>
                       <Popup><strong>{form.name || 'Zone Center'}</strong></Popup>
                     </Marker>
                   </>
                 )}
 
                 {/* Other zones faintly */}
-                {zones.filter(z => !selected || z.id !== selected.id).map((z, i) => (
-                  z.center_lat && z.center_lng ? (
+                {zones.filter(z => !selected || z.id !== selected.id).map((z, i) => {
+                  if (!hasCoords(z.center_lat, z.center_lng)) return null;
+                  return (
                     <Circle key={z.id}
-                      center={[parseFloat(z.center_lat), parseFloat(z.center_lng)]}
-                      radius={parseFloat(z.radius) || 5000}
+                      center={[pf(z.center_lat), pf(z.center_lng)]}
+                      radius={pf(z.radius) || 5000}
                       pathOptions={{ color: z.color||ZONE_COLORS[i%8], fillColor: z.color||ZONE_COLORS[i%8], fillOpacity:0.08, weight:1.5, opacity:0.35 }}
                     />
-                  ) : null
-                ))}
+                  );
+                })}
                 {myLocation && <Marker position={myLocation} icon={myLocIcon}><Popup><strong>You</strong></Popup></Marker>}
               </MapContainer>
 
@@ -341,9 +412,11 @@ export default function Zones() {
             {/* Radius bar under map */}
             <div className="zf-radius-bar">
               <label>Radius</label>
-              <input type="range" min="500" max="50000" step="500" value={form.radius}
-                onChange={e => setForm(f => ({ ...f, radius: parseInt(e.target.value) }))} className="radius-slider" />
-              <span className="zf-radius-val">{(form.radius / 1000).toFixed(1)} km</span>
+              <input type="range" min="500" max="50000" step="500"
+                value={pf(form.radius) || 5000}
+                onChange={e => setForm(f => ({ ...f, radius: parseInt(e.target.value) }))}
+                className="radius-slider" />
+              <span className="zf-radius-val">{((pf(form.radius) || 5000) / 1000).toFixed(1)} km</span>
             </div>
           </div>
 
@@ -379,11 +452,16 @@ export default function Zones() {
                   </select>
                 </div>
               </div>
-              {formHasCenter && (
+              {formHasCenter ? (
                 <div className="zf-coords">
                   <MapPin width={13} height={13} />
-                  <span>{parseFloat(form.center_lat).toFixed(5)}, {parseFloat(form.center_lng).toFixed(5)}</span>
-                  <button type="button" onClick={() => setForm(f => ({ ...f, center_lat:'', center_lng:'' }))}>Clear</button>
+                  <span>{formCenterLat.toFixed(5)}, {formCenterLng.toFixed(5)}</span>
+                  <button type="button" onClick={() => setForm(f => ({ ...f, center_lat:null, center_lng:null }))}>Clear</button>
+                </div>
+              ) : (
+                <div className="zf-coords" style={{ background:'#fef3c7', borderColor:'#fbbf24' }}>
+                  <Gps width={13} height={13} style={{ color:'#d97706' }} />
+                  <span style={{ color:'#92400e' }}>No location set — click map or search above</span>
                 </div>
               )}
             </div>
@@ -493,10 +571,10 @@ export default function Zones() {
             ) : filtered.map((zone, i) => {
               const c = zone.color || ZONE_COLORS[i % 8];
               const isActive = activeZone === zone.id;
+              const hasLoc = hasCoords(zone.center_lat, zone.center_lng);
               return (
                 <div key={zone.id} className={`zl-card ${isActive ? 'active' : ''} ${!zone.is_active ? 'dim' : ''}`}
-                  onClick={() => setActiveZone(isActive ? null : zone.id)}>
-                  {/* Color accent bar */}
+                  onClick={() => hasLoc && setActiveZone(isActive ? null : zone.id)}>
                   <div className="zl-card-accent" style={{ background: c }} />
                   <div className="zl-card-body">
                     <div className="zl-card-top">
@@ -504,8 +582,13 @@ export default function Zones() {
                         <div className="zl-card-name">{zone.name}</div>
                         <div className="zl-card-sub">
                           {zone.city ? `${zone.city}, ` : ''}{zone.emirate}
-                          {zone.radius ? ` · ${(zone.radius/1000).toFixed(1)} km` : ''}
+                          {zone.radius ? ` \u00b7 ${(pf(zone.radius)/1000).toFixed(1)} km` : ''}
                         </div>
+                        {!hasLoc && (
+                          <div style={{ fontSize:'0.7rem', color:'#d97706', fontWeight:600, marginTop:2 }}>
+                            \u26a0 No location — edit to set coordinates
+                          </div>
+                        )}
                       </div>
                       <div className="zl-card-right" onClick={e => e.stopPropagation()}>
                         <button className={`toggle-switch sm ${zone.is_active ? 'active' : ''}`}
@@ -523,7 +606,7 @@ export default function Zones() {
                         <Truck width={12} height={12} />
                         <span>{zone.driver_count || 0} driver{(zone.driver_count||0) !== 1 ? 's':''}</span>
                       </div>
-                      {zone.extra_km_fee > 0 && (
+                      {pf(zone.extra_km_fee) > 0 && (
                         <div className="zl-stat">
                           <MapPin width={12} height={12} />
                           <span>+{fmtFee(zone.extra_km_fee)}/km</span>
@@ -551,36 +634,53 @@ export default function Zones() {
               scrollWheelZoom={true} attributionControl={false}>
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
               {flyTarget && <FlyTo lat={flyTarget.lat} lng={flyTarget.lng} zoom={flyTarget.zoom} />}
-
               <FitAllZones zones={zones} />
 
               {zones.map((z, i) => {
-                if (!z.center_lat || !z.center_lng) return null;
+                if (!hasCoords(z.center_lat, z.center_lng)) return null;
+                const lat = pf(z.center_lat);
+                const lng = pf(z.center_lng);
+                const rad = pf(z.radius) || 5000;
                 const col = z.color || ZONE_COLORS[i % 8];
                 const act = activeZone === z.id;
                 return (
-                  <Circle key={z.id}
-                    center={[parseFloat(z.center_lat), parseFloat(z.center_lng)]}
-                    radius={parseFloat(z.radius) || 5000}
-                    pathOptions={{ color:col, fillColor:col, fillOpacity: act ? 0.28 : 0.15, weight: act ? 3.5 : 2, opacity: act ? 1 : 0.7 }}
+                  <Circle key={`circle-${z.id}`}
+                    center={[lat, lng]}
+                    radius={rad}
+                    pathOptions={{
+                      color: col, fillColor: col,
+                      fillOpacity: act ? 0.3 : 0.18,
+                      weight: act ? 3.5 : 2,
+                      opacity: act ? 1 : 0.8,
+                    }}
                     eventHandlers={{ click: () => setActiveZone(z.id) }}
                   >
                     <Popup>
                       <div className="map-popup">
                         <strong>{z.name}</strong>
-                        <div className="popup-detail">{z.emirate} &bull; AED {z.base_delivery_fee||0}</div>
+                        <div className="popup-detail">{z.emirate} &bull; AED {fmtFee(z.base_delivery_fee)} &bull; {(rad/1000).toFixed(1)} km</div>
                       </div>
                     </Popup>
                   </Circle>
                 );
               })}
 
-              {zones.map(z => z.center_lat && z.center_lng ? (
-                <Marker key={`m-${z.id}`} position={[parseFloat(z.center_lat), parseFloat(z.center_lng)]}
-                  icon={MARKER_ICONS.zone} eventHandlers={{ click: () => setActiveZone(z.id) }}>
-                  <Popup><div className="map-popup"><strong>{z.name}</strong><div className="popup-detail">{z.emirate}</div></div></Popup>
-                </Marker>
-              ) : null)}
+              {zones.map(z => {
+                if (!hasCoords(z.center_lat, z.center_lng)) return null;
+                return (
+                  <Marker key={`marker-${z.id}`}
+                    position={[pf(z.center_lat), pf(z.center_lng)]}
+                    icon={MARKER_ICONS.zone}
+                    eventHandlers={{ click: () => setActiveZone(z.id) }}>
+                    <Popup>
+                      <div className="map-popup">
+                        <strong>{z.name}</strong>
+                        <div className="popup-detail">{z.emirate}</div>
+                      </div>
+                    </Popup>
+                  </Marker>
+                );
+              })}
 
               {myLocation && <Marker position={myLocation} icon={myLocIcon}><Popup><strong>Your Location</strong></Popup></Marker>}
             </MapContainer>
