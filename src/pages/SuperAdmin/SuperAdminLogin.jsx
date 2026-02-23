@@ -1,135 +1,180 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { Lock, User, Eye, EyeClosed, ShieldCheck } from 'iconoir-react';
-import SEO from '../../components/SEO';
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
-import './SuperAdmin.css';
 
-const SuperAdminLogin = () => {
-  const { t, i18n } = useTranslation();
-  const navigate = useNavigate();
-  const [formData, setFormData] = useState({ username: '', password: '' });
-  const [showPassword, setShowPassword] = useState(false);
+const API = import.meta.env.VITE_API_URL || '/api';
+
+export default function SuperAdminLogin() {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPass, setShowPass] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
     try {
-      const response = await fetch(`${API_BASE_URL}/super-admin/login`, {
+      const res = await fetch(`${API}/super-admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ username, password }),
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Login failed');
+      const data = await res.json();
+      if (res.ok && data.token) {
+        localStorage.setItem('superAdminToken', data.token);
+        localStorage.setItem('superAdminUser', JSON.stringify(data.user));
+        navigate('/super-admin/dashboard');
+      } else {
+        setError(data.error || 'Invalid credentials');
       }
-
-      localStorage.setItem('superAdminToken', data.token);
-      localStorage.setItem('superAdminUser', JSON.stringify(data.user));
-      navigate('/super-admin/dashboard');
-    } catch (err) {
-      setError(err.message);
+    } catch {
+      setError('Connection error. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="super-admin-login">
-      <SEO page="superAdminLogin" noindex={true} />
-      <div className="login-background">
-        <div className="bg-pattern"></div>
-      </div>
-      
-      <div className="login-container">
-        <div className="login-card">
-          <div className="login-header">
-            <div className="logo-container">
-              <img src="/assets/images/logos/TRASEALLA_LOGO.svg" alt="Trasealla" className="logo" />
-            </div>
-            <div className="login-badge">
-              <ShieldCheck size={20} />
-              <span>Platform Administration</span>
-            </div>
-            <h1>Super Admin Portal</h1>
-            <p>Access the Trasealla CRM platform management</p>
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #020617 0%, #0f172a 50%, #020617 100%)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontFamily: "'Segoe UI', system-ui, sans-serif",
+      padding: '1rem',
+    }}>
+      <div style={{ width: '100%', maxWidth: 440 }}>
+
+        {/* Brand */}
+        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            width: 64, height: 64,
+            background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+            borderRadius: 16, marginBottom: '1rem',
+            boxShadow: '0 8px 24px rgba(99,102,241,0.45)',
+          }}>
+            <span style={{ fontSize: 28 }}>🛡️</span>
           </div>
+          <h1 style={{ color: '#fff', fontSize: '1.75rem', fontWeight: 700, margin: 0 }}>
+            Trasealla Delivery
+          </h1>
+          <p style={{ color: '#94a3b8', marginTop: 6, fontSize: '0.95rem' }}>
+            Delivery Platform Administration
+          </p>
+        </div>
+
+        {/* Card */}
+        <div style={{
+          background: 'rgba(255,255,255,0.04)',
+          backdropFilter: 'blur(12px)',
+          border: '1px solid rgba(99,102,241,0.2)',
+          borderRadius: 20, padding: '2rem',
+          boxShadow: '0 24px 48px rgba(0,0,0,0.5)',
+        }}>
+          <h2 style={{ color: '#fff', fontSize: '1.25rem', fontWeight: 600, marginTop: 0, marginBottom: 4 }}>
+            Super Admin Access
+          </h2>
+          <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '1.75rem' }}>
+            Restricted to platform administrators only
+          </p>
 
           {error && (
-            <div className="error-message">
-              <span>{error}</span>
+            <div style={{
+              background: 'rgba(239,68,68,0.15)',
+              border: '1px solid rgba(239,68,68,0.4)',
+              color: '#fca5a5', borderRadius: 10,
+              padding: '0.75rem 1rem', marginBottom: '1.25rem',
+              fontSize: '0.875rem',
+            }}>
+              {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="login-form">
-            <div className="form-group">
-              <label>Username or Email</label>
-              <div className="input-wrapper">
-                <User size={20} />
-                <input
-                  type="text"
-                  value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  placeholder="Enter your username"
-                  required
-                />
-              </div>
+          <form onSubmit={handleSubmit}>
+            <div style={{ marginBottom: '1.25rem' }}>
+              <label style={{ color: '#94a3b8', fontSize: '0.8rem', fontWeight: 500, display: 'block', marginBottom: 6 }}>
+                USERNAME
+              </label>
+              <input
+                type="text"
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+                placeholder="Enter admin username"
+                required
+                style={{
+                  width: '100%', padding: '0.75rem 1rem',
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 10, color: '#fff', fontSize: '0.95rem',
+                  outline: 'none', boxSizing: 'border-box',
+                }}
+              />
             </div>
 
-            <div className="form-group">
-              <label>Password</label>
-              <div className="input-wrapper">
-                <Lock size={20} />
+            <div style={{ marginBottom: '1.75rem' }}>
+              <label style={{ color: '#94a3b8', fontSize: '0.8rem', fontWeight: 500, display: 'block', marginBottom: 6 }}>
+                PASSWORD
+              </label>
+              <div style={{ position: 'relative' }}>
                 <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  placeholder="Enter your password"
+                  type={showPass ? 'text' : 'password'}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="Enter admin password"
                   required
+                  style={{
+                    width: '100%', padding: '0.75rem 3rem 0.75rem 1rem',
+                    background: 'rgba(255,255,255,0.06)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: 10, color: '#fff', fontSize: '0.95rem',
+                    outline: 'none', boxSizing: 'border-box',
+                  }}
                 />
                 <button
                   type="button"
-                  className="toggle-password"
-                  onClick={() => setShowPassword(!showPassword)}
+                  onClick={() => setShowPass(v => !v)}
+                  style={{
+                    position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    fontSize: 16, color: '#64748b',
+                  }}
                 >
-                  {showPassword ? <EyeClosed size={20} /> : <Eye size={20} />}
+                  {showPass ? '\u{1F648}' : '\u{1F441}\uFE0F'}
                 </button>
               </div>
             </div>
 
-            <button type="submit" className="login-button" disabled={loading}>
-              {loading ? (
-                <span className="loading-spinner"></span>
-              ) : (
-                <>
-                  <ShieldCheck size={20} />
-                  <span>Access Platform</span>
-                </>
-              )}
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                width: '100%', padding: '0.875rem',
+                background: loading
+                  ? 'rgba(99,102,241,0.5)'
+                  : 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                color: '#fff', border: 'none', borderRadius: 10,
+                fontSize: '1rem', fontWeight: 600,
+                cursor: loading ? 'not-allowed' : 'pointer',
+                boxShadow: loading ? 'none' : '0 4px 16px rgba(99,102,241,0.45)',
+              }}
+            >
+              {loading ? 'Authenticating...' : 'Access Admin Panel'}
             </button>
           </form>
-
-          <div className="login-footer">
-            <a href="/login" className="back-link">← Back to CRM Login</a>
-          </div>
         </div>
 
-        <div className="security-note">
-          <ShieldCheck size={16} />
-          <span>This portal is for authorized Trasealla administrators only</span>
-        </div>
+        <p style={{ textAlign: 'center', marginTop: '1.5rem', color: '#475569', fontSize: '0.85rem' }}>
+          Back to{' '}
+          <a
+            href="/login"
+            style={{ color: '#6366f1', textDecoration: 'none', fontWeight: 500 }}
+          >
+            Delivery Login &rarr;
+          </a>
+        </p>
       </div>
     </div>
   );
-};
-
-export default SuperAdminLogin;
-
+}
