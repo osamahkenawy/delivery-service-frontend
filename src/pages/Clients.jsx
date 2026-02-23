@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Group, User, Search, EditPencil, Trash, Plus,
   Mail, Phone, Building, MapPin, Download, NavArrowRight, NavArrowLeft,
@@ -6,6 +6,25 @@ import {
   StatsUpSquare, Wallet, Filter, Eye,
 } from 'iconoir-react';
 import api from '../lib/api';
+
+/* ── Toast notification ── */
+function Toast({ toasts }) {
+  return (
+    <div style={{ position:'fixed', top:24, right:24, zIndex:9999, display:'flex', flexDirection:'column', gap:10, pointerEvents:'none' }}>
+      {toasts.map(t => (
+        <div key={t.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'13px 18px',
+          borderRadius:12, fontWeight:600, fontSize:14, minWidth:260, maxWidth:380,
+          boxShadow:'0 8px 30px rgba(0,0,0,0.15)',
+          background: t.type==='success'?'#16a34a': t.type==='error'?'#dc2626':'#f97316',
+          color:'#fff', animation:'slideInRight 0.3s ease' }}>
+          {t.type==='success' ? <CheckCircle width={18} height={18} /> : <WarningTriangle width={18} height={18} />}
+          {t.msg}
+        </div>
+      ))}
+      <style>{`@keyframes slideInRight{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}`}</style>
+    </div>
+  );
+}
 
 const TYPE_META = {
   ecommerce:  { bg: '#dbeafe', color: '#1d4ed8', label: 'E-Commerce'  },
@@ -137,6 +156,15 @@ export default function Clients() {
   const [form, setForm] = useState(emptyForm);
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
+  /* ── Toast ── */
+  const [toasts, setToasts] = useState([]);
+  const toastId = useRef(0);
+  const showToast = (msg, type = 'success') => {
+    const id = ++toastId.current;
+    setToasts(prev => [...prev, { id, msg, type }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3500);
+  };
+
   const fetchClients = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams({ page, limit: LIMIT });
@@ -200,6 +228,7 @@ export default function Clients() {
       ? await api.put(`/clients/${selected.id}`, form)
       : await api.post('/clients', form);
     if (res.success) {
+      showToast(selected ? 'Client updated successfully!' : 'Client created successfully!');
       setShowForm(false); setSelected(null);
       fetchClients();
       if (drawer && drawer.id === selected?.id) setDrawer(res.data);
@@ -209,17 +238,29 @@ export default function Clients() {
 
   const handleToggle = async (c, e) => {
     e?.stopPropagation();
-    await api.put(`/clients/${c.id}`, { ...c, is_active: !(c.is_active !== false) });
-    fetchClients();
-    if (drawer?.id === c.id) setDrawer(d => ({ ...d, is_active: !(d.is_active !== false) }));
+    const newActive = !(c.is_active !== false);
+    const res = await api.put(`/clients/${c.id}`, { ...c, is_active: newActive });
+    if (res.success) {
+      showToast(newActive ? `${c.full_name} activated` : `${c.full_name} deactivated`);
+      fetchClients();
+      if (drawer?.id === c.id) setDrawer(d => ({ ...d, is_active: newActive }));
+    } else {
+      showToast('Failed to update status', 'error');
+    }
   };
 
   const handleDelete = async () => {
     if (!deleteConfirm) return;
-    await api.delete(`/clients/${deleteConfirm.id}`);
+    const { id, full_name: name } = deleteConfirm;
+    const res = await api.delete(`/clients/${id}`);
     setDeleteConfirm(null);
-    if (drawer?.id === deleteConfirm.id) setDrawer(null);
-    fetchClients();
+    if (res.success !== false) {
+      showToast(`${name} has been deactivated`);
+      if (drawer?.id === id) setDrawer(null);
+      fetchClients();
+    } else {
+      showToast('Failed to deactivate client', 'error');
+    }
   };
 
   const exportCSV = () => {
@@ -829,6 +870,8 @@ export default function Clients() {
           </div>
         </div>
       )}
+
+      <Toast toasts={toasts} />
     </div>
   );
 }
