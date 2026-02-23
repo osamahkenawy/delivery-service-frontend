@@ -17,6 +17,7 @@ import Notifications from './pages/Notifications';
 import Wallet from './pages/Wallet';
 import Invoices from './pages/Invoices';
 import Reports from './pages/Reports';
+import LiveMap from './pages/LiveMap';
 import Settings from './pages/Settings';
 import Integrations from './pages/Integrations';
 
@@ -154,6 +155,7 @@ function App() {
         <Route path="/wallet"         element={<PrivateRoute><Wallet /></PrivateRoute>} />
         <Route path="/invoices"       element={<PrivateRoute><Invoices /></PrivateRoute>} />
         <Route path="/reports"        element={<PrivateRoute><Reports /></PrivateRoute>} />
+        <Route path="/live-map"       element={<PrivateRoute><LiveMap /></PrivateRoute>} />
         <Route path="/settings"       element={<PrivateRoute><Settings /></PrivateRoute>} />
         <Route path="/api-keys"       element={<PrivateRoute><Integrations /></PrivateRoute>} />
 
