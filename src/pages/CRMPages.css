@@ -1551,3 +1551,344 @@ textarea.form-control {
   .ord-stats-row { grid-template-columns: repeat(2, 1fr); }
   .ord-drawer { width: 100vw; }
 }
+
+/* ════════════════════════════════════════════════════════
+   DRIVERS MODULE  (.drv-*)
+   ════════════════════════════════════════════════════════ */
+
+/* ── Stat card clickable ── */
+.drv-stat-clickable { cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; position: relative; }
+.drv-stat-clickable:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(36,64,102,0.12); }
+.drv-stat-active-pip {
+  position: absolute; top: 8px; right: 8px;
+  width: 8px; height: 8px; border-radius: 50%;
+}
+
+/* ── Grid ── */
+.drv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+  margin-top: 8px;
+}
+
+/* ── Card ── */
+.drv-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  border: 1px solid #f1f5f9;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.drv-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(36,64,102,0.12); }
+.drv-card.inactive { opacity: 0.6; }
+
+.drv-card-strip {
+  height: 4px;
+  width: 100%;
+  border-radius: 14px 14px 0 0;
+}
+
+/* ── Avatar ── */
+.drv-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+.drv-avatar {
+  width: 46px; height: 46px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 20px;
+  flex-shrink: 0;
+}
+.drv-dot {
+  position: absolute;
+  bottom: 1px; right: 1px;
+  width: 11px; height: 11px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+}
+.drv-dot.pulse {
+  animation: drvPulse 1.8s infinite;
+}
+@keyframes drvPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(22,163,74,0.5); }
+  50%       { box-shadow: 0 0 0 5px rgba(22,163,74,0); }
+}
+
+/* ── Card header ── */
+.drv-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px 16px 10px;
+}
+.drv-card-title { flex: 1; min-width: 0; }
+.drv-card-name  { font-weight: 700; font-size: 15px; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.drv-card-phone { font-size: 13px; color: #64748b; margin-top: 2px; }
+.drv-card-email { font-size: 12px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.drv-status-select {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 20px;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  outline: none;
+  margin-top: 2px;
+}
+
+/* ── Tags ── */
+.drv-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 16px 10px;
+}
+.drv-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 3px 9px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.drv-tag.vehicle  { /* colors from inline style */ }
+.drv-tag.zone     { background: #f0f9ff; color: #0369a1; }
+.drv-tag.inactive { background: #fee2e2; color: #dc2626; }
+
+/* ── Mid: rating + active badge ── */
+.drv-card-mid {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px 10px;
+}
+.drv-active-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 600;
+  background: #e0f2fe; color: #0369a1;
+  padding: 3px 8px; border-radius: 20px;
+}
+
+/* ── Stars ── */
+.drv-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.drv-stars-val {
+  font-size: 12px;
+  font-weight: 600;
+  color: #f59e0b;
+  margin-left: 4px;
+}
+
+/* ── Metrics row ── */
+.drv-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1px;
+  background: #f1f5f9;
+  margin: 0 16px 14px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.drv-metric {
+  background: #fff;
+  padding: 10px 6px;
+  text-align: center;
+}
+.drv-metric-val { font-size: 18px; font-weight: 700; color: #1e293b; line-height: 1; }
+.drv-metric-lbl { font-size: 10px; color: #94a3b8; margin-top: 3px; text-transform: uppercase; letter-spacing: 0.03em; }
+
+/* ── Card footer ── */
+.drv-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-top: 1px solid #f8fafc;
+  margin-top: auto;
+}
+.drv-card-date {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+/* ── Vehicle plate chip ── */
+.drv-plate {
+  font-family: monospace;
+  background: #1e293b;
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+}
+
+/* ── Status badge ── */
+.drv-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.drv-status-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.drv-status-dot.pulse { animation: drvPulse 1.8s infinite; }
+
+/* ── Drawer ── */
+.drv-drawer {
+  width: 500px !important;
+}
+.drv-drawer-hero {
+  gap: 14px !important;
+  padding-bottom: 16px !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+.drv-drawer-avatar {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 24px;
+  flex-shrink: 0;
+}
+.drv-drawer-hero-text { flex: 1; }
+.drv-drawer-hero-text h3 { margin: 0; font-size: 18px; font-weight: 700; color: #1e293b; }
+
+/* ── Tabs ── */
+.drv-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid #f1f5f9;
+  padding: 0 20px;
+}
+.drv-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border: none;
+  background: none;
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.drv-tab:hover  { color: var(--primary); }
+.drv-tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+.drv-tab-badge {
+  background: var(--primary);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 20px;
+  min-width: 18px;
+  text-align: center;
+}
+
+/* ── Performance grid ── */
+.drv-perf-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.drv-perf-card {
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 12px 8px;
+  text-align: center;
+  border-bottom: 3px solid var(--accent, #244066);
+}
+.drv-perf-val { font-size: 18px; font-weight: 700; color: var(--accent, #244066); line-height: 1; }
+.drv-perf-lbl { font-size: 10px; color: #94a3b8; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* ── GPS ping chip ── */
+.drv-ping-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 12px; color: #0369a1;
+  background: #e0f2fe;
+  padding: 3px 9px; border-radius: 20px;
+  font-weight: 500;
+}
+
+/* ── Orders list inside drawer ── */
+.drv-orders-list { display: flex; flex-direction: column; gap: 6px; }
+.drv-order-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  font-size: 13px;
+}
+.drv-order-num     { font-weight: 600; color: #1e293b; font-size: 12px; }
+.drv-order-recipient { color: #475569; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.drv-order-emirate { font-size: 11px; color: #94a3b8; }
+.drv-mini-badge    { font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 20px; white-space: nowrap; }
+.drv-order-fee     { font-weight: 600; color: #1e293b; font-size: 12px; text-align: right; }
+.drv-order-date    { font-size: 11px; color: #94a3b8; white-space: nowrap; }
+
+/* ── Deactivate button ── */
+.drv-deactivate { margin-right: auto !important; }
+
+/* ── Detail loading ── */
+.drv-detail-loading { padding: 8px 0; }
+
+/* ── Filter select ── */
+.filter-select {
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  font-size: 13px;
+  color: #334155;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.filter-select:focus { border-color: var(--primary); }
+.filter-count {
+  font-size: 13px;
+  color: #94a3b8;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .drv-grid { grid-template-columns: 1fr; }
+  .drv-drawer { width: 100vw !important; }
+  .drv-perf-row { grid-template-columns: repeat(2, 1fr); }
+  .drv-order-row { grid-template-columns: 1fr 1fr; }
+}
