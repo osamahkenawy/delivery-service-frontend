@@ -1,154 +1,327 @@
 import { useState, useEffect } from 'react';
 import api from '../lib/api';
+import './CRMPages.css';
 
-const TX_COLORS = {
-  credit:  { bg: '#dcfce7', color: '#16a34a' },
-  debit:   { bg: '#fee2e2', color: '#dc2626' },
+const TX_BADGE = {
+  topup:         { bg: '#dcfce7', color: '#16a34a',  label: 'Top-up' },
+  credit:        { bg: '#dcfce7', color: '#16a34a',  label: 'Credit' },
+  debit:         { bg: '#fee2e2', color: '#dc2626',  label: 'Debit' },
+  cod_collected: { bg: '#dbeafe', color: '#1d4ed8',  label: 'COD Collected' },
+  cod_settled:   { bg: '#fef3c7', color: '#d97706',  label: 'COD Settled' },
+  charge:        { bg: '#fee2e2', color: '#dc2626',  label: 'Charge' },
 };
 
+const fmtAED = v => `AED ${parseFloat(v || 0).toFixed(2)}`;
+
 export default function Wallet() {
-  const [wallet, setWallet] = useState(null);
+  const [wallet,       setWallet]       = useState(null);
   const [transactions, setTransactions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showTopup, setShowTopup] = useState(false);
-  const [topupAmount, setTopupAmount] = useState('');
-  const [topupNote, setTopupNote] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [page, setPage] = useState(1);
-  const PER_PAGE = 15;
+  const [codOrders,    setCodOrders]    = useState([]);
+  const [loading,      setLoading]      = useState(true);
+  const [activeTab,    setActiveTab]    = useState('transactions');
+  const [showTopup,    setShowTopup]    = useState(false);
+  const [showSettle,   setShowSettle]   = useState(false);
+  const [topupForm,    setTopupForm]    = useState({ amount: '', reference: '', description: '' });
+  const [settleForm,   setSettleForm]   = useState({ amount: '', reference: '', note: '' });
+  const [collectOrder, setCollectOrder] = useState(null);
+  const [collectAmt,   setCollectAmt]   = useState('');
+  const [saving,       setSaving]       = useState(false);
+  const [page,         setPage]         = useState(1);
+  const PER_PAGE = 20;
 
   useEffect(() => { fetchAll(); }, []);
 
   const fetchAll = async () => {
     setLoading(true);
-    const [wRes, tRes] = await Promise.all([
+    const [wRes, tRes, cRes] = await Promise.all([
       api.get('/wallet'),
       api.get('/wallet/transactions'),
+      api.get('/wallet/cod-orders'),
     ]);
     if (wRes.success) setWallet(wRes.data);
     if (tRes.success) setTransactions(tRes.data || []);
+    if (cRes.success) setCodOrders(cRes.data || []);
     setLoading(false);
   };
 
   const handleTopup = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    const res = await api.post('/wallet/topup', { amount: topupAmount, notes: topupNote });
-    if (res.success) {
-      setShowTopup(false);
-      setTopupAmount('');
-      setTopupNote('');
-      fetchAll();
-    }
+    e.preventDefault(); setSaving(true);
+    const res = await api.post('/wallet/topup', topupForm);
+    if (res.success) { setShowTopup(false); setTopupForm({ amount: '', reference: '', description: '' }); fetchAll(); }
     setSaving(false);
   };
 
-  const paged = transactions.slice((page - 1) * PER_PAGE, page * PER_PAGE);
-  const total = Math.ceil(transactions.length / PER_PAGE);
+  const handleSettle = async (e) => {
+    e.preventDefault(); setSaving(true);
+    const res = await api.post('/wallet/settle-cod', settleForm);
+    if (res.success) { setShowSettle(false); setSettleForm({ amount: '', reference: '', note: '' }); fetchAll(); }
+    setSaving(false);
+  };
+
+  const handleCollectCOD = async () => {
+    if (!collectOrder || !collectAmt) return;
+    setSaving(true);
+    const res = await api.post('/wallet/collect-cod', {
+      order_id: collectOrder.id,
+      amount: collectAmt,
+      note: `COD collected for ${collectOrder.order_number}`,
+    });
+    if (res.success) { setCollectOrder(null); setCollectAmt(''); fetchAll(); }
+    setSaving(false);
+  };
+
+  const paged      = transactions.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const totalPages = Math.ceil(transactions.length / PER_PAGE);
+  const pendingCOD   = codOrders.filter(o => !o.cod_collected);
+  const collectedCOD = codOrders.filter(o => o.cod_collected);
+
+  const modalStyle = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' };
+  const boxStyle   = { background: 'var(--bg-card)', borderRadius: 16, padding: 32, width: '100%', maxWidth: 420, border: '1px solid var(--border)' };
+  const fieldStyle = { width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-hover)', color: 'var(--text-primary)', fontSize: '.875rem', boxSizing: 'border-box' };
 
   return (
     <div className="page-container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+      <div className="page-header-row" style={{ marginBottom: 24 }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>Wallet</h2>
-          <p style={{ margin: 0, color: '#64748b', fontSize: 14 }}>Manage balance and transactions</p>
+          <h2 className="page-heading">Wallet & COD</h2>
+          <p className="page-subheading">Balance, cash on delivery, and transaction history</p>
         </div>
-        <button onClick={() => setShowTopup(true)}
-          style={{ background: '#f97316', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 20px', fontWeight: 600, cursor: 'pointer', fontSize: 14 }}>
-          + Top Up
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn-outline-action" onClick={() => setShowSettle(true)}>Settle COD</button>
+          <button style={{ padding: '8px 20px', borderRadius: 8, border: 'none', background: '#f97316', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '.875rem' }}
+            onClick={() => setShowTopup(true)}>+ Top Up</button>
+        </div>
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: 40, color: '#94a3b8' }}>Loading...</div>
+        <div className="od-loading">Loading wallet...</div>
       ) : (
         <>
-          {/* Balance cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 28 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px,1fr))', gap: 14, marginBottom: 24 }}>
             {[
-              { label: 'Available Balance', value: `AED ${parseFloat(wallet?.balance || 0).toFixed(2)}`, icon: '💰', bg: '#fff7ed', accent: '#f97316' },
-              { label: 'Total Credited', value: `AED ${parseFloat(wallet?.total_credited || 0).toFixed(2)}`, icon: '📈', bg: '#f0fdf4', accent: '#16a34a' },
-              { label: 'Total Debited', value: `AED ${parseFloat(wallet?.total_debited || 0).toFixed(2)}`, icon: '📉', bg: '#fef2f2', accent: '#dc2626' },
-              { label: 'Transactions', value: transactions.length, icon: '📄', bg: '#f8fafc', accent: '#64748b' },
-            ].map(card => (
-              <div key={card.label} style={{ background: card.bg, borderRadius: 12, padding: 20, border: `1px solid ${card.accent}22` }}>
-                <div style={{ fontSize: 28, marginBottom: 8 }}>{card.icon}</div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: card.accent }}>{card.value}</div>
-                <div style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>{card.label}</div>
+              { label: 'Available Balance', value: fmtAED(wallet?.balance),        color: '#f97316', icon: '💰' },
+              { label: 'COD Pending',       value: fmtAED(wallet?.cod_pending),     color: '#1d4ed8', icon: '📦' },
+              { label: 'Total Credited',    value: fmtAED(wallet?.total_credited),  color: '#16a34a', icon: '📈' },
+              { label: 'Total Debited',     value: fmtAED(wallet?.total_debited),   color: '#dc2626', icon: '📉' },
+              { label: 'Transactions',      value: transactions.length,             color: '#64748b', icon: '📄' },
+              { label: 'Uncollected COD',   value: pendingCOD.length + ' orders',   color: '#8b5cf6', icon: '⚠️' },
+            ].map(c => (
+              <div key={c.label} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 18px' }}>
+                <div style={{ fontSize: '1.5rem', marginBottom: 6 }}>{c.icon}</div>
+                <div style={{ fontSize: '1.35rem', fontWeight: 800, color: c.color }}>{c.value}</div>
+                <div style={{ fontSize: '.75rem', color: 'var(--text-muted)', marginTop: 4 }}>{c.label}</div>
               </div>
             ))}
           </div>
 
-          {/* Transaction table */}
-          <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9', fontWeight: 700, fontSize: 16 }}>Transaction History</div>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                  {['Date', 'Type', 'Amount', 'Balance After', 'Reference', 'Notes'].map(h => (
-                    <th key={h} style={{ padding: '12px 20px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {paged.length === 0 ? (
-                  <tr><td colSpan={6} style={{ textAlign: 'center', padding: 40, color: '#94a3b8' }}>No transactions yet</td></tr>
-                ) : paged.map(tx => {
-                  const sc = TX_COLORS[tx.type] || TX_COLORS.debit;
-                  return (
-                    <tr key={tx.id} style={{ borderBottom: '1px solid #f8fafc' }}>
-                      <td style={{ padding: '12px 20px', fontSize: 13, color: '#64748b' }}>{new Date(tx.created_at).toLocaleDateString()}</td>
-                      <td style={{ padding: '12px 20px' }}>
-                        <span style={{ ...sc, padding: '3px 8px', borderRadius: 6, fontSize: 12, fontWeight: 600 }}>{tx.type}</span>
-                      </td>
-                      <td style={{ padding: '12px 20px', fontWeight: 700, color: tx.type === 'credit' ? '#16a34a' : '#dc2626', fontSize: 15 }}>
-                        {tx.type === 'credit' ? '+' : '-'}AED {parseFloat(tx.amount).toFixed(2)}
-                      </td>
-                      <td style={{ padding: '12px 20px', fontSize: 14 }}>AED {parseFloat(tx.balance_after || 0).toFixed(2)}</td>
-                      <td style={{ padding: '12px 20px', fontSize: 13, color: '#64748b' }}>{tx.reference || '—'}</td>
-                      <td style={{ padding: '12px 20px', fontSize: 13, color: '#64748b' }}>{tx.notes || '—'}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            {total > 1 && (
-              <div style={{ padding: '12px 20px', display: 'flex', justifyContent: 'center', gap: 8, borderTop: '1px solid #f1f5f9' }}>
-                {Array.from({ length: total }, (_, i) => i + 1).map(p => (
-                  <button key={p} onClick={() => setPage(p)}
-                    style={{ width: 32, height: 32, borderRadius: 6, border: '1px solid #e2e8f0', background: p === page ? '#f97316' : '#fff', color: p === page ? '#fff' : '#475569', cursor: 'pointer', fontSize: 13, fontWeight: p === page ? 600 : 400 }}>
-                    {p}
-                  </button>
-                ))}
-              </div>
-            )}
+          <div className="od-tabs" style={{ marginBottom: 20 }}>
+            {[
+              { key: 'transactions', label: `Transactions (${transactions.length})` },
+              { key: 'cod-pending',  label: `COD Uncollected (${pendingCOD.length})` },
+              { key: 'cod-done',     label: `COD Collected (${collectedCOD.length})` },
+            ].map(t => (
+              <button key={t.key} className={`od-tab ${activeTab === t.key ? 'active' : ''}`}
+                onClick={() => setActiveTab(t.key)}>{t.label}</button>
+            ))}
           </div>
+
+          {activeTab === 'transactions' && (
+            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '.875rem' }}>
+                <thead>
+                  <tr style={{ background: 'var(--bg-hover)' }}>
+                    {['Date','Type','Order','Amount','Balance After','Reference','Description'].map(h => (
+                      <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {paged.length === 0 ? (
+                    <tr><td colSpan={7} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>No transactions yet</td></tr>
+                  ) : paged.map(tx => {
+                    const badge = TX_BADGE[tx.type] || { bg: '#f1f5f9', color: '#64748b', label: tx.type };
+                    const isCredit = ['topup','credit','cod_settled'].includes(tx.type);
+                    return (
+                      <tr key={tx.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-muted)', whiteSpace: 'nowrap', fontSize: '.8rem' }}>{new Date(tx.created_at).toLocaleDateString()}</td>
+                        <td style={{ padding: '10px 14px' }}>
+                          <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: '.7rem', fontWeight: 700, background: badge.bg, color: badge.color }}>{badge.label}</span>
+                        </td>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: '.8rem' }}>{tx.order_number || '—'}</td>
+                        <td style={{ padding: '10px 14px', fontWeight: 700, color: isCredit ? '#16a34a' : '#dc2626', whiteSpace: 'nowrap' }}>
+                          {isCredit ? '+' : '-'}{fmtAED(tx.amount)}
+                        </td>
+                        <td style={{ padding: '10px 14px', whiteSpace: 'nowrap', fontSize: '.85rem' }}>{fmtAED(tx.balance_after)}</td>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: '.8rem' }}>{tx.reference || '—'}</td>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: '.8rem' }}>{tx.description || tx.notes || '—'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {totalPages > 1 && (
+                <div style={{ padding: '12px', display: 'flex', justifyContent: 'center', gap: 6, borderTop: '1px solid var(--border)' }}>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                    <button key={p} onClick={() => setPage(p)}
+                      style={{ width: 30, height: 30, borderRadius: 6, border: '1px solid var(--border)', background: p === page ? '#f97316' : 'var(--bg-card)', color: p === page ? '#fff' : 'var(--text-secondary)', cursor: 'pointer', fontSize: '.8rem' }}>
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'cod-pending' && (
+            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+              {pendingCOD.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)', fontSize: '.875rem' }}>
+                  <div style={{ fontSize: '2rem', marginBottom: 8 }}>✅</div>All COD orders have been collected
+                </div>
+              ) : (
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '.875rem' }}>
+                  <thead>
+                    <tr style={{ background: 'var(--bg-hover)' }}>
+                      {['Order','Recipient','COD Amount','Delivery Fee','Driver','Date','Action'].map(h => (
+                        <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pendingCOD.map(o => (
+                      <tr key={o.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                        <td style={{ padding: '10px 14px', fontWeight: 700 }}>{o.order_number}</td>
+                        <td style={{ padding: '10px 14px' }}>{o.recipient_name}</td>
+                        <td style={{ padding: '10px 14px', fontWeight: 700, color: '#f97316' }}>{fmtAED(o.cod_amount)}</td>
+                        <td style={{ padding: '10px 14px' }}>{fmtAED(o.delivery_fee)}</td>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-muted)' }}>{o.driver_name || '—'}</td>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: '.8rem', whiteSpace: 'nowrap' }}>{new Date(o.created_at).toLocaleDateString()}</td>
+                        <td style={{ padding: '10px 14px' }}>
+                          <button onClick={() => { setCollectOrder(o); setCollectAmt(o.cod_amount || ''); }}
+                            style={{ padding: '5px 12px', borderRadius: 7, border: '1px solid #1d4ed8', background: '#dbeafe', color: '#1d4ed8', fontSize: '.78rem', fontWeight: 700, cursor: 'pointer' }}>
+                            Mark Collected
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'cod-done' && (
+            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+              {collectedCOD.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)', fontSize: '.875rem' }}>No collected COD orders yet</div>
+              ) : (
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '.875rem' }}>
+                  <thead>
+                    <tr style={{ background: 'var(--bg-hover)' }}>
+                      {['Order','Recipient','Collected','Collected At','Driver'].map(h => (
+                        <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {collectedCOD.map(o => (
+                      <tr key={o.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                        <td style={{ padding: '10px 14px', fontWeight: 700 }}>{o.order_number}</td>
+                        <td style={{ padding: '10px 14px' }}>{o.recipient_name}</td>
+                        <td style={{ padding: '10px 14px', fontWeight: 700, color: '#16a34a' }}>{fmtAED(o.cod_collected)}</td>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: '.8rem', whiteSpace: 'nowrap' }}>
+                          {o.cod_collected_at ? new Date(o.cod_collected_at).toLocaleString() : '—'}
+                        </td>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-muted)' }}>{o.driver_name || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
         </>
       )}
 
-      {/* Top-up Modal */}
       {showTopup && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: '#fff', borderRadius: 16, padding: 32, width: '100%', maxWidth: 400 }}>
-            <h3 style={{ margin: '0 0 20px', fontSize: 20, fontWeight: 700 }}>Top Up Wallet</h3>
+        <div style={modalStyle}>
+          <div style={boxStyle}>
+            <h3 style={{ margin: '0 0 20px', fontSize: '1.1rem', fontWeight: 700 }}>Top Up Wallet</h3>
             <form onSubmit={handleTopup}>
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>Amount (AED) *</label>
-                <input required type="number" step="0.01" min="1" value={topupAmount} onChange={e => setTopupAmount(e.target.value)}
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 16, boxSizing: 'border-box' }} />
-              </div>
-              <div style={{ marginBottom: 20 }}>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>Notes</label>
-                <input value={topupNote} onChange={e => setTopupNote(e.target.value)} placeholder="Optional note..."
-                  style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14, boxSizing: 'border-box' }} />
-              </div>
-              <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-                <button type="button" onClick={() => setShowTopup(false)} style={{ padding: '10px 20px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontWeight: 500 }}>Cancel</button>
-                <button type="submit" disabled={saving} style={{ padding: '10px 24px', borderRadius: 8, border: 'none', background: '#f97316', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
+              {[
+                { key: 'amount',      label: 'Amount (AED) *', type: 'number', min: 1, step: '0.01', required: true },
+                { key: 'reference',   label: 'Reference #',    type: 'text' },
+                { key: 'description', label: 'Description',    type: 'text' },
+              ].map(f => (
+                <div key={f.key} style={{ marginBottom: 14 }}>
+                  <label style={{ display: 'block', fontSize: '.8rem', fontWeight: 600, marginBottom: 6 }}>{f.label}</label>
+                  <input type={f.type} required={f.required} min={f.min} step={f.step} value={topupForm[f.key]}
+                    onChange={e => setTopupForm(p => ({ ...p, [f.key]: e.target.value }))}
+                    style={fieldStyle} />
+                </div>
+              ))}
+              <div style={{ display: 'flex', gap: 10, marginTop: 20, justifyContent: 'flex-end' }}>
+                <button type="button" onClick={() => setShowTopup(false)} className="btn-outline-action">Cancel</button>
+                <button type="submit" disabled={saving} style={{ padding: '9px 22px', borderRadius: 8, border: 'none', background: '#f97316', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>
                   {saving ? 'Processing...' : 'Add Funds'}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showSettle && (
+        <div style={modalStyle}>
+          <div style={boxStyle}>
+            <h3 style={{ margin: '0 0 8px', fontSize: '1.1rem', fontWeight: 700 }}>Settle COD → Balance</h3>
+            <p style={{ margin: '0 0 20px', fontSize: '.8rem', color: 'var(--text-muted)' }}>
+              COD Pending: <strong>{fmtAED(wallet?.cod_pending)}</strong>
+            </p>
+            <form onSubmit={handleSettle}>
+              {[
+                { key: 'amount',    label: 'Amount (AED) *', type: 'number', min: 0.01, step: '0.01', required: true },
+                { key: 'reference', label: 'Reference #',    type: 'text' },
+                { key: 'note',      label: 'Note',           type: 'text' },
+              ].map(f => (
+                <div key={f.key} style={{ marginBottom: 14 }}>
+                  <label style={{ display: 'block', fontSize: '.8rem', fontWeight: 600, marginBottom: 6 }}>{f.label}</label>
+                  <input type={f.type} required={f.required} min={f.min} step={f.step} value={settleForm[f.key]}
+                    onChange={e => setSettleForm(p => ({ ...p, [f.key]: e.target.value }))}
+                    style={fieldStyle} />
+                </div>
+              ))}
+              <div style={{ display: 'flex', gap: 10, marginTop: 20, justifyContent: 'flex-end' }}>
+                <button type="button" onClick={() => setShowSettle(false)} className="btn-outline-action">Cancel</button>
+                <button type="submit" disabled={saving} style={{ padding: '9px 22px', borderRadius: 8, border: 'none', background: '#f97316', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>
+                  {saving ? 'Processing...' : 'Settle'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {collectOrder && (
+        <div style={modalStyle}>
+          <div style={{ ...boxStyle, maxWidth: 380 }}>
+            <h3 style={{ margin: '0 0 8px', fontSize: '1.1rem', fontWeight: 700 }}>Mark COD Collected</h3>
+            <p style={{ margin: '0 0 20px', fontSize: '.85rem', color: 'var(--text-muted)' }}>
+              <strong>{collectOrder.order_number}</strong> — {collectOrder.recipient_name}
+            </p>
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', fontSize: '.8rem', fontWeight: 600, marginBottom: 6 }}>Amount Collected (AED) *</label>
+              <input type="number" step="0.01" min="0.01" value={collectAmt}
+                onChange={e => setCollectAmt(e.target.value)}
+                style={{ ...fieldStyle, fontSize: '1rem', fontWeight: 700 }} />
+            </div>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button onClick={() => setCollectOrder(null)} className="btn-outline-action">Cancel</button>
+              <button onClick={handleCollectCOD} disabled={saving || !collectAmt}
+                style={{ padding: '9px 22px', borderRadius: 8, border: 'none', background: '#1d4ed8', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>
+                {saving ? 'Saving...' : 'Confirm'}
+              </button>
+            </div>
           </div>
         </div>
       )}
