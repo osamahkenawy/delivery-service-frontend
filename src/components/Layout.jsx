@@ -3,109 +3,72 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AuthContext } from '../App';
 import {
-  HomeSimple, Mail, Building, User, Flash, Wallet, ViewColumns3,
-  List, Calendar, Notes, Label, Cube, Page, Folder, Megaphone,
-  City, Settings, Activity, StatsUpSquare, ClockRotateRight, Menu,
-  LogOut, Language, Group, MailIn, Network, Sparks,
-  Heart, Clock, Star, Medal, Dashboard
+  HomeSimple, Package, DeliveryTruck, Map, User, MapPin,
+  DollarCircle, Bell, Wallet, Page, StatsUpSquare, Settings,
+  Network, Menu, LogOut, Language
 } from 'iconoir-react';
-import AIChatbot from './AIChatbot';
 import './Layout.css';
 
 const iconMap = {
-  'dashboard': HomeSimple,
-  'inbox': Mail,
-  'accounts': Building,
-  'contacts': User,
-  'leads': Flash,
-  'deals': Wallet,
-  'pipelines': ViewColumns3,
-  'activities': List,
-  'calendar': Calendar,
-  'notes': Notes,
-  'tags': Label,
-  'products': Cube,
-  'quotes': Page,
-  'documents': Folder,
-  'campaigns': Megaphone,
-  'audiences': Group,
-  'email-templates': MailIn,
-  'integrations': Network,
-  'branches': City,
-  'custom-fields': Settings,
-  'workflows': Activity,
-  'reports': StatsUpSquare,
-  'audit-logs': ClockRotateRight,
-  'mwasalat-ai': Sparks,
-  'beauty-dashboard': Dashboard,
-  'appointments': Calendar,
-  'beauty-services': Heart,
-  'staff-schedule': Clock,
-  'loyalty': Star,
-  'beauty-clients': Medal,
-}; 
+  'dashboard':      HomeSimple,
+  'orders':         Package,
+  'drivers':        DeliveryTruck,
+  'dispatch':       Map,
+  'clients':        User,
+  'zones':          MapPin,
+  'pricing':        DollarCircle,
+  'notifications':  Bell,
+  'wallet':         Wallet,
+  'invoices':       Page,
+  'reports':        StatsUpSquare,
+  'settings':       Settings,
+  'api-keys':       Network,
+};
 
 const navSections = [
   {
     titleKey: 'Main',
     items: [
-      { path: '/dashboard', labelKey: 'common.dashboard', iconKey: 'dashboard' },
-      { path: '/inbox', labelKey: 'common.inbox', iconKey: 'inbox' },
-      { path: '/mwasalat-ai', labelKey: 'ai.traseallaAI', iconKey: 'mwasalat-ai'},
+      { path: '/dashboard',     labelKey: 'Dashboard',      labelAr: '\u0644\u0648\u062d\u0629 \u0627\u0644\u062a\u062d\u0643\u0645',  iconKey: 'dashboard' },
     ]
   },
   {
-    titleKey: 'CRM',
+    titleKey: 'Operations',
     items: [
-      { path: '/accounts', labelKey: 'common.accounts', iconKey: 'accounts' },
-      { path: '/contacts', labelKey: 'common.contacts', iconKey: 'contacts' },
-      { path: '/leads', labelKey: 'common.leads', iconKey: 'leads' },
-      { path: '/deals', labelKey: 'common.deals', iconKey: 'deals' },
-      { path: '/pipelines', labelKey: 'common.pipelines', iconKey: 'pipelines' },
-      { path: '/activities', labelKey: 'common.activities', iconKey: 'activities' },
-      { path: '/calendar', labelKey: 'common.calendar', iconKey: 'calendar' },
-      { path: '/notes', labelKey: 'common.notes', iconKey: 'notes' },
-      { path: '/tags', labelKey: 'common.tags', iconKey: 'tags' },
+      { path: '/orders',        labelKey: 'Orders',          labelAr: '\u0627\u0644\u0637\u0644\u0628\u0627\u062a',    iconKey: 'orders' },
+      { path: '/drivers',       labelKey: 'Drivers',         labelAr: '\u0627\u0644\u0633\u0627\u0626\u0642\u0648\u0646',   iconKey: 'drivers' },
+      { path: '/dispatch',      labelKey: 'Dispatch',        labelAr: '\u0627\u0644\u0625\u0631\u0633\u0627\u0644',    iconKey: 'dispatch' },
+      { path: '/clients',       labelKey: 'Clients',         labelAr: '\u0627\u0644\u0639\u0645\u0644\u0627\u0621',    iconKey: 'clients' },
     ]
   },
   {
-    titleKey: 'Sales',
+    titleKey: 'Config',
     items: [
-      { path: '/products', labelKey: 'common.products', iconKey: 'products' },
-      { path: '/quotes', labelKey: 'common.quotes', iconKey: 'quotes' },
-      { path: '/documents', labelKey: 'common.documents', iconKey: 'documents' },
+      { path: '/zones',         labelKey: 'Zones',           labelAr: '\u0627\u0644\u0645\u0646\u0627\u0637\u0642',    iconKey: 'zones' },
+      { path: '/pricing',       labelKey: 'Pricing',         labelAr: '\u0627\u0644\u062a\u0633\u0639\u064a\u0631',    iconKey: 'pricing' },
     ]
   },
   {
-    titleKey: 'Marketing',
+    titleKey: 'Finance',
     items: [
-      { path: '/campaigns', labelKey: 'common.campaigns', iconKey: 'campaigns' },
-      { path: '/audiences', labelKey: 'common.audiences', iconKey: 'audiences' },
-      { path: '/email-templates', labelKey: 'common.emailTemplates', iconKey: 'email-templates' },
-      { path: '/integrations', labelKey: 'common.integrations', iconKey: 'integrations' },
+      { path: '/wallet',        labelKey: 'Wallet',          labelAr: '\u0627\u0644\u0645\u062d\u0641\u0638\u0629',    iconKey: 'wallet' },
+      { path: '/invoices',      labelKey: 'Invoices',        labelAr: '\u0627\u0644\u0641\u0648\u0627\u062a\u064a\u0631',   iconKey: 'invoices' },
     ]
   },
   {
-    titleKey: 'Settings',
+    titleKey: 'Analytics',
     items: [
-      { path: '/branches', labelKey: 'common.branches', iconKey: 'branches' },
-      { path: '/custom-fields', labelKey: 'common.customFields', iconKey: 'custom-fields' },
-      { path: '/workflows', labelKey: 'common.workflows', iconKey: 'workflows' },
-      { path: '/reports', labelKey: 'common.reports', iconKey: 'reports' },
-      { path: '/audit-logs', labelKey: 'common.auditLogs', iconKey: 'audit-logs' },
+      { path: '/reports',       labelKey: 'Reports',         labelAr: '\u0627\u0644\u062a\u0642\u0627\u0631\u064a\u0631',   iconKey: 'reports' },
     ]
   },
   {
-    titleKey: 'Beauty Center',
+    titleKey: 'System',
     items: [
-      { path: '/beauty-dashboard', labelKey: 'beauty.dashboard', iconKey: 'beauty-dashboard' },
-      { path: '/appointments', labelKey: 'beauty.appointments', iconKey: 'appointments' },
-      { path: '/beauty-services', labelKey: 'beauty.services', iconKey: 'beauty-services' },
-      { path: '/staff-schedule', labelKey: 'beauty.staffSchedule', iconKey: 'staff-schedule' },
-      { path: '/loyalty', labelKey: 'beauty.loyalty', iconKey: 'loyalty' },
-      { path: '/beauty-clients', labelKey: 'beauty.clients', iconKey: 'beauty-clients' },
+      { path: '/notifications', labelKey: 'Notifications',   labelAr: '\u0627\u0644\u0625\u0634\u0639\u0627\u0631\u0627\u062a',  iconKey: 'notifications' },
+      { path: '/settings',      labelKey: 'Settings',        labelAr: '\u0627\u0644\u0625\u0639\u062f\u0627\u062f\u0627\u062a',  iconKey: 'settings' },
+      { path: '/api-keys',      labelKey: 'API Keys',        labelAr: '\u0645\u0641\u0627\u062a\u064a\u062d API',  iconKey: 'api-keys' },
     ]
-  }
+  },
 ];
 
 const allNavItems = navSections.flatMap(s => s.items);
@@ -115,10 +78,10 @@ export default function Layout({ children }) {
   const [isMobile, setIsMobile] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showLangMenu, setShowLangMenu] = useState(false);
-  const { user, tenant, logout } = useContext(AuthContext);
+  const { user, logout } = useContext(AuthContext);
   const location = useLocation();
   const navigate = useNavigate();
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
 
   const isRTL = i18n.language === 'ar';
 
@@ -141,17 +104,13 @@ export default function Layout({ children }) {
 
   const handleLogout = async () => {
     await logout();
-    navigate('/');
-  };
-
-  const changeLanguage = (lng) => {
-    i18n.changeLanguage(lng);
-    setShowLangMenu(false);
+    navigate('/login');
   };
 
   const getPageTitle = () => {
-    const item = allNavItems.find(item => item.path === location.pathname);
-    return item ? t(item.labelKey) : 'CRM';
+    const item = allNavItems.find(item => location.pathname.startsWith(item.path) && item.path !== '/');
+    if (!item) return 'Trasealla Delivery';
+    return isRTL ? (item.labelAr || item.labelKey) : item.labelKey;
   };
 
   const renderIcon = (iconKey) => {
@@ -168,31 +127,26 @@ export default function Layout({ children }) {
 
       <aside className={`custom-sidebar ${sidebarOpen ? (isMobile ? 'open' : '') : 'closed'}`}>
         <div className="sidebar-brand">
-          <Link to="/dashboard">
-            <img 
-              src="/assets/images/logos/TRASEALLA._WHITE_LOGOsvg.svg" 
-              alt="Trasealla CRM" 
-              style={{ height: '45px' }} 
-            />
+          <Link to="/dashboard" style={{ textDecoration: 'none' }}>
+            <span style={{ fontSize: 22, fontWeight: 800, color: '#f97316' }}>🚚 Trasealla</span>
           </Link>
         </div>
 
         <nav className="sidebar-nav">
           {navSections.map((section) => (
-            <div key={section.titleKey} className={`nav-section ${section.titleKey === 'Beauty Center' ? 'beauty-section' : ''}`}>
-              <div className={`sidebar-nav-label ${section.titleKey === 'Beauty Center' ? 'beauty-label' : ''}`}>
-                {section.titleKey === 'Beauty Center' && <span style={{ marginRight: 6 }}>💇‍♀️</span>}
-                {t(`layout.${section.titleKey}`)}
+            <div key={section.titleKey} className="nav-section">
+              <div className="sidebar-nav-label">
+                {section.titleKey}
               </div>
               {section.items.map((item) => (
                 <div key={item.path} className="sidebar-nav-item">
                   <Link
                     to={item.path}
-                    className={`sidebar-nav-link ${location.pathname === item.path ? 'active' : ''} ${item.isNew ? 'ai-link' : ''}`}
+                    className={`sidebar-nav-link ${location.pathname.startsWith(item.path) ? 'active' : ''}`}
+                    onClick={() => isMobile && setSidebarOpen(false)}
                   >
                     {renderIcon(item.iconKey)}
-                    <span>{t(item.labelKey)}</span>
-                    {item.isNew && <span className="nav-new-badge">NEW</span>}
+                    <span>{isRTL ? (item.labelAr || item.labelKey) : item.labelKey}</span>
                   </Link>
                 </div>
               ))}
@@ -207,21 +161,10 @@ export default function Layout({ children }) {
             <Menu width={24} height={24} />
           </button>
           
-          {!sidebarOpen && (
-            <div className="topbar-brand-mobile">
-              <img 
-                src="/assets/images/logos/T_ONLY.png" 
-                alt="T" 
-                style={{ height: '35px', marginRight: '10px' }} 
-              />
-            </div>
-          )}
-          
           <h1 className="page-title">{getPageTitle()}</h1>
         </div>
 
         <div className="topbar-actions">
-          {/* Language Switcher */}
           <div className="lang-switcher">
             <button 
               className="lang-toggle"
@@ -234,13 +177,13 @@ export default function Layout({ children }) {
               <div className="lang-dropdown">
                 <button 
                   className={`lang-option ${i18n.language === 'en' ? 'active' : ''}`}
-                  onClick={() => changeLanguage('en')}
+                  onClick={() => { i18n.changeLanguage('en'); setShowLangMenu(false); }}
                 >
                   🇺🇸 English
                 </button>
                 <button 
                   className={`lang-option ${i18n.language === 'ar' ? 'active' : ''}`}
-                  onClick={() => changeLanguage('ar')}
+                  onClick={() => { i18n.changeLanguage('ar'); setShowLangMenu(false); }}
                 >
                   🇦🇪 العربية
                 </button>
@@ -248,15 +191,7 @@ export default function Layout({ children }) {
             )}
           </div>
 
-          {user?.role === 'super_admin' && (
-            <span className="role-badge super-admin">SUPER ADMIN</span>
-          )}
-          {user?.role === 'admin' && (
-            <span className="role-badge admin">ADMIN</span>
-          )}
-          {user?.role === 'staff' && (
-            <span className="role-badge staff">STAFF</span>
-          )}
+          {user?.role && <span className={`role-badge ${user.role}`}>{user.role.toUpperCase()}</span>}
           
           <div className="user-menu-wrapper">
             <button 
@@ -273,16 +208,12 @@ export default function Layout({ children }) {
                 </div>
                 <div>
                   <strong>{user?.full_name || user?.username}</strong>
-                  <span>{user?.email}</span>
+                  <span style={{ display: 'block', fontSize: 12, color: '#888' }}>{user?.email}</span>
                 </div>
               </div>
-              <Link to="/profile" className="user-dropdown-item">
-                <User width={18} height={18} />
-                {t('common.profile')}
-              </Link>
               <button onClick={handleLogout} className="user-dropdown-item danger">
                 <LogOut width={18} height={18} />
-                {t('common.logout')}
+                Logout
               </button>
             </div>
           </div>
@@ -294,11 +225,8 @@ export default function Layout({ children }) {
       </main>
 
       <footer className={`custom-footer ${!sidebarOpen ? 'sidebar-closed' : ''}`}>
-        {t('common.copyright')}
+        &copy; {new Date().getFullYear()} Trasealla Delivery &mdash; All rights reserved
       </footer>
-
-      {/* AI Chatbot */}
-      <AIChatbot />
     </div>
   );
 }
