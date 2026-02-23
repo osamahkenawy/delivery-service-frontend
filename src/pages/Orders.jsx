@@ -23,8 +23,9 @@ const STATUS_META = {
 };
 const ORDER_TYPES  = ['standard', 'express', 'same_day', 'scheduled', 'cod', 'return'];
 const EMIRATES     = ['Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman', 'Ras Al Khaimah', 'Fujairah', 'Umm Al Quwain'];
+const PAYMENT_LABELS = { cod: 'Cash on Delivery', prepaid: 'Prepaid', credit: 'Credit Card', wallet: 'Wallet' };
 const EMPTY_FORM   = {
-  client_id: '', zone_id: '', order_type: 'standard', payment_method: 'cash',
+  client_id: '', zone_id: '', order_type: 'standard', payment_method: 'cod',
   recipient_name: '', recipient_phone: '', recipient_address: '',
   recipient_emirate: 'Dubai', cod_amount: '', weight_kg: '', notes: '',
 };
@@ -144,7 +145,7 @@ export default function Orders() {
       client_id:        order.client_id        || '',
       zone_id:          order.zone_id          || '',
       order_type:       order.order_type       || 'standard',
-      payment_method:   order.payment_method   || 'cash',
+      payment_method:   order.payment_method   || 'cod',
       recipient_name:   order.recipient_name   || '',
       recipient_phone:  order.recipient_phone  || '',
       recipient_address:order.recipient_address|| '',
@@ -444,7 +445,7 @@ export default function Orders() {
                 </div>
                 <div className="detail-row">
                   <span className="detail-label">Payment</span>
-                  <span className="detail-value">{viewOrder.payment_method}</span>
+                    <span className="detail-value">{PAYMENT_LABELS[viewOrder.payment_method] || viewOrder.payment_method}</span>
                 </div>
                 {viewOrder.weight_kg && (
                   <div className="detail-row">
@@ -551,8 +552,8 @@ export default function Orders() {
                     <label>Payment Method</label>
                     <select value={form.payment_method}
                       onChange={e => setForm(f => ({ ...f, payment_method: e.target.value }))}>
-                      {['cash', 'cod', 'card', 'wallet', 'invoice'].map(p => (
-                        <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>
+                      {['cod', 'prepaid', 'credit', 'wallet'].map(p => (
+                        <option key={p} value={p}>{PAYMENT_LABELS[p] || p}</option>
                       ))}
                     </select>
                   </div>
