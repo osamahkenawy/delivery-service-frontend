@@ -174,8 +174,8 @@ export default function Clients() {
     const res = await api.get(`/clients?${params}`);
     if (res.success) {
       let data = res.data || [];
-      if (statusFilter === 'active')   data = data.filter(c => c.is_active !== false);
-      if (statusFilter === 'inactive') data = data.filter(c => c.is_active === false);
+      if (statusFilter === 'active')   data = data.filter(c => !!c.is_active);
+      if (statusFilter === 'inactive') data = data.filter(c => !c.is_active);
       setClients(data);
       setTotal(res.pagination?.total || data.length);
     }
@@ -238,7 +238,7 @@ export default function Clients() {
 
   const handleToggle = async (c, e) => {
     e?.stopPropagation();
-    const newActive = !(c.is_active !== false);
+    const newActive = !c.is_active;
     const res = await api.put(`/clients/${c.id}`, { ...c, is_active: newActive });
     if (res.success) {
       showToast(newActive ? `${c.full_name} activated` : `${c.full_name} deactivated`);
@@ -269,7 +269,7 @@ export default function Clients() {
       c.id, c.full_name, c.company_name||'', TYPE_META[c.type]?.label||c.type,
       c.phone, c.email||'', c.emirate||'',
       c.total_orders||0, c.delivered_orders||0, c.credit_limit||0,
-      c.is_active!==false?'Active':'Inactive',
+      c.is_active?'Active':'Inactive',
     ]);
     const csv = [headers, ...rows].map(r => r.map(v=>`"${v}"`).join(',')).join('\n');
     const a = document.createElement('a');
@@ -280,7 +280,7 @@ export default function Clients() {
 
   const clearFilters = () => { setSearch(''); setTypeFilter(''); setEmirateFilter(''); setStatusFilter(''); setPage(1); };
   const hasFilters   = search || typeFilter || emirateFilter || statusFilter;
-  const activeCount  = clients.filter(c => c.is_active !== false).length;
+  const activeCount  = clients.filter(c => !!c.is_active).length;
   const totalOrders  = clients.reduce((s,c) => s + (parseInt(c.total_orders)||0), 0);
 
   /* ── Render ── */
@@ -414,7 +414,7 @@ export default function Clients() {
                     const creditL  = parseFloat(client.credit_limit) || 0;
                     const creditU  = parseFloat(client.credit_used   || 0);
                     const creditPct= creditL > 0 ? Math.min(100,(creditU/creditL)*100) : 0;
-                    const isActive = client.is_active !== false;
+                    const isActive = !!client.is_active;
                     return (
                       <tr key={client.id} onClick={() => openDrawer(client)}
                         style={{ borderBottom:'1px solid #f8fafc', cursor:'pointer', transition:'background 0.15s' }}
@@ -548,7 +548,7 @@ export default function Clients() {
                     </div>
                   )}
                   <div style={{ marginTop:8, display:'flex', gap:8, flexWrap:'wrap' }}>
-                    <StatusPill active={drawer.is_active!==false} />
+                    <StatusPill active={!!drawer.is_active} />
                     {drawer.type && (
                       <span style={{ background:TYPE_META[drawer.type]?.bg, color:TYPE_META[drawer.type]?.color,
                         padding:'3px 10px', borderRadius:20, fontSize:12, fontWeight:700 }}>
@@ -569,8 +569,8 @@ export default function Clients() {
                   style={{ flex:1, padding:'10px', borderRadius:10, border:'1px solid rgba(255,255,255,0.2)',
                     background:'rgba(255,255,255,0.08)', color:'#fff', cursor:'pointer', fontWeight:600, fontSize:14,
                     display:'flex', alignItems:'center', justifyContent:'center', gap:7 }}>
-                  {drawer.is_active!==false ? <Xmark width={14} height={14} /> : <CheckCircle width={14} height={14} />}
-                  {drawer.is_active!==false ? 'Deactivate' : 'Activate'}
+                  {!!drawer.is_active ? <Xmark width={14} height={14} /> : <CheckCircle width={14} height={14} />}
+                  {!!drawer.is_active ? 'Deactivate' : 'Activate'}
                 </button>
               </div>
             </div>
@@ -789,7 +789,7 @@ export default function Clients() {
                     </div>
                     <div style={{ display:'flex', alignItems:'center', gap:9, paddingTop:22 }}>
                       <input type="checkbox" id="chk_active"
-                        checked={form.is_active !== false}
+                        checked={!!form.is_active}
                         onChange={e=>set('is_active',e.target.checked)}
                         style={{ width:16, height:16, accentColor:'#f97316', cursor:'pointer' }} />
                       <label htmlFor="chk_active" style={{ fontSize:14, fontWeight:600, cursor:'pointer', color:'#374151' }}>
