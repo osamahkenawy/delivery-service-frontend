@@ -1,6 +1,6 @@
 import { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, EyeClosed, DeliveryTruck, Check, WarningTriangle } from 'iconoir-react';
+import { Eye, EyeClosed, WarningTriangle } from 'iconoir-react';
 import { AuthContext } from '../App';
 import './LoginPage.css';
 
@@ -108,33 +108,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <div className="login-right">
-        <div className="login-visual">
-          <div className="visual-content">
-            <div className="visual-icon" style={{ width: 80, height: 80, borderRadius: 20,
-              background: 'rgba(255,255,255,0.15)', display: 'flex',
-              alignItems: 'center', justifyContent: 'center', marginBottom: 24, backdropFilter: 'blur(8px)' }}>
-              <DeliveryTruck width={40} height={40} color="#fff" />
-            </div>
-            <h2>Trasealla Delivery</h2>
-            <p>Manage your entire delivery operation from one powerful platform. Track orders, assign drivers, and grow your business.</p>
-            <div className="visual-features">
-              <div className="feature-item">
-                <Check width={16} height={16} /> Real-time order tracking
-              </div>
-              <div className="feature-item">
-                <Check width={16} height={16} /> Smart dispatch management
-              </div>
-              <div className="feature-item">
-                <Check width={16} height={16} /> UAE zone coverage
-              </div>
-              <div className="feature-item">
-                <Check width={16} height={16} /> Driver performance analytics
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <div className="login-right" aria-hidden="true" />
     </div>
   );
 }

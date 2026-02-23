@@ -1,9 +1,10 @@
-import { useState, useEffect, useContext, useRef } from 'react';
+import { useState, useEffect, useContext, useRef, useMemo } from 'react';
 import {
   Package, Plus, Search, XmarkCircle, Eye, EditPencil, DeliveryTruck,
-  Check, Xmark, ArrowLeft, ArrowRight, Filter,
+  Check, Xmark, ArrowLeft, ArrowRight, Filter, Copy,
   Clock, MapPin, User, Phone, DollarCircle,
-  Weight, Prohibition, Refresh
+  Weight, Prohibition, Refresh, Calendar, Box3dPoint,
+  Hashtag, CreditCard, NavArrowDown
 } from 'iconoir-react';
 import { AuthContext } from '../App';
 import api from '../lib/api';
@@ -13,15 +14,15 @@ import './CRMPages.css';
 
 /* ─── Constants ─────────────────────────────────────────────── */
 const STATUS_META = {
-  pending:    { label: 'Pending',    bg: '#fef3c7', color: '#d97706' },
-  confirmed:  { label: 'Confirmed',  bg: '#dbeafe', color: '#2563eb' },
-  assigned:   { label: 'Assigned',   bg: '#ede9fe', color: '#7c3aed' },
-  picked_up:  { label: 'Picked Up',  bg: '#fce7f3', color: '#be185d' },
-  in_transit: { label: 'In Transit', bg: '#e0f2fe', color: '#0369a1' },
-  delivered:  { label: 'Delivered',  bg: '#dcfce7', color: '#16a34a' },
-  failed:     { label: 'Failed',     bg: '#fee2e2', color: '#dc2626' },
-  returned:   { label: 'Returned',   bg: '#fff7ed', color: '#ea580c' },
-  cancelled:  { label: 'Cancelled',  bg: '#f1f5f9', color: '#64748b' },
+  pending:    { label: 'Pending',    bg: '#fef3c7', color: '#d97706', icon: Clock },
+  confirmed:  { label: 'Confirmed',  bg: '#dbeafe', color: '#2563eb', icon: Check },
+  assigned:   { label: 'Assigned',   bg: '#ede9fe', color: '#7c3aed', icon: User },
+  picked_up:  { label: 'Picked Up',  bg: '#fce7f3', color: '#be185d', icon: Package },
+  in_transit: { label: 'In Transit', bg: '#e0f2fe', color: '#0369a1', icon: DeliveryTruck },
+  delivered:  { label: 'Delivered',  bg: '#dcfce7', color: '#16a34a', icon: Check },
+  failed:     { label: 'Failed',     bg: '#fee2e2', color: '#dc2626', icon: Xmark },
+  returned:   { label: 'Returned',   bg: '#fff7ed', color: '#ea580c', icon: ArrowLeft },
+  cancelled:  { label: 'Cancelled',  bg: '#f1f5f9', color: '#64748b', icon: Prohibition },
 };
 const ORDER_TYPES  = ['standard', 'express', 'same_day', 'scheduled', 'return'];
 const EMIRATES     = ['Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman', 'Ras Al Khaimah', 'Fujairah', 'Umm Al Quwain'];
@@ -33,28 +34,42 @@ const EMPTY_FORM   = {
   cod_amount: '', weight_kg: '', notes: '',
 };
 
+/* ─── Helpers ────────────────────────────────────────────────── */
+const fmtDate = d => d ? new Date(d).toLocaleDateString('en-AE', { day:'2-digit', month:'short', year:'numeric' }) : '\u2014';
+const fmtTime = d => d ? new Date(d).toLocaleTimeString('en-AE', { hour:'2-digit', minute:'2-digit' }) : '';
+const fmtAED  = v => { const n = parseFloat(v); return !isNaN(n) && n > 0 ? `AED ${n.toFixed(2)}` : '\u2014'; };
+const fmtType = t => t ? t.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '\u2014';
+
 /* ─── Sub-components ─────────────────────────────────────────── */
-const StatusBadge = ({ status }) => {
+const StatusBadge = ({ status, size = 'sm' }) => {
   const m = STATUS_META[status] || STATUS_META.pending;
+  const Icon = m.icon;
   return (
-    <span className="status-badge" style={{ background: m.bg, color: m.color }}>
+    <span className={`ord-status-badge ${size}`} style={{ background: m.bg, color: m.color }}>
+      <Icon width={size === 'lg' ? 14 : 11} height={size === 'lg' ? 14 : 11} />
       {m.label}
     </span>
   );
 };
 
-const SkeletonRows = () => (
-  <>
-    {[1,2,3,4,5].map(i => (
-      <tr key={i}>
-        {Array(9).fill(0).map((_, j) => (
-          <td key={j} style={{ padding: '14px 16px' }}>
-            <div className="skeleton-card" style={{ height: 16, borderRadius: 4, width: j === 0 ? 80 : j === 2 ? 120 : 60 }} />
-          </td>
-        ))}
-      </tr>
+const StatCard = ({ icon: Icon, label, value, accent }) => (
+  <div className="ord-stat-card">
+    <div className="ord-stat-icon" style={{ background: accent + '18', color: accent }}>
+      <Icon width={18} height={18} />
+    </div>
+    <div className="ord-stat-info">
+      <div className="ord-stat-value">{value}</div>
+      <div className="ord-stat-label">{label}</div>
+    </div>
+  </div>
+);
+
+const SkeletonCards = () => (
+  <div className="ord-grid">
+    {[1,2,3,4].map(i => (
+      <div key={i} className="ord-card skeleton-pulse" style={{ height: 180 }} />
     ))}
-  </>
+  </div>
 );
 
 /* ─── Main component ─────────────────────────────────────────── */
@@ -72,11 +87,19 @@ export default function Orders() {
   const [clients,    setClients]    = useState([]);
   const [saving,     setSaving]     = useState(false);
   const [error,      setError]      = useState('');
-  const [summary,    setSummary]    = useState({});
+  const [copied,     setCopied]     = useState('');
   const searchRef = useRef(null);
+  const debounceRef = useRef(null);
 
-  useEffect(() => { fetchOrders(); }, [pagination.page, filters]);
+  useEffect(() => { fetchOrders(); }, [pagination.page, filters.status, filters.date_from, filters.date_to]);
   useEffect(() => { fetchDropdowns(); }, []);
+
+  /* Debounced search */
+  useEffect(() => {
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => fetchOrders(), 350);
+    return () => clearTimeout(debounceRef.current);
+  }, [filters.search]);
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -90,16 +113,9 @@ export default function Orders() {
       if (res.success) {
         setOrders(res.data || []);
         setPagination(p => ({ ...p, total: res.pagination?.total || res.total || 0 }));
-        buildSummary(res.data || []);
       }
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
-  };
-
-  const buildSummary = (data) => {
-    const s = {};
-    data.forEach(o => { s[o.status] = (s[o.status] || 0) + 1; });
-    setSummary(s);
   };
 
   const fetchDropdowns = async () => {
@@ -109,6 +125,17 @@ export default function Orders() {
       if (cRes.success) setClients(cRes.data || []);
     } catch (e) { console.error(e); }
   };
+
+  /* ── Stats ── */
+  const stats = useMemo(() => {
+    const s = { total: orders.length, pending: 0, in_transit: 0, delivered: 0 };
+    orders.forEach(o => {
+      if (o.status === 'pending') s.pending++;
+      if (o.status === 'in_transit') s.in_transit++;
+      if (o.status === 'delivered') s.delivered++;
+    });
+    return s;
+  }, [orders]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -135,13 +162,7 @@ export default function Orders() {
     } catch (e) { console.error(e); }
   };
 
-  const openNew = () => {
-    setSelected(null);
-    setForm(EMPTY_FORM);
-    setError('');
-    setShowForm(true);
-  };
-
+  const openNew = () => { setSelected(null); setForm(EMPTY_FORM); setError(''); setShowForm(true); };
   const openEdit = (order) => {
     setSelected(order);
     setForm({
@@ -159,23 +180,20 @@ export default function Orders() {
       weight_kg:        order.weight_kg        || '',
       notes:            order.notes            || '',
     });
-    setError('');
-    setShowForm(true);
+    setError(''); setShowForm(true);
   };
-
-  const closeForm = () => {
-    setShowForm(false);
-    setSelected(null);
-    setForm(EMPTY_FORM);
-    setError('');
+  const closeForm = () => { setShowForm(false); setSelected(null); setForm(EMPTY_FORM); setError(''); };
+  const copyToken = (token) => {
+    navigator.clipboard.writeText(token).then(() => { setCopied(token); setTimeout(() => setCopied(''), 1500); });
   };
 
   const clearFilters = () => setFilters({ status: '', search: '', date_from: '', date_to: '' });
   const hasFilters   = filters.status || filters.search || filters.date_from || filters.date_to;
   const totalPages   = Math.ceil(pagination.total / pagination.limit);
-  const fmtDate      = d => d ? new Date(d).toLocaleDateString('en-AE', { day:'2-digit', month:'short', year:'numeric' }) : '—';
-  const fmtAED       = v => v ? `AED ${parseFloat(v).toFixed(2)}` : '—';
 
+  /* ═══════════════════════════════════════════════════════════════
+     RENDER
+     ═══════════════════════════════════════════════════════════════ */
   return (
     <div className="page-container">
 
@@ -197,55 +215,50 @@ export default function Orders() {
         </div>
       </div>
 
-      {/* ── Summary chips ── */}
-      {!loading && Object.keys(summary).length > 0 && (
-        <div className="orders-summary-bar">
-          {Object.entries(STATUS_META)
-            .filter(([k]) => summary[k])
-            .map(([k, m]) => (
-              <button
-                key={k}
-                className={`summary-chip ${filters.status === k ? 'active' : ''}`}
-                style={{ '--chip-color': m.color, '--chip-bg': m.bg }}
-                onClick={() => setFilters(f => ({ ...f, status: f.status === k ? '' : k }))}
-              >
-                <span className="chip-dot" style={{ background: m.color }} />
-                {m.label}
-                <span className="chip-count">{summary[k]}</span>
-              </button>
-            ))
-          }
+      {/* ── Stat Cards ── */}
+      {!loading && orders.length > 0 && (
+        <div className="ord-stats-row">
+          <StatCard icon={Package} label="Total Orders" value={pagination.total} accent="#244066" />
+          <StatCard icon={Clock} label="Pending" value={stats.pending} accent="#d97706" />
+          <StatCard icon={DeliveryTruck} label="In Transit" value={stats.in_transit} accent="#0369a1" />
+          <StatCard icon={Check} label="Delivered" value={stats.delivered} accent="#16a34a" />
         </div>
       )}
+
+      {/* ── Status filter chips ── */}
+      <div className="orders-summary-bar">
+        <button
+          className={`summary-chip ${!filters.status ? 'active' : ''}`}
+          style={{ '--chip-color':'#244066', '--chip-bg':'#eff6ff' }}
+          onClick={() => setFilters(f => ({ ...f, status: '' }))}
+        >All</button>
+        {Object.entries(STATUS_META).map(([k, m]) => (
+          <button key={k}
+            className={`summary-chip ${filters.status === k ? 'active' : ''}`}
+            style={{ '--chip-color': m.color, '--chip-bg': m.bg }}
+            onClick={() => setFilters(f => ({ ...f, status: f.status === k ? '' : k }))}
+          >
+            <span className="chip-dot" style={{ background: m.color }} />
+            {m.label}
+          </button>
+        ))}
+      </div>
 
       {/* ── Filter bar ── */}
       <div className="filter-bar">
         <div className="search-box">
           <Search width={15} height={15} className="search-icon" />
-          <input
-            ref={searchRef}
-            type="text"
+          <input ref={searchRef} type="text"
             placeholder="Search order #, recipient, phone..."
             value={filters.search}
             onChange={e => setFilters(f => ({ ...f, search: e.target.value }))}
-            className="search-input"
-          />
+            className="search-input" />
           {filters.search && (
             <button className="search-clear" onClick={() => setFilters(f => ({ ...f, search: '' }))}>
               <XmarkCircle width={15} height={15} />
             </button>
           )}
         </div>
-        <select
-          className="filter-select"
-          value={filters.status}
-          onChange={e => setFilters(f => ({ ...f, status: e.target.value }))}
-        >
-          <option value="">All Statuses</option>
-          {Object.entries(STATUS_META).map(([k, m]) => (
-            <option key={k} value={k}>{m.label}</option>
-          ))}
-        </select>
         <input type="date" className="filter-date" value={filters.date_from}
           onChange={e => setFilters(f => ({ ...f, date_from: e.target.value }))} />
         <span className="date-sep">to</span>
@@ -258,113 +271,92 @@ export default function Orders() {
         )}
       </div>
 
-      {/* ── Table ── */}
-      <div className="table-responsive">
-        <table className="contacts-table">
-          <thead>
-            <tr>
-              <th>Order #</th>
-              <th>Recipient</th>
-              <th>Zone / Emirate</th>
-              <th>Type</th>
-              <th>Status</th>
-              <th>Fee / COD</th>
-              <th>Driver</th>
-              <th>Date</th>
-              <th style={{ textAlign: 'center' }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? <SkeletonRows /> :
-             orders.length === 0 ? (
-              <tr>
-                <td colSpan={9}>
-                  <div className="empty-state-mini" style={{ padding: '3.5rem 0' }}>
-                    <Package width={48} height={48} />
-                    <p style={{ fontWeight: 600, fontSize: '1rem', marginTop: 12 }}>No orders found</p>
-                    <p style={{ margin: '4px 0 16px' }}>
-                      {hasFilters ? 'Try adjusting your filters' : 'Create your first order to get started'}
-                    </p>
-                    {!hasFilters && (
-                      <button className="btn-primary-action" onClick={openNew}>
-                        <Plus width={16} height={16} /> New Order
-                      </button>
-                    )}
+      {/* ── Orders Grid ── */}
+      {loading ? <SkeletonCards /> : orders.length === 0 ? (
+        <div className="ord-empty">
+          <div className="ord-empty-icon"><Package width={48} height={48} /></div>
+          <h3>No orders found</h3>
+          <p>{hasFilters ? 'Try adjusting your filters' : 'Create your first order to get started'}</p>
+          {!hasFilters && (
+            <button className="btn-primary-action" onClick={openNew}>
+              <Plus width={16} height={16} /> New Order
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="ord-grid">
+          {orders.map(order => {
+            const sm = STATUS_META[order.status] || STATUS_META.pending;
+            return (
+              <div key={order.id} className="ord-card" onClick={() => setViewOrder(order)}>
+                {/* Card accent bar */}
+                <div className="ord-card-accent" style={{ background: sm.color }} />
+
+                {/* Top: order number + status */}
+                <div className="ord-card-header">
+                  <div>
+                    <div className="ord-card-number">{order.order_number}</div>
+                    <div className="ord-card-token">{order.tracking_token}</div>
                   </div>
-                </td>
-              </tr>
-            ) : (
-              orders.map(order => (
-                <tr key={order.id}>
-                  <td>
-                    <div style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.875rem' }}>{order.order_number}</div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--gray-400)', fontFamily: 'monospace', marginTop: 2 }}>
-                      {order.tracking_token}
+                  <StatusBadge status={order.status} />
+                </div>
+
+                {/* Recipient info */}
+                <div className="ord-card-recipient">
+                  <div className="ord-card-avatar" style={{ background: sm.bg, color: sm.color }}>
+                    {order.recipient_name?.[0]?.toUpperCase() || '?'}
+                  </div>
+                  <div className="ord-card-recipient-info">
+                    <div className="ord-card-name">{order.recipient_name}</div>
+                    <div className="ord-card-phone">{order.recipient_phone}</div>
+                  </div>
+                </div>
+
+                {/* Details row */}
+                <div className="ord-card-details">
+                  <div className="ord-card-detail">
+                    <MapPin width={12} height={12} />
+                    <span>{order.zone_name || order.recipient_emirate}</span>
+                  </div>
+                  <div className="ord-card-detail">
+                    <Box3dPoint width={12} height={12} />
+                    <span>{fmtType(order.order_type)}</span>
+                  </div>
+                  {parseFloat(order.delivery_fee) > 0 && (
+                    <div className="ord-card-detail fee">
+                      <DollarCircle width={12} height={12} />
+                      <span>{fmtAED(order.delivery_fee)}</span>
                     </div>
-                  </td>
-                  <td>
-                    <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>{order.recipient_name}</div>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--gray-500)' }}>{order.recipient_phone}</div>
-                  </td>
-                  <td>
-                    <div style={{ fontSize: '0.875rem', fontWeight: 500 }}>{order.zone_name || '—'}</div>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--gray-500)' }}>{order.recipient_emirate}</div>
-                  </td>
-                  <td>
-                    <span className="status-badge" style={{ background: '#f1f5f9', color: 'var(--gray-600)' }}>
-                      {order.order_type?.replace('_', ' ')}
-                    </span>
-                  </td>
-                  <td>
-                    <select
-                      value={order.status}
-                      onChange={e => handleStatusChange(order.id, e.target.value)}
-                      className="inline-status-select"
-                      style={{
-                        background: STATUS_META[order.status]?.bg || '#f1f5f9',
-                        color:      STATUS_META[order.status]?.color || '#64748b',
-                      }}
-                    >
-                      {Object.entries(STATUS_META).map(([k, m]) => (
-                        <option key={k} value={k}>{m.label}</option>
-                      ))}
-                    </select>
-                  </td>
-                  <td>
-                    <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>{fmtAED(order.delivery_fee)}</div>
-                    {order.cod_amount > 0 && (
-                      <div style={{ fontSize: '0.75rem', color: 'var(--warning)' }}>COD {fmtAED(order.cod_amount)}</div>
-                    )}
-                  </td>
-                  <td>
-                    <div style={{ fontSize: '0.875rem', color: order.driver_name ? 'var(--gray-700)' : 'var(--gray-400)' }}>
-                      {order.driver_name || 'Unassigned'}
-                    </div>
-                  </td>
-                  <td>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--gray-600)' }}>{fmtDate(order.created_at)}</div>
-                  </td>
-                  <td>
-                    <div className="action-btns">
-                      <button className="action-btn view"   title="View"  onClick={() => setViewOrder(order)}><Eye width={14} height={14} /></button>
-                      <button className="action-btn edit"   title="Edit"  onClick={() => openEdit(order)}><EditPencil width={14} height={14} /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+                  )}
+                </div>
+
+                {/* Footer */}
+                <div className="ord-card-footer">
+                  <div className="ord-card-date">
+                    <Calendar width={11} height={11} />
+                    {fmtDate(order.created_at)}
+                  </div>
+                  <div className="ord-card-driver">
+                    <DeliveryTruck width={12} height={12} />
+                    <span>{order.driver_name || 'Unassigned'}</span>
+                  </div>
+                  <div className="ord-card-actions" onClick={e => e.stopPropagation()}>
+                    <button className="action-btn edit" title="Edit" onClick={() => openEdit(order)}>
+                      <EditPencil width={13} height={13} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* ── Pagination ── */}
       {totalPages > 1 && (
         <div className="pagination-bar">
-          <button
-            className="page-btn"
-            disabled={pagination.page === 1}
-            onClick={() => setPagination(p => ({ ...p, page: p.page - 1 }))}
-          >
+          <button className="page-btn" disabled={pagination.page === 1}
+            onClick={() => setPagination(p => ({ ...p, page: p.page - 1 }))}>
             <ArrowLeft width={14} height={14} />
           </button>
           {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
@@ -372,62 +364,73 @@ export default function Orders() {
                       pagination.page >= totalPages - 3 ? totalPages - 6 + i :
                       pagination.page - 3 + i;
             return p >= 1 && p <= totalPages ? (
-              <button
-                key={p}
-                className={`page-btn ${pagination.page === p ? 'active' : ''}`}
-                onClick={() => setPagination(prev => ({ ...prev, page: p }))}
-              >
-                {p}
-              </button>
+              <button key={p} className={`page-btn ${pagination.page === p ? 'active' : ''}`}
+                onClick={() => setPagination(prev => ({ ...prev, page: p }))}>{p}</button>
             ) : null;
           })}
-          <button
-            className="page-btn"
-            disabled={pagination.page === totalPages}
-            onClick={() => setPagination(p => ({ ...p, page: p.page + 1 }))}
-          >
+          <button className="page-btn" disabled={pagination.page === totalPages}
+            onClick={() => setPagination(p => ({ ...p, page: p.page + 1 }))}>
             <ArrowRight width={14} height={14} />
           </button>
           <span className="page-info">
-            {((pagination.page - 1) * pagination.limit) + 1}–
-            {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total}
+            {((pagination.page - 1) * pagination.limit) + 1}--{Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total}
           </span>
         </div>
       )}
 
-      {/* ── View Drawer ── */}
+      {/* ══════════════════════════════════════════════════════════
+         VIEW ORDER DRAWER
+         ══════════════════════════════════════════════════════════ */}
       {viewOrder && (
         <div className="modal-overlay" onClick={() => setViewOrder(null)}>
-          <div className="modal-container" style={{ maxWidth: 560 }} onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <div>
+          <div className="ord-drawer" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="ord-drawer-header">
+              <div className="ord-drawer-header-text">
                 <h3>{viewOrder.order_number}</h3>
-                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--gray-400)' }}>
-                  Tracking: {viewOrder.tracking_token}
-                </p>
+                <button className="ord-copy-btn" onClick={() => copyToken(viewOrder.tracking_token)}
+                  title="Copy tracking token">
+                  <span>{viewOrder.tracking_token}</span>
+                  <Copy width={12} height={12} />
+                  {copied === viewOrder.tracking_token && <span className="ord-copied">Copied!</span>}
+                </button>
               </div>
               <button className="modal-close" onClick={() => setViewOrder(null)}><Xmark width={18} height={18} /></button>
             </div>
-            <div className="modal-body">
-              <div className="detail-section">
-                <div className="detail-row">
-                  <span className="detail-label">Status</span>
-                  <StatusBadge status={viewOrder.status} />
+
+            <div className="ord-drawer-body">
+              {/* Status + quick change */}
+              <div className="ord-view-section">
+                <div className="ord-view-status-row">
+                  <StatusBadge status={viewOrder.status} size="lg" />
+                  <select value={viewOrder.status}
+                    onChange={e => { handleStatusChange(viewOrder.id, e.target.value); setViewOrder(v => ({ ...v, status: e.target.value })); }}
+                    className="inline-status-select ord-status-change"
+                    style={{ background: STATUS_META[viewOrder.status]?.bg, color: STATUS_META[viewOrder.status]?.color }}>
+                    {Object.entries(STATUS_META).map(([k, m]) => <option key={k} value={k}>{m.label}</option>)}
+                  </select>
                 </div>
-                <div className="detail-row">
-                  <span className="detail-label"><User width={14} height={14} /> Recipient</span>
-                  <span className="detail-value">{viewOrder.recipient_name}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label"><Phone width={14} height={14} /> Phone</span>
-                  <span className="detail-value">{viewOrder.recipient_phone}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label"><MapPin width={14} height={14} /> Address</span>
-                  <span className="detail-value">{viewOrder.recipient_address}</span>
+              </div>
+
+              {/* Recipient card */}
+              <div className="ord-view-section">
+                <div className="ord-view-section-title"><User width={14} height={14} /> Recipient</div>
+                <div className="ord-view-card">
+                  <div className="ord-view-row">
+                    <span className="ord-view-label">Name</span>
+                    <span className="ord-view-value bold">{viewOrder.recipient_name}</span>
+                  </div>
+                  <div className="ord-view-row">
+                    <span className="ord-view-label">Phone</span>
+                    <a href={`tel:${viewOrder.recipient_phone}`} className="ord-view-value link">{viewOrder.recipient_phone}</a>
+                  </div>
+                  <div className="ord-view-row">
+                    <span className="ord-view-label">Address</span>
+                    <span className="ord-view-value">{viewOrder.recipient_address || '\u2014'}</span>
+                  </div>
                 </div>
                 {viewOrder.recipient_lat && viewOrder.recipient_lng && (
-                  <div style={{ margin: '8px 0 12px', borderRadius: 10, overflow: 'hidden', border: '1px solid var(--gray-200)' }}>
+                  <div className="ord-view-map">
                     <MapView
                       markers={[{
                         lat: parseFloat(viewOrder.recipient_lat),
@@ -436,56 +439,81 @@ export default function Orders() {
                         label: viewOrder.recipient_name,
                         popup: `<strong>${viewOrder.recipient_name}</strong><br/>${viewOrder.recipient_address || ''}`
                       }]}
-                      height={180}
-                      zoom={15}
+                      height={160} zoom={15}
                     />
                   </div>
                 )}
-                <div className="detail-row">
-                  <span className="detail-label"><MapPin width={14} height={14} /> Zone</span>
-                  <span className="detail-value">{viewOrder.zone_name || '—'} ({viewOrder.recipient_emirate})</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label"><DeliveryTruck width={14} height={14} /> Driver</span>
-                  <span className="detail-value">{viewOrder.driver_name || 'Unassigned'}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label"><DollarCircle width={14} height={14} /> Fee</span>
-                  <span className="detail-value">{fmtAED(viewOrder.delivery_fee)}</span>
-                </div>
-                {viewOrder.cod_amount > 0 && (
-                  <div className="detail-row">
-                    <span className="detail-label">COD Amount</span>
-                    <span className="detail-value" style={{ color: 'var(--warning)', fontWeight: 600 }}>{fmtAED(viewOrder.cod_amount)}</span>
+              </div>
+
+              {/* Delivery info */}
+              <div className="ord-view-section">
+                <div className="ord-view-section-title"><DeliveryTruck width={14} height={14} /> Delivery</div>
+                <div className="ord-view-card">
+                  <div className="ord-view-row">
+                    <span className="ord-view-label">Zone</span>
+                    <span className="ord-view-value">{viewOrder.zone_name || '\u2014'}</span>
                   </div>
-                )}
-                <div className="detail-row">
-                  <span className="detail-label">Type</span>
-                  <span className="detail-value">{viewOrder.order_type?.replace('_', ' ')}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Payment</span>
-                    <span className="detail-value">{PAYMENT_LABELS[viewOrder.payment_method] || viewOrder.payment_method}</span>
-                </div>
-                {viewOrder.weight_kg && (
-                  <div className="detail-row">
-                    <span className="detail-label"><Weight width={14} height={14} /> Weight</span>
-                    <span className="detail-value">{viewOrder.weight_kg} kg</span>
+                  <div className="ord-view-row">
+                    <span className="ord-view-label">Emirate</span>
+                    <span className="ord-view-value">{viewOrder.recipient_emirate}</span>
                   </div>
-                )}
-                <div className="detail-row">
-                  <span className="detail-label"><Clock width={14} height={14} /> Created</span>
-                  <span className="detail-value">{fmtDate(viewOrder.created_at)}</span>
-                </div>
-                {viewOrder.notes && (
-                  <div className="detail-row" style={{ alignItems: 'flex-start' }}>
-                    <span className="detail-label">Notes</span>
-                    <span className="detail-value" style={{ whiteSpace: 'pre-wrap' }}>{viewOrder.notes}</span>
+                  <div className="ord-view-row">
+                    <span className="ord-view-label">Driver</span>
+                    <span className={'ord-view-value ' + (viewOrder.driver_name ? 'bold' : 'muted')}>{viewOrder.driver_name || 'Unassigned'}</span>
                   </div>
-                )}
+                  <div className="ord-view-row">
+                    <span className="ord-view-label">Type</span>
+                    <span className="ord-view-value">{fmtType(viewOrder.order_type)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment */}
+              <div className="ord-view-section">
+                <div className="ord-view-section-title"><DollarCircle width={14} height={14} /> Payment</div>
+                <div className="ord-view-card">
+                  <div className="ord-view-row">
+                    <span className="ord-view-label">Method</span>
+                    <span className="ord-view-value">{PAYMENT_LABELS[viewOrder.payment_method] || viewOrder.payment_method}</span>
+                  </div>
+                  <div className="ord-view-row">
+                    <span className="ord-view-label">Delivery Fee</span>
+                    <span className="ord-view-value bold">{fmtAED(viewOrder.delivery_fee)}</span>
+                  </div>
+                  {parseFloat(viewOrder.cod_amount) > 0 && (
+                    <div className="ord-view-row">
+                      <span className="ord-view-label">COD Amount</span>
+                      <span className="ord-view-value" style={{ color: '#d97706', fontWeight: 600 }}>{fmtAED(viewOrder.cod_amount)}</span>
+                    </div>
+                  )}
+                  {viewOrder.weight_kg && (
+                    <div className="ord-view-row">
+                      <span className="ord-view-label">Weight</span>
+                      <span className="ord-view-value">{parseFloat(viewOrder.weight_kg).toFixed(1)} kg</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Meta */}
+              <div className="ord-view-section">
+                <div className="ord-view-card subtle">
+                  <div className="ord-view-row">
+                    <span className="ord-view-label">Created</span>
+                    <span className="ord-view-value">{fmtDate(viewOrder.created_at)} {fmtTime(viewOrder.created_at)}</span>
+                  </div>
+                  {viewOrder.notes && (
+                    <div className="ord-view-row" style={{ alignItems: 'flex-start' }}>
+                      <span className="ord-view-label">Notes</span>
+                      <span className="ord-view-value" style={{ whiteSpace: 'pre-wrap' }}>{viewOrder.notes}</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-            <div className="modal-footer">
+
+            {/* Footer */}
+            <div className="ord-drawer-footer">
               <button className="btn-outline-action" onClick={() => setViewOrder(null)}>Close</button>
               <button className="btn-primary-action" onClick={() => { setViewOrder(null); openEdit(viewOrder); }}>
                 <EditPencil width={14} height={14} /> Edit Order
@@ -495,15 +523,16 @@ export default function Orders() {
         </div>
       )}
 
-      {/* ── Create / Edit Modal ── */}
+      {/* ══════════════════════════════════════════════════════════
+         CREATE / EDIT MODAL
+         ══════════════════════════════════════════════════════════ */}
       {showForm && (
         <div className="modal-overlay" onClick={closeForm}>
           <div className="modal-container large" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>{selected ? `Edit Order — ${selected.order_number}` : 'New Order'}</h3>
+              <h3>{selected ? `Edit Order \u2014 ${selected.order_number}` : 'New Order'}</h3>
               <button className="modal-close" onClick={closeForm}><Xmark width={18} height={18} /></button>
             </div>
-
             <form onSubmit={handleSubmit}>
               <div className="modal-body">
                 {error && (
@@ -530,15 +559,10 @@ export default function Orders() {
                     <label>Delivery Address *</label>
                     <div className="form-map-wrapper">
                       <LocationPicker
-                        lat={form.recipient_lat}
-                        lng={form.recipient_lng}
-                        address={form.recipient_address}
-                        markerType="delivery"
-                        height={220}
+                        lat={form.recipient_lat} lng={form.recipient_lng}
+                        address={form.recipient_address} markerType="delivery" height={220}
                         onChange={({ lat, lng, address }) =>
-                          setForm(f => ({ ...f, recipient_lat: lat, recipient_lng: lng, recipient_address: address }))
-                        }
-                      />
+                          setForm(f => ({ ...f, recipient_lat: lat, recipient_lng: lng, recipient_address: address }))} />
                     </div>
                   </div>
                   <div className="form-field">
@@ -553,7 +577,9 @@ export default function Orders() {
                     <select required value={form.zone_id}
                       onChange={e => setForm(f => ({ ...f, zone_id: e.target.value }))}>
                       <option value="">Select zone...</option>
-                      {zones.filter(z => z.is_active).map(z => <option key={z.id} value={z.id}>{z.name} — {z.emirate}</option>)}
+                      {zones.filter(z => z.is_active).map(z => (
+                        <option key={z.id} value={z.id}>{z.name} {'\u2014'} {z.emirate}</option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -565,16 +591,14 @@ export default function Orders() {
                     <select value={form.client_id}
                       onChange={e => setForm(f => ({ ...f, client_id: e.target.value }))}>
                       <option value="">No client (walk-in)</option>
-                      {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      {clients.map(c => <option key={c.id} value={c.id}>{c.full_name || c.name}</option>)}
                     </select>
                   </div>
                   <div className="form-field">
                     <label>Order Type</label>
                     <select value={form.order_type}
                       onChange={e => setForm(f => ({ ...f, order_type: e.target.value }))}>
-                      {ORDER_TYPES.map(t => (
-                        <option key={t} value={t}>{t.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}</option>
-                      ))}
+                      {ORDER_TYPES.map(t => <option key={t} value={t}>{fmtType(t)}</option>)}
                     </select>
                   </div>
                   <div className="form-field">
@@ -582,7 +606,7 @@ export default function Orders() {
                     <select value={form.payment_method}
                       onChange={e => setForm(f => ({ ...f, payment_method: e.target.value }))}>
                       {['cod', 'prepaid', 'credit', 'wallet'].map(p => (
-                        <option key={p} value={p}>{PAYMENT_LABELS[p] || p}</option>
+                        <option key={p} value={p}>{PAYMENT_LABELS[p]}</option>
                       ))}
                     </select>
                   </div>
@@ -606,7 +630,6 @@ export default function Orders() {
                   </div>
                 </div>
               </div>
-
               <div className="modal-footer">
                 <button type="button" className="btn-outline-action" onClick={closeForm}>Cancel</button>
                 <button type="submit" className="btn-primary-action" disabled={saving}>
