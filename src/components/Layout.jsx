@@ -5,7 +5,7 @@ import { AuthContext } from '../App';
 import {
   HomeSimple, Package, DeliveryTruck, Map, User, MapPin,
   DollarCircle, Bell, Wallet, Page, StatsUpSquare, Settings,
-  Network, Menu, LogOut, Language
+  Network, Menu, LogOut, Language, Dashboard
 } from 'iconoir-react';
 import './Layout.css';
 
@@ -29,44 +29,44 @@ const navSections = [
   {
     titleKey: 'Main',
     items: [
-      { path: '/dashboard',     labelKey: 'Dashboard',      labelAr: '\u0644\u0648\u062d\u0629 \u0627\u0644\u062a\u062d\u0643\u0645',  iconKey: 'dashboard' },
+      { path: '/dashboard',     labelKey: 'Dashboard',     iconKey: 'dashboard' },
     ]
   },
   {
     titleKey: 'Operations',
     items: [
-      { path: '/orders',        labelKey: 'Orders',          labelAr: '\u0627\u0644\u0637\u0644\u0628\u0627\u062a',    iconKey: 'orders' },
-      { path: '/drivers',       labelKey: 'Drivers',         labelAr: '\u0627\u0644\u0633\u0627\u0626\u0642\u0648\u0646',   iconKey: 'drivers' },
-      { path: '/dispatch',      labelKey: 'Dispatch',        labelAr: '\u0627\u0644\u0625\u0631\u0633\u0627\u0644',    iconKey: 'dispatch' },
-      { path: '/clients',       labelKey: 'Clients',         labelAr: '\u0627\u0644\u0639\u0645\u0644\u0627\u0621',    iconKey: 'clients' },
+      { path: '/orders',        labelKey: 'Orders',        iconKey: 'orders' },
+      { path: '/drivers',       labelKey: 'Drivers',       iconKey: 'drivers' },
+      { path: '/dispatch',      labelKey: 'Dispatch',      iconKey: 'dispatch' },
+      { path: '/clients',       labelKey: 'Clients',       iconKey: 'clients' },
     ]
   },
   {
     titleKey: 'Config',
     items: [
-      { path: '/zones',         labelKey: 'Zones',           labelAr: '\u0627\u0644\u0645\u0646\u0627\u0637\u0642',    iconKey: 'zones' },
-      { path: '/pricing',       labelKey: 'Pricing',         labelAr: '\u0627\u0644\u062a\u0633\u0639\u064a\u0631',    iconKey: 'pricing' },
+      { path: '/zones',         labelKey: 'Zones',         iconKey: 'zones' },
+      { path: '/pricing',       labelKey: 'Pricing',       iconKey: 'pricing' },
     ]
   },
   {
     titleKey: 'Finance',
     items: [
-      { path: '/wallet',        labelKey: 'Wallet',          labelAr: '\u0627\u0644\u0645\u062d\u0641\u0638\u0629',    iconKey: 'wallet' },
-      { path: '/invoices',      labelKey: 'Invoices',        labelAr: '\u0627\u0644\u0641\u0648\u0627\u062a\u064a\u0631',   iconKey: 'invoices' },
+      { path: '/wallet',        labelKey: 'Wallet',        iconKey: 'wallet' },
+      { path: '/invoices',      labelKey: 'Invoices',      iconKey: 'invoices' },
     ]
   },
   {
     titleKey: 'Analytics',
     items: [
-      { path: '/reports',       labelKey: 'Reports',         labelAr: '\u0627\u0644\u062a\u0642\u0627\u0631\u064a\u0631',   iconKey: 'reports' },
+      { path: '/reports',       labelKey: 'Reports',       iconKey: 'reports' },
     ]
   },
   {
     titleKey: 'System',
     items: [
-      { path: '/notifications', labelKey: 'Notifications',   labelAr: '\u0627\u0644\u0625\u0634\u0639\u0627\u0631\u0627\u062a',  iconKey: 'notifications' },
-      { path: '/settings',      labelKey: 'Settings',        labelAr: '\u0627\u0644\u0625\u0639\u062f\u0627\u062f\u0627\u062a',  iconKey: 'settings' },
-      { path: '/api-keys',      labelKey: 'API Keys',        labelAr: '\u0645\u0641\u0627\u062a\u064a\u062d API',  iconKey: 'api-keys' },
+      { path: '/notifications', labelKey: 'Notifications', iconKey: 'notifications' },
+      { path: '/settings',      labelKey: 'Settings',      iconKey: 'settings' },
+      { path: '/api-keys',      labelKey: 'API Keys',      iconKey: 'api-keys' },
     ]
   },
 ];
@@ -78,10 +78,10 @@ export default function Layout({ children }) {
   const [isMobile, setIsMobile] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showLangMenu, setShowLangMenu] = useState(false);
-  const { user, logout } = useContext(AuthContext);
+  const { user, tenant, logout } = useContext(AuthContext);
   const location = useLocation();
   const navigate = useNavigate();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const isRTL = i18n.language === 'ar';
 
@@ -107,10 +107,14 @@ export default function Layout({ children }) {
     navigate('/login');
   };
 
+  const changeLanguage = (lng) => {
+    i18n.changeLanguage(lng);
+    setShowLangMenu(false);
+  };
+
   const getPageTitle = () => {
-    const item = allNavItems.find(item => location.pathname.startsWith(item.path) && item.path !== '/');
-    if (!item) return 'Trasealla Delivery';
-    return isRTL ? (item.labelAr || item.labelKey) : item.labelKey;
+    const item = allNavItems.find(item => location.pathname.startsWith(item.path));
+    return item ? item.labelKey : 'Trasealla Delivery';
   };
 
   const renderIcon = (iconKey) => {
@@ -120,15 +124,26 @@ export default function Layout({ children }) {
 
   return (
     <div className={`staff-wrapper ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'} ${isRTL ? 'rtl' : ''}`}>
-      <div 
-        className={`sidebar-overlay ${sidebarOpen && isMobile ? 'show' : ''}`} 
+      <div
+        className={`sidebar-overlay ${sidebarOpen && isMobile ? 'show' : ''}`}
         onClick={() => setSidebarOpen(false)}
       />
 
       <aside className={`custom-sidebar ${sidebarOpen ? (isMobile ? 'open' : '') : 'closed'}`}>
         <div className="sidebar-brand">
-          <Link to="/dashboard" style={{ textDecoration: 'none' }}>
-            <span style={{ fontSize: 22, fontWeight: 800, color: '#f97316' }}>🚚 Trasealla</span>
+          <Link to="/dashboard">
+            <img
+              src="/logo-white.png"
+              alt="Trasealla Delivery"
+              style={{ height: '45px' }}
+              onError={e => {
+                e.target.style.display = 'none';
+                e.target.nextSibling.style.display = 'block';
+              }}
+            />
+            <span style={{ display: 'none', fontSize: 20, fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>
+              Trasealla
+            </span>
           </Link>
         </div>
 
@@ -146,7 +161,7 @@ export default function Layout({ children }) {
                     onClick={() => isMobile && setSidebarOpen(false)}
                   >
                     {renderIcon(item.iconKey)}
-                    <span>{isRTL ? (item.labelAr || item.labelKey) : item.labelKey}</span>
+                    <span>{item.labelKey}</span>
                   </Link>
                 </div>
               ))}
@@ -160,47 +175,54 @@ export default function Layout({ children }) {
           <button className="menu-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>
             <Menu width={24} height={24} />
           </button>
-          
+
+          {!sidebarOpen && (
+            <div className="topbar-brand-mobile">
+              <img
+                src="/logo-icon.png"
+                alt="T"
+                style={{ height: '35px', marginRight: '10px' }}
+                onError={e => { e.target.style.display = 'none'; }}
+              />
+            </div>
+          )}
+
           <h1 className="page-title">{getPageTitle()}</h1>
         </div>
 
         <div className="topbar-actions">
           <div className="lang-switcher">
-            <button 
-              className="lang-toggle"
-              onClick={() => setShowLangMenu(!showLangMenu)}
-            >
+            <button className="lang-toggle" onClick={() => setShowLangMenu(!showLangMenu)}>
               <Language width={20} height={20} />
               <span>{i18n.language.toUpperCase()}</span>
             </button>
             {showLangMenu && (
               <div className="lang-dropdown">
-                <button 
+                <button
                   className={`lang-option ${i18n.language === 'en' ? 'active' : ''}`}
-                  onClick={() => { i18n.changeLanguage('en'); setShowLangMenu(false); }}
+                  onClick={() => changeLanguage('en')}
                 >
-                  🇺🇸 English
+                  EN &mdash; English
                 </button>
-                <button 
+                <button
                   className={`lang-option ${i18n.language === 'ar' ? 'active' : ''}`}
-                  onClick={() => { i18n.changeLanguage('ar'); setShowLangMenu(false); }}
+                  onClick={() => changeLanguage('ar')}
                 >
-                  🇦🇪 العربية
+                  AR &mdash; &#1575;&#1604;&#1593;&#1585;&#1576;&#1610;&#1577;
                 </button>
               </div>
             )}
           </div>
 
-          {user?.role && <span className={`role-badge ${user.role}`}>{user.role.toUpperCase()}</span>}
-          
+          {user?.role === 'superadmin' && <span className="role-badge super-admin">SUPER ADMIN</span>}
+          {user?.role === 'admin'      && <span className="role-badge admin">ADMIN</span>}
+          {user?.role === 'dispatcher' && <span className="role-badge staff">DISPATCHER</span>}
+
           <div className="user-menu-wrapper">
-            <button 
-              className="user-avatar-toggle" 
-              onClick={() => setShowUserMenu(!showUserMenu)}
-            >
+            <button className="user-avatar-toggle" onClick={() => setShowUserMenu(!showUserMenu)}>
               {user?.full_name?.charAt(0) || user?.username?.charAt(0) || 'U'}
             </button>
-            
+
             <div className={`user-dropdown ${showUserMenu ? 'show' : ''}`}>
               <div className="user-dropdown-header">
                 <div className="user-dropdown-avatar">
@@ -208,7 +230,7 @@ export default function Layout({ children }) {
                 </div>
                 <div>
                   <strong>{user?.full_name || user?.username}</strong>
-                  <span style={{ display: 'block', fontSize: 12, color: '#888' }}>{user?.email}</span>
+                  <span>{user?.email}</span>
                 </div>
               </div>
               <button onClick={handleLogout} className="user-dropdown-item danger">
