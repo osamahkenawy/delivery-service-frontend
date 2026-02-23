@@ -136,6 +136,98 @@ function StepBar({ current }) {
 }
 
 
+
+/* ── Nominatim address search dropdown ── */
+function AddressSearch({ onSelect }) {
+  const [q, setQ] = React.useState('');
+  const [results, setResults] = React.useState([]);
+  const [loading, setLoading] = React.useState(false);
+  const [open, setOpen] = React.useState(false);
+  const timer = React.useRef(null);
+  const wrapRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const handler = e => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const search = (val) => {
+    setQ(val);
+    clearTimeout(timer.current);
+    if (!val.trim() || val.length < 3) { setResults([]); setOpen(false); return; }
+    timer.current = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(val)}&format=json&addressdetails=1&limit=6&countrycodes=ae`, { headers: { 'Accept-Language': 'en' } });
+        const data = await res.json();
+        setResults(data);
+        setOpen(data.length > 0);
+      } catch { setResults([]); }
+      setLoading(false);
+    }, 400);
+  };
+
+  const pick = (item) => {
+    onSelect({
+      lat: parseFloat(item.lat).toFixed(7),
+      lng: parseFloat(item.lon).toFixed(7),
+      display: item.display_name,
+      address: item.address,
+    });
+    setQ(item.display_name.split(',').slice(0,2).join(','));
+    setOpen(false);
+  };
+
+  return (
+    <div ref={wrapRef} style={{ position:'relative', gridColumn:'1/-1', marginBottom:4 }}>
+      <label style={{ display:'block', fontSize:12, fontWeight:700, color:'#374151', marginBottom:6, textTransform:'uppercase', letterSpacing:'0.04em' }}>
+        Search Location
+      </label>
+      <div style={{ position:'relative' }}>
+        <input
+          value={q}
+          onChange={e => search(e.target.value)}
+          onFocus={() => results.length > 0 && setOpen(true)}
+          placeholder="Search address, landmark, area…"
+          style={{ width:'100%', padding:'10px 36px 10px 13px', borderRadius:9, border:'1px solid #e2e8f0', fontSize:14, boxSizing:'border-box', outline:'none' }}
+        />
+        <div style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', color:'#94a3b8', pointerEvents:'none' }}>
+          {loading ? '⏳' : '🔍'}
+        </div>
+        {q && (
+          <button type="button" onClick={() => { setQ(''); setResults([]); setOpen(false); }}
+            style={{ position:'absolute', right:30, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'#94a3b8', fontSize:16, padding:0, lineHeight:1 }}>
+            ×
+          </button>
+        )}
+      </div>
+      {open && results.length > 0 && (
+        <div style={{ position:'absolute', top:'100%', left:0, right:0, zIndex:2000, background:'#fff',
+          borderRadius:12, boxShadow:'0 8px 32px rgba(0,0,0,0.15)', border:'1px solid #e2e8f0', marginTop:4, maxHeight:260, overflowY:'auto' }}>
+          {results.map((r, i) => {
+            const title = [r.address?.road, r.address?.suburb, r.address?.city || r.address?.town].filter(Boolean).join(', ') || r.display_name.split(',')[0];
+            const sub = r.display_name;
+            return (
+              <button key={i} type="button" onClick={() => pick(r)}
+                style={{ display:'flex', alignItems:'flex-start', gap:10, width:'100%', padding:'11px 14px', border:'none', background:'none',
+                  cursor:'pointer', textAlign:'left', borderBottom: i < results.length-1 ? '1px solid #f1f5f9':'none' }}
+                onMouseEnter={e => e.currentTarget.style.background='#f8fafc'}
+                onMouseLeave={e => e.currentTarget.style.background='none'}>
+                <span style={{ color:'#f97316', flexShrink:0, marginTop:2 }}>📍</span>
+                <div>
+                  <div style={{ fontWeight:600, fontSize:13, color:'#1e293b' }}>{title}</div>
+                  <div style={{ fontSize:11, color:'#94a3b8', marginTop:2, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', maxWidth:480 }}>{sub}</div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Tiny Leaflet location picker (CDN-injected) ── */
 function LocationPickerMap({ lat, lng, onPick }) {
   const divRef = React.useRef(null);
@@ -731,7 +823,7 @@ export default function Clients() {
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:1000,
           display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
           <div style={{ background:'#fff', borderRadius:20, width:'100%', maxWidth:600,
-            maxHeight:'92vh', overflowY:'auto', boxShadow:'0 24px 70px rgba(0,0,0,0.2)' }}>
+            maxHeight:'92vh', display:'flex', flexDirection:'column', overflow:'hidden', boxShadow:'0 24px 70px rgba(0,0,0,0.2)' }}>
 
             {/* Modal Header */}
             <div style={{ padding:'22px 28px 0', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
@@ -756,8 +848,8 @@ export default function Clients() {
             {/* Divider */}
             <div style={{ margin:'20px 0 0', height:1, background:'#f1f5f9' }} />
 
-            <form onSubmit={handleSubmit}>
-              <div style={{ padding:'22px 28px 0' }}>
+            <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', flex:1, overflow:'hidden' }}>
+              <div style={{ overflowY:'auto', flex:1, padding:'22px 28px 0' }}>
                 {formError && (
                   <div style={{ background:'#fee2e2', color:'#dc2626', padding:'10px 14px',
                     borderRadius:8, marginBottom:16, fontSize:14,
@@ -873,7 +965,7 @@ export default function Clients() {
                     <div style={{ gridColumn:'1/-1', background:'#f8fafc', borderRadius:12, padding:16, border:'1px solid #e2e8f0' }}>
                       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
                         <span style={{ fontSize:13, fontWeight:700, color:'#374151', display:'flex', alignItems:'center', gap:6 }}>
-                          <MapPin width={14} height={14} color="#f97316" /> Location Coordinates
+                          <MapPin width={14} height={14} color="#f97316" /> Location
                         </span>
                         <div style={{ display:'flex', gap:8 }}>
                           {form.zone_id && (() => {
@@ -894,11 +986,12 @@ export default function Clients() {
                             )}
                             style={{ padding:'5px 10px', fontSize:11, borderRadius:7, border:'1px solid #6366f1',
                               background:'#eef2ff', color:'#6366f1', cursor:'pointer', fontWeight:600 }}>
-                            📍 Use My GPS
+                            📍 My GPS
                           </button>
                         </div>
                       </div>
-                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:12 }}>
+                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+                        <AddressSearch onSelect={({ lat, lng }) => { set('latitude', lat); set('longitude', lng); }} />
                         <div>
                           <label style={{ ...LABEL, marginBottom:4 }}>Latitude</label>
                           <input type="number" step="any" value={form.latitude}
@@ -912,13 +1005,15 @@ export default function Clients() {
                             style={INPUT} placeholder="e.g. 55.2708" />
                         </div>
                       </div>
-                      <LocationPickerMap
-                        lat={form.latitude}
-                        lng={form.longitude}
-                        onPick={(lat, lng) => { set('latitude', lat); set('longitude', lng); }}
-                      />
+                      <div style={{ marginTop:12 }}>
+                        <LocationPickerMap
+                          lat={form.latitude}
+                          lng={form.longitude}
+                          onPick={(lat, lng) => { set('latitude', lat); set('longitude', lng); }}
+                        />
+                      </div>
                       <p style={{ margin:'8px 0 0', fontSize:11, color:'#94a3b8' }}>
-                        Click the map or drag the marker to set the exact delivery location.
+                        Search an address or click the map / drag the marker to set exact location.
                       </p>
                     </div>
                     <div style={{ display:'flex', alignItems:'center', gap:9, paddingTop:22 }}>
@@ -940,8 +1035,8 @@ export default function Clients() {
                 )}
               </div>
 
-              {/* Footer nav */}
-              <div style={{ padding:'22px 28px 26px', display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:8 }}>
+              {/* Footer nav — sticky */}
+              <div style={{ padding:'16px 28px 20px', display:'flex', justifyContent:'space-between', alignItems:'center', borderTop:'1px solid #f1f5f9', background:'#fff', flexShrink:0 }}>
                 <button type="button"
                   onClick={step > 1 ? (e) => prevStep(e) : () => setShowForm(false)}
                   style={{ padding:'10px 22px', borderRadius:10, border:'1px solid #e2e8f0',
