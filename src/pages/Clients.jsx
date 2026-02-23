@@ -188,11 +188,13 @@ export default function Clients() {
     return true;
   };
 
-  const nextStep = () => { if (validateStep()) setStep(s => s + 1); };
-  const prevStep = () => { setFormError(''); setStep(s => s - 1); };
+  const nextStep = (e) => { e?.preventDefault(); e?.stopPropagation(); if (validateStep()) setStep(s => Math.min(s + 1, STEPS.length)); };
+  const prevStep = (e) => { e?.preventDefault(); e?.stopPropagation(); setFormError(''); setStep(s => Math.max(s - 1, 1)); };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    e.stopPropagation();
+    if (step !== STEPS.length) return; // safety guard — only submit on last step
     setSaving(true); setFormError('');
     const res = selected
       ? await api.put(`/clients/${selected.id}`, form)
@@ -642,7 +644,7 @@ export default function Clients() {
                   Step {step} of {STEPS.length} — {STEPS[step-1].desc}
                 </p>
               </div>
-              <button onClick={() => setShowForm(false)}
+              <button type="button" onClick={() => setShowForm(false)}
                 style={{ background:'#f1f5f9', border:'none', cursor:'pointer', color:'#64748b',
                   width:34, height:34, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center' }}>
                 <Xmark width={16} height={16} />
@@ -766,7 +768,7 @@ export default function Clients() {
               {/* Footer nav */}
               <div style={{ padding:'22px 28px 26px', display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:8 }}>
                 <button type="button"
-                  onClick={step > 1 ? prevStep : () => setShowForm(false)}
+                  onClick={step > 1 ? (e) => prevStep(e) : () => setShowForm(false)}
                   style={{ padding:'10px 22px', borderRadius:10, border:'1px solid #e2e8f0',
                     background:'#fff', cursor:'pointer', fontWeight:600, fontSize:14,
                     display:'flex', alignItems:'center', gap:7, color:'#475569' }}>
@@ -775,7 +777,7 @@ export default function Clients() {
                 </button>
 
                 {step < STEPS.length ? (
-                  <button type="button" onClick={nextStep}
+                  <button type="button" onClick={(e) => nextStep(e)}
                     style={{ padding:'10px 28px', borderRadius:10, border:'none',
                       background:'linear-gradient(135deg,#f97316,#ea580c)', color:'#fff',
                       cursor:'pointer', fontWeight:700, fontSize:14,
