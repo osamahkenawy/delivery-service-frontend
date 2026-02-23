@@ -2,6 +2,7 @@ import { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeClosed, DeliveryTruck, Check, WarningTriangle } from 'iconoir-react';
 import { AuthContext } from '../App';
+import logoColored from '../assets/images/theme/logo/GoLineDeliveryServiceLogoColored.png';
 import './LoginPage.css';
 
 export default function LoginPage() {
@@ -39,7 +40,7 @@ export default function LoginPage() {
           <div className="login-header">
             <div className="logo">
               <img
-                src="/logo-colored.png"
+                src={logoColored}
                 alt="Trasealla Delivery"
                 onError={e => {
                   e.target.style.display = 'none';

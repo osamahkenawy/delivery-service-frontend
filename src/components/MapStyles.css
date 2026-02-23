@@ -247,7 +247,7 @@
   display: grid;
   grid-template-columns: 380px 1fr;
   gap: 20px;
-  height: calc(100vh - 180px);
+  height: calc(100vh - 220px);
   min-height: 500px;
 }
 @media (max-width: 1024px) {
@@ -255,6 +255,105 @@
     grid-template-columns: 1fr;
     height: auto;
   }
+}
+
+/* ── Zone Form Two-Column Layout ─────────────────────────────── */
+.zone-form-layout {
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  gap: 20px;
+  height: calc(100vh - 160px);
+  min-height: 500px;
+}
+@media (max-width: 1024px) {
+  .zone-form-layout {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+}
+
+.zone-form-panel {
+  overflow-y: auto;
+  padding-right: 8px;
+  padding-bottom: 20px;
+}
+.zone-form-panel::-webkit-scrollbar { width: 5px; }
+.zone-form-panel::-webkit-scrollbar-thumb { background: var(--gray-300, #cbd5e1); border-radius: 4px; }
+
+.zone-form-map-panel {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 2px solid var(--gray-200, #e2e8f0);
+  box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+  min-height: 450px;
+}
+
+/* ── Toggle Switch ───────────────────────────────────────────── */
+.toggle-switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  border: none;
+  background: var(--gray-300, #cbd5e1);
+  cursor: pointer;
+  transition: background 0.25s;
+  padding: 0;
+  flex-shrink: 0;
+}
+.toggle-switch.active {
+  background: #22c55e;
+}
+.toggle-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+  transition: transform 0.25s;
+}
+.toggle-switch.active .toggle-knob {
+  transform: translateX(20px);
+}
+
+/* ── Radius Slider ───────────────────────────────────────────── */
+.radius-slider {
+  width: 100%;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--gray-200, #e2e8f0);
+  border-radius: 3px;
+  outline: none;
+  margin: 8px 0 4px;
+}
+.radius-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primary, #244066);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(36,64,102,0.3);
+  border: 2px solid #fff;
+  transition: transform 0.15s;
+}
+.radius-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+.radius-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primary, #244066);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(36,64,102,0.3);
+  border: 2px solid #fff;
 }
 
 .zones-list-panel {

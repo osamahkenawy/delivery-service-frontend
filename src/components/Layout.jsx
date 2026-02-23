@@ -7,6 +7,7 @@ import {
   DollarCircle, Bell, Wallet, Page, StatsUpSquare, Settings,
   Network, Menu, LogOut, Language, Dashboard
 } from 'iconoir-react';
+import logoWhite from '../assets/images/theme/logo/goLineDeliveryServiceLogoWhite.png';
 import './Layout.css';
 
 const iconMap = {
@@ -133,7 +134,7 @@ export default function Layout({ children }) {
         <div className="sidebar-brand">
           <Link to="/dashboard">
             <img
-              src="/logo-white.png"
+              src={logoWhite}
               alt="Trasealla Delivery"
               style={{ height: '45px' }}
               onError={e => {
