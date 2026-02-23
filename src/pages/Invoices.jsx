@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import api from '../lib/api';
 
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
+
 const STATUS_COLORS = {
   draft:    { bg: '#f1f5f9', color: '#64748b' },
   sent:     { bg: '#dbeafe', color: '#1d4ed8' },
@@ -46,6 +48,21 @@ export default function Invoices() {
   const handleStatus = async (id, status) => {
     await api.patch(`/invoices/${id}/status`, { status });
     api.get('/invoices').then(r => r.success && setInvoices(r.data || []));
+  };
+
+  const downloadPDF = async (inv) => {
+    const token = localStorage.getItem('crm_token');
+    const res = await fetch(`${API_BASE}/invoices/${inv.id}/pdf`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) { alert('Failed to generate PDF'); return; }
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url;
+    a.download = `${inv.invoice_number || 'invoice-' + inv.id}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const filtered = statusFilter ? invoices.filter(i => i.status === statusFilter) : invoices;
@@ -135,12 +152,10 @@ export default function Invoices() {
                     </td>
                     <td style={{ padding: '14px 20px', fontSize: 13, color: '#64748b' }}>{new Date(inv.created_at).toLocaleDateString()}</td>
                     <td style={{ padding: '14px 20px' }}>
-                      {inv.pdf_url && (
-                        <a href={inv.pdf_url} target="_blank" rel="noreferrer"
-                          style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#fff', color: '#475569', textDecoration: 'none', fontSize: 13 }}>
-                          PDF
-                        </a>
-                      )}
+                      <button onClick={() => downloadPDF(inv)}
+                        style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#fff', color: '#f97316', fontSize: 13, cursor: 'pointer', fontWeight: 600 }}>
+                        ↓ PDF
+                      </button>
                     </td>
                   </tr>
                 );
