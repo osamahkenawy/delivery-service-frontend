@@ -34,7 +34,8 @@ function BarcodeCard({ order }) {
 
   useEffect(() => {
     if (!canvasRef.current || !order?.tracking_token) return;
-    QRCode.toCanvas(canvasRef.current, order.tracking_token, {
+    const trackUrl = (typeof window !== 'undefined' ? window.location.origin : '') + '/track/' + order.tracking_token;
+    QRCode.toCanvas(canvasRef.current, trackUrl, {
       width: 90, margin: 1, color: { dark: '#1e293b', light: '#ffffff' },
     }).catch(() => {});
   }, [order?.tracking_token]);

@@ -16,6 +16,7 @@ const iconMap = {
   'dispatch':       Map,
   'live-map':       Map,
   'barcode':         Package,
+  'driver-scan':     DeliveryTruck,
   'clients':        User,
   'zones':          MapPin,
   'pricing':        DollarCircle,
@@ -42,6 +43,7 @@ const navSections = [
       { path: '/dispatch',      labelKey: 'Dispatch',      iconKey: 'dispatch' },
       { path: '/live-map',      labelKey: 'Live Map',      iconKey: 'live-map' },
       { path: '/barcode',        labelKey: 'Barcodes',      iconKey: 'barcode' },
+      { path: '/driver/scan',    labelKey: 'Scan Shipment',  iconKey: 'driver-scan' },
       { path: '/clients',       labelKey: 'Clients',       iconKey: 'clients' },
     ]
   },
