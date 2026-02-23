@@ -53,7 +53,7 @@ function FitAllZones({ zones }) {
   useEffect(() => {
     if (fitted.current) return;
     if (!zones || zones.length === 0) return;
-    const valid = zones.filter(z => hasCoords(z.center_lat, z.center_lng));
+    const valid = zones.filter(z => z.is_active && hasCoords(z.center_lat, z.center_lng));
     if (valid.length === 0) return;
     const bounds = L.latLngBounds(valid.map(z => {
       const r = pf(z.radius) || 5000;
@@ -637,7 +637,7 @@ export default function Zones() {
               <FitAllZones zones={zones} />
 
               {zones.map((z, i) => {
-                if (!hasCoords(z.center_lat, z.center_lng)) return null;
+                if (!z.is_active || !hasCoords(z.center_lat, z.center_lng)) return null;
                 const lat = pf(z.center_lat);
                 const lng = pf(z.center_lng);
                 const rad = pf(z.radius) || 5000;
@@ -666,7 +666,7 @@ export default function Zones() {
               })}
 
               {zones.map(z => {
-                if (!hasCoords(z.center_lat, z.center_lng)) return null;
+                if (!z.is_active || !hasCoords(z.center_lat, z.center_lng)) return null;
                 return (
                   <Marker key={`marker-${z.id}`}
                     position={[pf(z.center_lat), pf(z.center_lng)]}

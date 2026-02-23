@@ -23,7 +23,7 @@ const STATUS_META = {
   returned:   { label: 'Returned',   bg: '#fff7ed', color: '#ea580c' },
   cancelled:  { label: 'Cancelled',  bg: '#f1f5f9', color: '#64748b' },
 };
-const ORDER_TYPES  = ['standard', 'express', 'same_day', 'scheduled', 'cod', 'return'];
+const ORDER_TYPES  = ['standard', 'express', 'same_day', 'scheduled', 'return'];
 const EMIRATES     = ['Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman', 'Ras Al Khaimah', 'Fujairah', 'Umm Al Quwain'];
 const PAYMENT_LABELS = { cod: 'Cash on Delivery', prepaid: 'Prepaid', credit: 'Credit Card', wallet: 'Wallet' };
 const EMPTY_FORM   = {
@@ -89,7 +89,7 @@ export default function Orders() {
       const res = await api.get(`/orders?${params}`);
       if (res.success) {
         setOrders(res.data || []);
-        setPagination(p => ({ ...p, total: res.pagination?.total || 0 }));
+        setPagination(p => ({ ...p, total: res.pagination?.total || res.total || 0 }));
         buildSummary(res.data || []);
       }
     } catch (e) { console.error(e); }
@@ -553,7 +553,7 @@ export default function Orders() {
                     <select required value={form.zone_id}
                       onChange={e => setForm(f => ({ ...f, zone_id: e.target.value }))}>
                       <option value="">Select zone...</option>
-                      {zones.map(z => <option key={z.id} value={z.id}>{z.name}</option>)}
+                      {zones.filter(z => z.is_active).map(z => <option key={z.id} value={z.id}>{z.name} — {z.emirate}</option>)}
                     </select>
                   </div>
                 </div>
