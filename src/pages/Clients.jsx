@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Group, User, Search, EditPencil, Trash, Plus,
   Mail, Phone, Building, MapPin, Download, NavArrowRight, NavArrowLeft,
@@ -46,6 +46,7 @@ const emptyForm = {
   full_name:'', company_name:'', email:'', phone:'', phone_alt:'',
   type:'individual', client_category:'other',
   address_line1:'', area:'', city:'', emirate:'Dubai',
+  zone_id:'', latitude:'', longitude:'',
   credit_limit:'', notes:'', is_active:true,
 };
 
@@ -134,6 +135,50 @@ function StepBar({ current }) {
   );
 }
 
+
+/* ── Tiny Leaflet location picker (CDN-injected) ── */
+function LocationPickerMap({ lat, lng, onPick }) {
+  const divRef = React.useRef(null);
+  const mapObj = React.useRef(null);
+
+  React.useEffect(() => {
+    const initMap = () => {
+      if (mapObj.current || !divRef.current) return;
+      const L = window.L;
+      const center = (lat && lng) ? [parseFloat(lat), parseFloat(lng)] : [25.2048, 55.2708];
+      const map = L.map(divRef.current, { zoomControl: true }).setView(center, 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OSM', maxZoom: 19,
+      }).addTo(map);
+      const icon = L.divIcon({ html: '<div style="width:22px;height:22px;background:#f97316;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.3)"></div>', className:'', iconAnchor:[11,11] });
+      const marker = L.marker(center, { draggable: true, icon }).addTo(map);
+      marker.on('dragend', e => { const p = e.target.getLatLng(); onPick(p.lat.toFixed(7), p.lng.toFixed(7)); });
+      map.on('click', e => { marker.setLatLng(e.latlng); onPick(e.latlng.lat.toFixed(7), e.latlng.lng.toFixed(7)); });
+      mapObj.current = { map, marker };
+    };
+
+    if (!document.getElementById('lf-css')) {
+      const l = document.createElement('link'); l.id='lf-css'; l.rel='stylesheet';
+      l.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'; document.head.appendChild(l);
+    }
+    if (window.L) { initMap(); }
+    else {
+      const s = document.createElement('script'); s.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      s.onload = initMap; document.head.appendChild(s);
+    }
+    return () => { if (mapObj.current) { mapObj.current.map.remove(); mapObj.current = null; } };
+  }, []);
+
+  React.useEffect(() => {
+    if (!mapObj.current || !lat || !lng) return;
+    const { map, marker } = mapObj.current;
+    const pos = [parseFloat(lat), parseFloat(lng)];
+    marker.setLatLng(pos); map.setView(pos, 14, { animate: true });
+  }, [lat, lng]);
+
+  return <div ref={divRef} style={{ height:200, borderRadius:10, border:'1px solid #e2e8f0', marginTop:8, background:'#f1f5f9' }} />;
+}
+
 /* ── Main component ── */
 export default function Clients() {
   const [clients,       setClients]       = useState([]);
@@ -154,7 +199,14 @@ export default function Clients() {
   const [formError,     setFormError]     = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [form, setForm] = useState(emptyForm);
-  const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
+  const set = (k, v) => setForm(p => {
+    const next = { ...p, [k]: v };
+    if (k === 'zone_id') {
+      const z = zones.find(z => String(z.id) === String(v));
+      if (z) { next.latitude = z.center_lat || ''; next.longitude = z.center_lng || ''; }
+    }
+    return next;
+  });
 
   /* ── Toast ── */
   const [toasts, setToasts] = useState([]);
@@ -164,6 +216,12 @@ export default function Clients() {
     setToasts(prev => [...prev, { id, msg, type }]);
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3500);
   };
+
+  /* ── Zones ── */
+  const [zones, setZones] = useState([]);
+  useEffect(() => {
+    api.get('/zones').then(r => { if (r.success) setZones(r.data || []); });
+  }, []);
 
   const fetchClients = useCallback(async () => {
     setLoading(true);
@@ -760,6 +818,29 @@ export default function Clients() {
                         {EMIRATES.map(em => <option key={em} value={em}>{em}</option>)}
                       </select>
                     </div>
+                    <div style={{ gridColumn:'1/-1' }}>
+                      <label style={LABEL}>Delivery Zone</label>
+                      <select value={form.zone_id} onChange={e=>set('zone_id',e.target.value)} style={INPUT}>
+                        <option value="">— Select a zone (optional) —</option>
+                        {zones
+                          .filter(z => !form.emirate || z.emirate === form.emirate)
+                          .map(z => (
+                            <option key={z.id} value={z.id}>
+                              {z.name}{z.city ? ` · ${z.city}` : ''} ({z.emirate})
+                            </option>
+                          ))}
+                      </select>
+                      {form.zone_id && (() => {
+                        const z = zones.find(zz => String(zz.id) === String(form.zone_id));
+                        return z ? (
+                          <div style={{ marginTop:6, fontSize:12, color:'#64748b', display:'flex', gap:12 }}>
+                            <span>📐 Radius: {z.radius ? `${(z.radius/1000).toFixed(1)} km` : 'N/A'}</span>
+                            <span>🚚 Base fee: AED {z.base_delivery_fee || 0}</span>
+                            <span>⏱ Est. {z.estimated_minutes || '—'} min</span>
+                          </div>
+                        ) : null;
+                      })()}
+                    </div>
                   </div>
                 )}
 
@@ -786,6 +867,59 @@ export default function Clients() {
                       <input type="number" min="0" value={form.credit_limit}
                         onChange={e=>set('credit_limit',e.target.value)}
                         style={INPUT} placeholder="0 = No limit" />
+                    </div>
+
+                    {/* Location / GPS */}
+                    <div style={{ gridColumn:'1/-1', background:'#f8fafc', borderRadius:12, padding:16, border:'1px solid #e2e8f0' }}>
+                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
+                        <span style={{ fontSize:13, fontWeight:700, color:'#374151', display:'flex', alignItems:'center', gap:6 }}>
+                          <MapPin width={14} height={14} color="#f97316" /> Location Coordinates
+                        </span>
+                        <div style={{ display:'flex', gap:8 }}>
+                          {form.zone_id && (() => {
+                            const z = zones.find(zz => String(zz.id) === String(form.zone_id));
+                            return z?.center_lat ? (
+                              <button type="button"
+                                onClick={() => { set('latitude', String(z.center_lat)); set('longitude', String(z.center_lng)); }}
+                                style={{ padding:'5px 10px', fontSize:11, borderRadius:7, border:'1px solid #f97316',
+                                  background:'#fff7ed', color:'#f97316', cursor:'pointer', fontWeight:600 }}>
+                                Use Zone Center
+                              </button>
+                            ) : null;
+                          })()}
+                          <button type="button"
+                            onClick={() => navigator.geolocation?.getCurrentPosition(
+                              p => { set('latitude', p.coords.latitude.toFixed(7)); set('longitude', p.coords.longitude.toFixed(7)); },
+                              () => {}
+                            )}
+                            style={{ padding:'5px 10px', fontSize:11, borderRadius:7, border:'1px solid #6366f1',
+                              background:'#eef2ff', color:'#6366f1', cursor:'pointer', fontWeight:600 }}>
+                            📍 Use My GPS
+                          </button>
+                        </div>
+                      </div>
+                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:12 }}>
+                        <div>
+                          <label style={{ ...LABEL, marginBottom:4 }}>Latitude</label>
+                          <input type="number" step="any" value={form.latitude}
+                            onChange={e=>set('latitude',e.target.value)}
+                            style={INPUT} placeholder="e.g. 25.2048" />
+                        </div>
+                        <div>
+                          <label style={{ ...LABEL, marginBottom:4 }}>Longitude</label>
+                          <input type="number" step="any" value={form.longitude}
+                            onChange={e=>set('longitude',e.target.value)}
+                            style={INPUT} placeholder="e.g. 55.2708" />
+                        </div>
+                      </div>
+                      <LocationPickerMap
+                        lat={form.latitude}
+                        lng={form.longitude}
+                        onPick={(lat, lng) => { set('latitude', lat); set('longitude', lng); }}
+                      />
+                      <p style={{ margin:'8px 0 0', fontSize:11, color:'#94a3b8' }}>
+                        Click the map or drag the marker to set the exact delivery location.
+                      </p>
                     </div>
                     <div style={{ display:'flex', alignItems:'center', gap:9, paddingTop:22 }}>
                       <input type="checkbox" id="chk_active"
