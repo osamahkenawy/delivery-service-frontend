@@ -89,6 +89,7 @@ export default function DriverDashboard() {
   const [noProfile, setNoProfile] = useState(false);
   const [gpsActive, setGpsActive] = useState(false);
   const [gpsError, setGpsError]   = useState(null);
+  const [gpsCoords, setGpsCoords] = useState(null);   // for debug display
   const refreshRef              = useRef(null);
   const gpsRef                  = useRef(null);
   const watchRef                = useRef(null);
@@ -153,19 +154,39 @@ export default function DriverDashboard() {
           heading: pos.coords.heading,
           accuracy: pos.coords.accuracy,
         };
+        setGpsCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy });
         setGpsError(null);
-        console.log('[GPS] Position updated:', lastPosRef.current.lat.toFixed(6), lastPosRef.current.lng.toFixed(6), 'accuracy:', pos.coords.accuracy?.toFixed(0) + 'm');
+        console.log('[GPS] Position updated:', pos.coords.latitude.toFixed(6), pos.coords.longitude.toFixed(6), 'accuracy:', pos.coords.accuracy?.toFixed(0) + 'm');
       },
       (err) => {
-        console.warn('[GPS] Error:', err.code, err.message);
+        console.warn('[GPS] watchPosition Error:', err.code, err.message);
         setGpsError(err.message);
       },
-      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 }
     );
 
     const sendPing = async () => {
+      // If watchPosition hasn't given us a fresh position, try getCurrentPosition
+      if (!lastPosRef.current) {
+        console.log('[GPS] No watchPosition fix yet, trying getCurrentPosition...');
+        try {
+          const pos = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject,
+              { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 });
+          });
+          lastPosRef.current = {
+            lat: pos.coords.latitude, lng: pos.coords.longitude,
+            speed: pos.coords.speed, heading: pos.coords.heading,
+            accuracy: pos.coords.accuracy,
+          };
+          setGpsCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy });
+          console.log('[GPS] getCurrentPosition fallback:', pos.coords.latitude.toFixed(6), pos.coords.longitude.toFixed(6));
+        } catch (err) {
+          console.warn('[GPS] getCurrentPosition fallback failed:', err.message);
+          return;
+        }
+      }
       const pos = lastPosRef.current;
-      if (!pos) { console.log('[GPS] No position yet, skipping ping'); return; }
       const currentData = dataRef.current;
       const currentDriverId = currentData?.driver?.id;
       const activeOrder = (currentData?.orders || []).find(o => ['picked_up', 'in_transit'].includes(o.status));
@@ -173,10 +194,10 @@ export default function DriverDashboard() {
       try {
         await api.patch(`/drivers/${currentDriverId}/location`, {
           lat: pos.lat, lng: pos.lng,
-          speed: pos.speed || 0, heading: pos.heading || 0,
+          speed: pos.speed ?? null, heading: pos.heading ?? null,
           order_id: activeOrder?.id || null,
         });
-        console.log('[GPS] Ping sent:', pos.lat.toFixed(6), pos.lng.toFixed(6));
+        console.log('[GPS] Ping sent:', pos.lat.toFixed(6), pos.lng.toFixed(6), 'accuracy:', pos.accuracy?.toFixed(0) + 'm');
       } catch (err) { console.warn('[GPS] Ping failed:', err); }
     };
 
@@ -316,6 +337,17 @@ export default function DriverDashboard() {
                 </span>
               )}
             </div>
+            {/* GPS coordinates debug — shows driver their actual tracked position */}
+            {gpsActive && gpsCoords && (
+              <div style={{ marginTop: 6, fontSize: 11, color: 'rgba(255,255,255,0.6)', fontFamily: 'monospace' }}>
+                {gpsCoords.lat.toFixed(6)}, {gpsCoords.lng.toFixed(6)} ±{gpsCoords.accuracy?.toFixed(0) || '?'}m
+              </div>
+            )}
+            {gpsActive && gpsError && (
+              <div style={{ marginTop: 6, fontSize: 11, color: '#fca5a5' }}>
+                {gpsError} — check browser location permissions
+              </div>
+            )}
           </div>
           <div className="dp-hero-actions">
             <button onClick={() => { setLoading(true); fetchOrders(); }} title="Refresh" className="dp-btn-refresh">

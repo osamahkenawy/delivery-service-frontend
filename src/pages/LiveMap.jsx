@@ -63,20 +63,28 @@ export default function LiveMap() {
   const socketRef = useRef(null);
 
   /* ── Load initial driver locations ────────────────────────── */
-  useEffect(() => {
+  const fetchLocations = () => {
     api.get('/drivers/live-locations').then(res => {
       if (res.success) {
         const map = {};
         res.data.forEach(d => { map[d.id] = d; });
         setDrivers(map);
+        setLastUpdate(new Date());
       }
     });
+  };
+
+  useEffect(() => {
+    fetchLocations();
+    // HTTP polling fallback every 12s — ensures map updates even if Socket.IO is down
+    const poll = setInterval(fetchLocations, 12000);
     if (!document.getElementById('leaflet-zoom-spacing')) {
       const style = document.createElement('style');
       style.id = 'leaflet-zoom-spacing';
       style.textContent = '.leaflet-control-zoom { display: flex; flex-direction: column; gap: 8px; } .leaflet-control-zoom-in, .leaflet-control-zoom-out { margin: 0 !important; }';
       document.head.appendChild(style);
     }
+    return () => clearInterval(poll);
   }, []);
 
   /* ── Socket.io subscription ────────────────────────────────── */

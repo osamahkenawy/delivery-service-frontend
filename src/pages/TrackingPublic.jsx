@@ -68,6 +68,8 @@ export default function TrackingPublic() {
   const mapRef = useRef(null);
   const mapObjRef = useRef(null);
   const markerRef = useRef(null);
+  const destMarkerRef = useRef(null);
+  const initialFitRef = useRef(false);
   const timerRef = useRef(null);
 
   const [order, setOrder] = useState(null);
@@ -161,7 +163,8 @@ export default function TrackingPublic() {
             </div>
           </div>`);
       }
-      if (order.recipient_lat && order.recipient_lng) {
+      // Only add destination marker once
+      if (!destMarkerRef.current && order.recipient_lat && order.recipient_lng) {
         const destIcon = L.divIcon({
           className: '',
           html: `<div style="background:#1d4ed8;border:3px solid #fff;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(29,78,216,0.4)">
@@ -169,7 +172,7 @@ export default function TrackingPublic() {
           </div>`,
           iconSize: [36, 36], iconAnchor: [18, 18],
         });
-        L.marker([order.recipient_lat, order.recipient_lng], { icon: destIcon }).addTo(mapObjRef.current)
+        destMarkerRef.current = L.marker([order.recipient_lat, order.recipient_lng], { icon: destIcon }).addTo(mapObjRef.current)
           .bindPopup(`<div style="min-width:180px;font-family:Inter,system-ui,sans-serif">
             <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:linear-gradient(135deg,#3b82f6,#2563eb);border-radius:8px 8px 0 0;color:#fff;font-weight:700;font-size:13px">
               Delivery Location
@@ -180,9 +183,20 @@ export default function TrackingPublic() {
               ${order.recipient_area ? `<div style="color:#9ca3af;font-size:11px;margin-top:2px">${order.recipient_area}${order.recipient_emirate ? ', ' + order.recipient_emirate : ''}</div>` : ''}
             </div>
           </div>`);
-        mapObjRef.current.fitBounds([[lat, lng], [order.recipient_lat, order.recipient_lng]], { padding: [40, 40] });
+      }
+      // Only fit bounds on first load, then just pan to keep driver visible
+      if (!initialFitRef.current) {
+        initialFitRef.current = true;
+        if (order.recipient_lat && order.recipient_lng) {
+          mapObjRef.current.fitBounds([[lat, lng], [order.recipient_lat, order.recipient_lng]], { padding: [40, 40] });
+        } else {
+          mapObjRef.current.setView([lat, lng], 14);
+        }
       } else {
-        mapObjRef.current.setView([lat, lng], 14);
+        // Smoothly keep driver in view without resetting zoom
+        if (!mapObjRef.current.getBounds().contains([lat, lng])) {
+          mapObjRef.current.panTo([lat, lng], { animate: true, duration: 0.5 });
+        }
       }
     };
     initMap();
@@ -273,7 +287,7 @@ export default function TrackingPublic() {
               {isLive && (
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#fef3c7', padding: '7px 16px', borderRadius: 20, fontSize: 13, color: '#92400e', fontWeight: 600, border: '1px solid #fde68a' }}>
                   <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#f59e0b', animation: 'tpPulse 1.5s ease-in-out infinite' }} />
-                  Driver is live \u2014 map updates every 30s
+                  Driver is en route \u2014 live tracking
                 </div>
               )}
               {order.status === 'delivered' && order.delivered_at && (
