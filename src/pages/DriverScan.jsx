@@ -62,7 +62,12 @@ function OrderCard({ order, onStatusUpdate, onScan, loading }) {
   const doStatusUpdate = async (newStatus) => {
     setUpdating(true);
     const gps = await getGPS();
-    const result = await onStatusUpdate(order.tracking_token, newStatus, statusNote, gps);
+    const payload = { statusNote, gps };
+    // Send COD collected amount when delivering a COD order
+    if (newStatus === 'delivered' && order.payment_method === 'cod' && codAmt) {
+      payload.cod_collected_amount = parseFloat(codAmt);
+    }
+    const result = await onStatusUpdate(order.tracking_token, newStatus, statusNote, gps, payload.cod_collected_amount);
     if (result?.success) {
       setScanResult({ ok: true, msg: `✅ Marked as ${STATUS_META[newStatus]?.label || newStatus}` });
     } else {
@@ -311,10 +316,12 @@ export default function DriverScan() {
     await loadOrder(manualToken.trim());
   };
 
-  const handleStatusUpdate = async (token, status, note, gps) => {
-    return await api.patch(`/tracking/${token}/status`, {
+  const handleStatusUpdate = async (token, status, note, gps, cod_collected_amount) => {
+    const payload = {
       status, note: note || undefined, lat: gps?.lat, lng: gps?.lng,
-    });
+    };
+    if (cod_collected_amount != null) payload.cod_collected_amount = cod_collected_amount;
+    return await api.patch(`/tracking/${token}/status`, payload);
   };
 
   const handleScan = async (token, scanType, gps) => {

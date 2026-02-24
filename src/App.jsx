@@ -20,6 +20,7 @@ import Reports from './pages/Reports';
 import LiveMap from './pages/LiveMap';
 import Barcode from './pages/Barcode';
 import DriverScan from './pages/DriverScan';
+import DriverDashboard from './pages/DriverDashboard';
 import Settings from './pages/Settings';
 import Integrations from './pages/Integrations';
 
@@ -160,6 +161,7 @@ function App() {
         <Route path="/live-map"       element={<PrivateRoute><LiveMap /></PrivateRoute>} />
         <Route path="/barcode"        element={<PrivateRoute><Barcode /></PrivateRoute>} />
         <Route path="/driver/scan"    element={<PrivateRoute><DriverScan /></PrivateRoute>} />
+        <Route path="/driver/orders"  element={<PrivateRoute><DriverDashboard /></PrivateRoute>} />
         <Route path="/settings"       element={<PrivateRoute><Settings /></PrivateRoute>} />
         <Route path="/api-keys"       element={<PrivateRoute><Integrations /></PrivateRoute>} />
 
