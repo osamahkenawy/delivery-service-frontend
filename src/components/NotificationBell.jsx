@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import {
   Bell, BellNotification, Check, CheckCircle, WarningTriangle,
@@ -53,6 +54,7 @@ export default function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const ref = useRef(null);
+  const dropdownRef = useRef(null);
   const navigate = useNavigate();
 
   /* ── fetch unread count ──────────────────────────────────── */
@@ -103,7 +105,10 @@ export default function NotificationBell() {
   /* ── click outside to close ──────────────────────────────── */
   useEffect(() => {
     const handler = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+      if (
+        ref.current && !ref.current.contains(e.target) &&
+        dropdownRef.current && !dropdownRef.current.contains(e.target)
+      ) setOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -164,13 +169,13 @@ export default function NotificationBell() {
         )}
       </button>
 
-      {/* ── Dropdown ─────────────────────────────────────── */}
-      {open && (
-        <div style={{
+      {/* ── Dropdown (portal → avoids topbar stacking context) ── */}
+      {open && createPortal(
+        <div ref={dropdownRef} style={{
           position: 'fixed', top: 70, right: 20,
           width: 400, maxHeight: 'calc(100vh - 100px)', background: 'var(--bg-card)',
           border: '1px solid var(--border)', borderRadius: 16,
-          boxShadow: '0 20px 60px rgba(0,0,0,.18)', zIndex: 10000,
+          boxShadow: '0 20px 60px rgba(0,0,0,.18)', zIndex: 99999,
           display: 'flex', flexDirection: 'column', overflow: 'hidden',
           animation: 'bellDropIn .2s ease-out',
         }}>
@@ -313,7 +318,8 @@ export default function NotificationBell() {
               <span style={{ fontSize: '.9rem' }}>&rarr;</span>
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ── Inline keyframes ─────────────────────────────── */}
