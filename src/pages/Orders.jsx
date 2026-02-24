@@ -9,7 +9,18 @@ import {
   CreditCard, Weight, Prohibition, Refresh, Group, OpenNewWindow, ShareAndroid,
 } from 'iconoir-react';
 import api from '../lib/api';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import './CRMPages.css';
+
+/* Fix leaflet marker icon paths (Vite) */
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
 
 /* ══════════════════════════════════════════════════════════════
    TOAST
@@ -200,6 +211,46 @@ function AddressSearch({ onSelect }) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+/* ── Map click handler ── */
+function ClickHandler({ onClick }) {
+  useMapEvents({ click: (e) => onClick(e.latlng) });
+  return null;
+}
+function FlyTo({ center }) {
+  const map = useMap();
+  useEffect(() => { if (center) map.flyTo(center, Math.max(map.getZoom(), 15), { duration: 0.6 }); }, [center]);
+  return null;
+}
+
+/* Location picker map for order form */
+function LocationPickerMap({ lat, lng, onPick }) {
+  const center = (lat && lng) ? [parseFloat(lat), parseFloat(lng)] : [25.2048, 55.2708]; // Dubai default
+  const hasPin = lat && lng;
+  return (
+    <div style={{ gridColumn:'1/-1' }}>
+      <label style={LABEL}>
+        <MapPin width={12} height={12} style={{ marginRight:4, verticalAlign:'middle' }} />
+        Pin Delivery Location <span style={{ fontWeight:400, textTransform:'none', fontSize:11, color:'#94a3b8' }}> — click the map to place pin</span>
+      </label>
+      <div style={{ borderRadius:12, overflow:'hidden', border:'1.5px solid #e2e8f0', height:240, position:'relative' }}>
+        <MapContainer center={center} zoom={hasPin ? 15 : 11} style={{ height:'100%', width:'100%' }}
+          scrollWheelZoom={true} doubleClickZoom={false} attributionControl={false}>
+          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          <ClickHandler onClick={(latlng) => onPick(latlng.lat, latlng.lng)} />
+          {hasPin && <FlyTo center={center} />}
+          {hasPin && <Marker position={center} />}
+        </MapContainer>
+        {hasPin && (
+          <div style={{ position:'absolute', bottom:8, left:8, background:'rgba(0,0,0,.7)', color:'#fff',
+            borderRadius:6, padding:'4px 10px', fontSize:11, fontWeight:600, zIndex:999, backdropFilter:'blur(4px)' }}>
+            {parseFloat(lat).toFixed(5)}, {parseFloat(lng).toFixed(5)}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -1175,6 +1226,20 @@ export default function Orders() {
                         placeholder="Pickup address"
                         readOnly={!!form.client_id} />
                     </div>
+                    {!form.client_id && (
+                      <LocationPickerMap
+                        lat={form.sender_lat} lng={form.sender_lng}
+                        onPick={async (lat, lng) => {
+                          set('sender_lat', lat);
+                          set('sender_lng', lng);
+                          try {
+                            const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+                            const data = await r.json();
+                            if (data.display_name) set('sender_address', data.display_name);
+                          } catch {}
+                        }}
+                      />
+                    )}
                   </div>
                 )}
 
@@ -1215,6 +1280,21 @@ export default function Orders() {
                         set('recipient_lng', lng);
                         if (display) set('recipient_address', display);
                       }} />
+
+                      <LocationPickerMap
+                        lat={form.recipient_lat} lng={form.recipient_lng}
+                        onPick={async (lat, lng) => {
+                          set('recipient_lat', lat);
+                          set('recipient_lng', lng);
+                          // Reverse geocode to fill address
+                          try {
+                            const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+                            const data = await r.json();
+                            if (data.display_name) set('recipient_address', data.display_name);
+                            if (data.address?.suburb || data.address?.neighbourhood) set('recipient_area', data.address.suburb || data.address.neighbourhood);
+                          } catch {}
+                        }}
+                      />
 
                       <div style={{ gridColumn:'1/-1' }}>
                         <label style={LABEL}>Delivery Address *</label>

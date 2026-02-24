@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
+import { io } from 'socket.io-client';
 
 let leafletLoaded = false;
 function ensureLeaflet() {
@@ -49,6 +50,7 @@ export default function TrackingPublic() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [lastRefresh, setLastRefresh] = useState(null);
+  const socketRef = useRef(null);
 
   const apiBase = import.meta.env.VITE_API_URL || '/api';
 
@@ -72,10 +74,35 @@ export default function TrackingPublic() {
   useEffect(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     if (order && LIVE_STATUSES.has(order.status)) {
-      timerRef.current = setInterval(() => fetchOrder(true), 30000);
+      timerRef.current = setInterval(() => fetchOrder(true), 15000);
     }
     return () => clearInterval(timerRef.current);
   }, [order?.status]);
+
+  /* ── Socket.IO for real-time driver location ── */
+  useEffect(() => {
+    if (!token || !order || !LIVE_STATUSES.has(order.status)) {
+      if (socketRef.current) { socketRef.current.disconnect(); socketRef.current = null; }
+      return;
+    }
+    const base = (import.meta.env.VITE_API_URL || '/api').replace('/api', '');
+    const socket = io(base, { transports: ['websocket', 'polling'] });
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      socket.emit('join-tracking', token);
+    });
+
+    socket.on('driver:location', (data) => {
+      setOrder(prev => prev ? {
+        ...prev,
+        driver_location: { lat: data.lat, lng: data.lng, recorded_at: data.timestamp },
+      } : prev);
+      setLastRefresh(new Date());
+    });
+
+    return () => { socket.disconnect(); socketRef.current = null; };
+  }, [token, order?.status]);
 
   useEffect(() => {
     if (!order?.driver_location || !mapRef.current) return;

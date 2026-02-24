@@ -70,7 +70,8 @@ function Toast({ toasts }) {
           {t.msg}
         </div>
       ))}
-      <style>{`@keyframes slideInRight{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}`}</style>
+      <style>{`@keyframes slideInRight{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+@keyframes gpsPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.5)}}`}</style>
     </div>
   );
 }
@@ -86,7 +87,10 @@ export default function DriverDashboard() {
   const [starting, setStarting] = useState(false);
   const [expanded, setExpanded] = useState(null);
   const [noProfile, setNoProfile] = useState(false);
+  const [gpsActive, setGpsActive] = useState(false);
   const refreshRef              = useRef(null);
+  const gpsRef                  = useRef(null);
+  const watchRef                = useRef(null);
 
   const showToast = useCallback((msg, type = 'success') => {
     const id = Date.now() + Math.random();
@@ -112,6 +116,58 @@ export default function DriverDashboard() {
     refreshRef.current = setInterval(fetchOrders, 30000);
     return () => clearInterval(refreshRef.current);
   }, [fetchOrders]);
+
+  /* ── Continuous GPS broadcasting (every 10s when driver has active in-transit/picked_up orders) ── */
+  useEffect(() => {
+    const orders = data?.orders || [];
+    const driver = data?.driver;
+    const hasActiveTrip = orders.some(o => ['picked_up', 'in_transit'].includes(o.status));
+
+    if (!hasActiveTrip || !driver?.id || !navigator.geolocation) {
+      // Stop broadcasting if no active trip
+      if (gpsRef.current) { clearInterval(gpsRef.current); gpsRef.current = null; }
+      if (watchRef.current != null) { navigator.geolocation.clearWatch(watchRef.current); watchRef.current = null; }
+      setGpsActive(false);
+      return;
+    }
+
+    // Already broadcasting
+    if (gpsRef.current) return;
+
+    setGpsActive(true);
+    let lastPos = null;
+
+    // Use watchPosition for best accuracy + fallback interval
+    watchRef.current = navigator.geolocation.watchPosition(
+      (pos) => {
+        lastPos = { lat: pos.coords.latitude, lng: pos.coords.longitude, speed: pos.coords.speed, heading: pos.coords.heading };
+      },
+      () => {}, // ignore errors silently
+      { enableHighAccuracy: true, maximumAge: 5000 }
+    );
+
+    const sendPing = async () => {
+      if (!lastPos) return;
+      const activeOrder = orders.find(o => ['picked_up', 'in_transit'].includes(o.status));
+      try {
+        await api.patch(`/drivers/${driver.id}/location`, {
+          lat: lastPos.lat, lng: lastPos.lng,
+          speed: lastPos.speed || 0, heading: lastPos.heading || 0,
+          order_id: activeOrder?.id || null,
+        });
+      } catch { /* non-critical */ }
+    };
+
+    // Send immediately then every 10 seconds
+    sendPing();
+    gpsRef.current = setInterval(sendPing, 10000);
+
+    return () => {
+      if (gpsRef.current) { clearInterval(gpsRef.current); gpsRef.current = null; }
+      if (watchRef.current != null) { navigator.geolocation.clearWatch(watchRef.current); watchRef.current = null; }
+      setGpsActive(false);
+    };
+  }, [data]);
 
   const getGPS = () => new Promise(resolve => {
     if (!navigator.geolocation) return resolve(null);
@@ -239,6 +295,13 @@ export default function DriverDashboard() {
               <span style={{ fontSize: 13, color: '#cbd5e1', fontWeight: 500, textTransform: 'capitalize' }}>
                 {driver.status || 'Busy'}
               </span>
+              {gpsActive && (
+                <span style={{ display:'inline-flex', alignItems:'center', gap:4, marginLeft:8,
+                  background:'rgba(34,197,94,0.2)', padding:'2px 8px', borderRadius:20, fontSize:11, fontWeight:700, color:'#4ade80' }}>
+                  <span style={{ width:6, height:6, borderRadius:'50%', background:'#4ade80', animation:'gpsPulse 1.5s ease-in-out infinite' }} />
+                  GPS Live
+                </span>
+              )}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>

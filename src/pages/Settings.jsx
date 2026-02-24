@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useContext } from 'react';
+import { AuthContext } from '../App';
 import {
   Settings as SettingsIcon, User, Building, DeliveryTruck, Mail, Bell,
   Label as Tag, Plus, Trash, CheckCircle, WarningCircle, Globe, Phone,
@@ -515,6 +516,7 @@ function CategoriesTab({ toast }) {
    USERS TAB
 ═══════════════════════════════════════════════════════════════ */
 function UsersTab({ toast }) {
+  const { user: currentUser } = useContext(AuthContext);
   const [users, setUsers]        = useState([]);
   const [loading, setLoading]    = useState(true);
   const [showModal, setShowModal]= useState(false);
@@ -585,7 +587,7 @@ function UsersTab({ toast }) {
                 <div style={{display:'flex',alignItems:'center',gap:10,flexShrink:0}}>
                   <span className="stg-role-badge" style={{background:meta.bg,color:meta.badge}}>{meta.label}</span>
                   <span className="stg-user-date">{fmtDate(u.created_at)}</span>
-                  {u.role !== 'superadmin' && (
+                  {u.role !== 'superadmin' && !u.is_owner && String(u.id) !== String(currentUser?.id) && (
                     <button className="stg-icon-btn red" onClick={()=>del(u.id)} title="Deactivate"><Trash width={13} height={13}/></button>
                   )}
                 </div>
