@@ -6,7 +6,7 @@ import {
   Prohibition, Refresh, Eye, Copy, ArrowRight, Calendar, Timer,
 } from 'iconoir-react';
 import api from '../lib/api';
-import './CRMPages.css';
+import './DriverPortal.css';
 
 /* ── Status meta ── */
 const STATUS_META = {
@@ -30,22 +30,30 @@ const fmtFull = d => d ? new Date(d).toLocaleDateString('en-AE', { day: '2-digit
 function ProgressSteps({ current }) {
   const steps = ['assigned', 'picked_up', 'in_transit', 'delivered'];
   const idx = steps.indexOf(current);
+  const labels = ['Assigned', 'Picked Up', 'In Transit', 'Delivered'];
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 0, margin: '10px 0 6px', padding: '0 4px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 0, margin: '12px 0 8px', padding: '0 4px' }}>
       {steps.map((s, i) => {
         const m = STATUS_META[s];
         const done = i <= idx && idx >= 0;
+        const active = i === idx;
         return (
           <div key={s} style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-            <div style={{
-              width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: done ? m.color : '#e2e8f0', color: done ? '#fff' : '#94a3b8',
-              fontSize: 10, fontWeight: 700, flexShrink: 0, transition: 'all 0.3s',
-            }}>
-              {done ? <Check width={12} height={12} /> : i + 1}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: done ? m.color : '#e2e8f0', color: done ? '#fff' : '#94a3b8',
+                fontSize: 10, fontWeight: 700, flexShrink: 0, transition: 'all 0.3s',
+                boxShadow: active ? `0 0 0 4px ${m.color}25` : 'none',
+              }}>
+                {done ? <Check width={13} height={13} /> : i + 1}
+              </div>
+              <span style={{ fontSize: 9, fontWeight: 600, color: done ? m.color : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
+                {labels[i].split(' ')[0]}
+              </span>
             </div>
             {i < steps.length - 1 && (
-              <div style={{ flex: 1, height: 3, background: i < idx ? m.color : '#e2e8f0', borderRadius: 2, transition: 'all 0.3s' }} />
+              <div style={{ flex: 1, height: 3, background: i < idx ? m.color : '#e2e8f0', borderRadius: 2, transition: 'all 0.3s', marginBottom: 16 }} />
             )}
           </div>
         );
@@ -57,21 +65,13 @@ function ProgressSteps({ current }) {
 /* ── Toast ── */
 function Toast({ toasts }) {
   return (
-    <div style={{ position: 'fixed', top: 24, right: 24, zIndex: 9999, display: 'flex', flexDirection: 'column', gap: 10, pointerEvents: 'none' }}>
+    <div className="dp-toast-container">
       {toasts.map(t => (
-        <div key={t.id} style={{
-          display: 'flex', alignItems: 'center', gap: 10, padding: '13px 18px',
-          borderRadius: 12, fontWeight: 600, fontSize: 14, minWidth: 260, maxWidth: 380,
-          boxShadow: '0 8px 30px rgba(0,0,0,0.15)',
-          background: t.type === 'success' ? '#16a34a' : '#dc2626',
-          color: '#fff', animation: 'slideInRight 0.3s ease',
-        }}>
+        <div key={t.id} className={`dp-toast ${t.type}`}>
           {t.type === 'success' ? <CheckCircle width={18} height={18} /> : <WarningTriangle width={18} height={18} />}
           {t.msg}
         </div>
       ))}
-      <style>{`@keyframes slideInRight{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
-@keyframes gpsPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.5)}}`}</style>
     </div>
   );
 }
@@ -254,190 +254,150 @@ export default function DriverDashboard() {
   /* ── No driver profile state ── */
   if (noProfile && !loading) {
     return (
-      <div style={{ padding: '60px 20px', maxWidth: 500, margin: '0 auto', textAlign: 'center' }}>
-        <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-          <WarningTriangle width={36} height={36} color="#dc2626" />
+      <div className="dp-no-profile">
+        <div className="dp-no-profile-icon">
+          <WarningTriangle width={40} height={40} color="#dc2626" />
         </div>
-        <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e293b', marginBottom: 8 }}>No Driver Profile</h2>
-        <p style={{ color: '#64748b', fontSize: 14, lineHeight: 1.6, marginBottom: 24 }}>
-          Your account is not linked to a driver profile. Please contact your admin to link your account to a driver profile.
-        </p>
+        <h2>No Driver Profile</h2>
+        <p>Your account is not linked to a driver profile. Please contact your admin to link your account.</p>
         <Toast toasts={toasts} />
       </div>
     );
   }
 
   return (
-    <div style={{ padding: '16px 16px 80px', maxWidth: 640, margin: '0 auto', fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <div className="driver-portal">
 
       {/* ═══ Hero Header ═══ */}
-      <div style={{
-        background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
-        borderRadius: 20, padding: '20px 20px', marginBottom: 16, color: '#fff', position: 'relative', overflow: 'hidden',
-      }}>
-        <div style={{ position: 'absolute', top: -20, right: -20, width: 120, height: 120, borderRadius: '50%', background: 'rgba(249,115,22,0.15)' }} />
-        <div style={{ position: 'absolute', bottom: -30, right: 40, width: 80, height: 80, borderRadius: '50%', background: 'rgba(249,115,22,0.1)' }} />
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'relative', zIndex: 1 }}>
+      <div className="dp-hero">
+        <div className="dp-hero-top">
           <div>
-            <p style={{ margin: 0, fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>{today}</p>
-            <h2 style={{ margin: '4px 0 0', fontSize: 22, fontWeight: 900 }}>
-              {driver.name ? `Hi, ${driver.name.split(' ')[0]}!` : 'My Deliveries'}
+            <div className="dp-hero-greeting">{today}</div>
+            <h2 className="dp-hero-name">
+              {driver.name ? `Hi, ${driver.name.split(' ')[0]} 👋` : 'My Deliveries'}
             </h2>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
-              <span style={{
-                width: 8, height: 8, borderRadius: '50%',
-                background: driver.status === 'available' ? '#22c55e' : '#f59e0b',
-              }} />
-              <span style={{ fontSize: 13, color: '#cbd5e1', fontWeight: 500, textTransform: 'capitalize' }}>
-                {driver.status || 'Busy'}
-              </span>
+            <div className="dp-hero-status">
+              <span className={`dp-status-dot ${driver.status || 'offline'}`} />
+              <span className="dp-status-text">{driver.status || 'Busy'}</span>
               {gpsActive && (
-                <span style={{ display:'inline-flex', alignItems:'center', gap:4, marginLeft:8,
-                  background:'rgba(34,197,94,0.2)', padding:'2px 8px', borderRadius:20, fontSize:11, fontWeight:700, color:'#4ade80' }}>
-                  <span style={{ width:6, height:6, borderRadius:'50%', background:'#4ade80', animation:'gpsPulse 1.5s ease-in-out infinite' }} />
+                <span className="dp-gps-badge">
+                  <span className="dp-gps-dot" />
                   GPS Live
                 </span>
               )}
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={() => { setLoading(true); fetchOrders(); }} title="Refresh"
-              style={{ padding: '10px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.15)',
-                background: 'rgba(255,255,255,0.08)', cursor: 'pointer', display: 'flex', color: '#fff' }}>
+          <div className="dp-hero-actions">
+            <button onClick={() => { setLoading(true); fetchOrders(); }} title="Refresh" className="dp-btn-refresh">
               <Refresh width={16} height={16} />
             </button>
-            <button onClick={() => navigate('/driver/scan')}
-              style={{ padding: '10px 16px', borderRadius: 12, border: 'none',
-                background: '#f97316', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 4px 14px rgba(249,115,22,0.4)' }}>
+            <button onClick={() => navigate('/driver/scan')} className="dp-btn-scan">
               <Eye width={14} height={14} /> Scan
             </button>
           </div>
         </div>
 
         {/* Quick Stats Row Inside Hero — Today */}
-        <div style={{ position: 'relative', zIndex: 1, marginTop: 16 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Today's Performance</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
-            {[
-              { label: 'Active',    value: stats.active || 0,   emoji: '\ud83d\udce6', bg: 'rgba(249,115,22,0.15)' },
-              { label: 'Delivered', value: stats.delivered || 0, emoji: '\u2705', bg: 'rgba(34,197,94,0.15)' },
-              { label: 'Failed',    value: stats.failed || 0,   emoji: '\u274c', bg: 'rgba(239,68,68,0.15)' },
-              { label: 'Revenue',   value: fmtAED(stats.revenue), emoji: '\ud83d\udcb0', bg: 'rgba(14,165,233,0.15)' },
-            ].map(s => (
-              <div key={s.label} style={{
-                background: s.bg, borderRadius: 12, padding: '10px 6px', textAlign: 'center',
-                border: '1px solid rgba(255,255,255,0.06)',
-              }}>
-                <div style={{ fontSize: 16 }}>{s.emoji}</div>
-                <div style={{ fontSize: 18, fontWeight: 900, color: '#fff', marginTop: 2 }}>{s.value}</div>
-                <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase' }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
+        <div className="dp-today-label">Today's Performance</div>
+        <div className="dp-today-grid">
+          {[
+            { label: 'Active',    value: stats.active || 0,   icon: '📦', bg: 'rgba(249,115,22,0.12)' },
+            { label: 'Delivered', value: stats.delivered || 0, icon: '✅', bg: 'rgba(34,197,94,0.12)' },
+            { label: 'Failed',    value: stats.failed || 0,   icon: '❌', bg: 'rgba(239,68,68,0.12)' },
+            { label: 'Revenue',   value: fmtAED(stats.revenue), icon: '💰', bg: 'rgba(14,165,233,0.12)' },
+          ].map(s => (
+            <div key={s.label} className="dp-today-card" style={{ background: s.bg }}>
+              <div className="tc-icon">{s.icon}</div>
+              <div className="tc-value">{s.value}</div>
+              <div className="tc-label">{s.label}</div>
+            </div>
+          ))}
         </div>
       </div>
 
       {/* ═══ All-Time Stats Card ═══ */}
       {allTimeStats.total_orders > 0 && (
-        <div style={{
-          background: '#fff', borderRadius: 16, padding: '18px 20px', marginBottom: 16,
-          boxShadow: '0 2px 12px rgba(0,0,0,0.06)', border: '1px solid #f1f5f9',
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#1e293b' }}>Overall Performance</h3>
-            <span style={{
-              padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700,
-              background: deliveryRate >= 90 ? '#dcfce7' : deliveryRate >= 70 ? '#fef3c7' : '#fee2e2',
-              color: deliveryRate >= 90 ? '#16a34a' : deliveryRate >= 70 ? '#d97706' : '#dc2626',
-            }}>
+        <div className="dp-alltime">
+          <div className="dp-alltime-header">
+            <h3 className="dp-alltime-title">Overall Performance</h3>
+            <span className={`dp-rate-badge ${deliveryRate >= 90 ? 'excellent' : deliveryRate >= 70 ? 'good' : 'poor'}`}>
               {deliveryRate}% Success
             </span>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+          <div className="dp-alltime-grid">
             {[
               { label: 'Total Orders', value: allTimeStats.total_orders, color: '#3b82f6', bg: '#eff6ff' },
               { label: 'Delivered', value: allTimeStats.total_delivered, color: '#16a34a', bg: '#f0fdf4' },
               { label: 'Failed', value: allTimeStats.total_failed, color: '#dc2626', bg: '#fef2f2' },
               { label: 'Earned', value: fmtAED(allTimeStats.total_revenue), color: '#0369a1', bg: '#f0f9ff' },
             ].map(s => (
-              <div key={s.label} style={{
-                background: s.bg, borderRadius: 12, padding: '12px 8px', textAlign: 'center',
-                border: `1px solid ${s.color}15`,
-              }}>
-                <div style={{ fontSize: 20, fontWeight: 900, color: s.color }}>{s.value}</div>
-                <div style={{ fontSize: 10, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginTop: 2 }}>{s.label}</div>
+              <div key={s.label} className="dp-alltime-stat" style={{ background: s.bg }}>
+                <div className="as-value" style={{ color: s.color }}>{s.value}</div>
+                <div className="as-label">{s.label}</div>
               </div>
             ))}
+          </div>
+          {/* Progress bar */}
+          <div className="dp-rate-bar-wrap">
+            <div className="dp-rate-bar-label">
+              <span>Delivery Success Rate</span>
+              <span>{deliveryRate}%</span>
+            </div>
+            <div className="dp-rate-bar">
+              <div className="dp-rate-bar-fill" style={{
+                width: `${deliveryRate}%`,
+                background: deliveryRate >= 90 ? 'linear-gradient(90deg, #22c55e, #16a34a)' : deliveryRate >= 70 ? 'linear-gradient(90deg, #f59e0b, #d97706)' : 'linear-gradient(90deg, #ef4444, #dc2626)',
+              }} />
+            </div>
           </div>
         </div>
       )}
 
       {/* ═══ Start Trip Banner ═══ */}
       {tab === 'active' && assignedCount > 0 && (
-        <button onClick={startTrip} disabled={starting}
-          style={{
-            width: '100%', padding: '16px', borderRadius: 16, border: 'none', marginBottom: 14,
-            background: 'linear-gradient(135deg, #16a34a, #15803d)', color: '#fff',
-            fontWeight: 800, fontSize: 15, cursor: starting ? 'not-allowed' : 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            opacity: starting ? 0.7 : 1, boxShadow: '0 6px 20px rgba(22,163,74,.35)',
-            animation: 'driverPulse 2s infinite',
-          }}>
+        <button onClick={startTrip} disabled={starting} className="dp-start-trip">
           <DeliveryTruck width={20} height={20} />
-          {starting ? 'Starting Trip...' : `\ud83d\ude80 Start Trip \u2014 ${assignedCount} Order${assignedCount > 1 ? 's' : ''}`}
+          {starting ? 'Starting Trip...' : `🚀 Start Trip — ${assignedCount} Order${assignedCount > 1 ? 's' : ''}`}
         </button>
       )}
-      <style>{`@keyframes driverPulse{0%,100%{box-shadow:0 6px 20px rgba(22,163,74,.35)}50%{box-shadow:0 6px 30px rgba(22,163,74,.5)}}`}</style>
 
       {/* ═══ Tabs ═══ */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 14, background: '#f1f5f9', borderRadius: 14, padding: 4 }}>
+      <div className="dp-tabs">
         {[
           { key: 'active',    label: 'Active',    count: stats.active,    color: '#f97316' },
           { key: 'completed', label: 'Delivered', count: stats.delivered, color: '#16a34a' },
           { key: 'failed',    label: 'Failed',    count: stats.failed,    color: '#dc2626' },
         ].map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
-            style={{
-              flex: 1, padding: '10px 8px', borderRadius: 10, border: 'none',
-              background: tab === t.key ? '#fff' : 'transparent',
-              color: tab === t.key ? t.color : '#64748b',
-              cursor: 'pointer', fontWeight: 700, fontSize: 13,
-              boxShadow: tab === t.key ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
-              transition: 'all 0.2s',
-            }}>
+            className={`dp-tab ${tab === t.key ? 'active' : ''}`}
+            style={tab === t.key ? { color: t.color } : undefined}>
             {t.label}
-            {t.count != null && <span style={{
-              display: 'inline-block', marginLeft: 4, padding: '1px 6px', borderRadius: 8,
-              fontSize: 11, fontWeight: 800,
-              background: tab === t.key ? t.color + '15' : '#e2e8f0',
-              color: tab === t.key ? t.color : '#94a3b8',
-            }}>{t.count}</span>}
+            {t.count != null && (
+              <span className="dp-tab-count" style={{
+                background: tab === t.key ? t.color + '15' : '#e2e8f0',
+                color: tab === t.key ? t.color : '#94a3b8',
+              }}>{t.count}</span>
+            )}
           </button>
         ))}
       </div>
 
       {/* ═══ Orders List ═══ */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: 60 }}>
-          <div style={{ width: 40, height: 40, border: '4px solid #e2e8f0', borderTopColor: '#f97316', borderRadius: '50%', margin: '0 auto 16px', animation: 'driverSpin 0.8s linear infinite' }} />
-          <p style={{ color: '#94a3b8', fontWeight: 600 }}>Loading your orders...</p>
-          <style>{`@keyframes driverSpin{to{transform:rotate(360deg)}}`}</style>
+        <div className="dp-loading">
+          <div className="dp-spinner" />
+          <p className="dp-loading-text">Loading your orders...</p>
         </div>
       ) : orders.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '50px 20px' }}>
-          <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-            <Package width={36} height={36} style={{ color: '#cbd5e1' }} />
+        <div className="dp-empty">
+          <div className="dp-empty-icon">
+            <Package width={40} height={40} style={{ color: '#cbd5e1' }} />
           </div>
-          <h3 style={{ color: '#1e293b', fontSize: 17, fontWeight: 800, marginBottom: 4 }}>
-            {tab === 'active' ? 'No Active Deliveries' : `No ${tab === 'completed' ? 'Delivered' : 'Failed'} Orders`}
-          </h3>
-          <p style={{ color: '#94a3b8', fontSize: 13 }}>
-            {tab === 'active' ? 'New orders will appear here when assigned to you' : 'Check back later for updates'}
-          </p>
+          <h3>{tab === 'active' ? 'No Active Deliveries' : `No ${tab === 'completed' ? 'Delivered' : 'Failed'} Orders`}</h3>
+          <p>{tab === 'active' ? 'New orders will appear here when assigned to you.' : 'Your history will appear here.'}</p>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {orders.map(order => {
             const m = STATUS_META[order.status] || STATUS_META.assigned;
             const next = NEXT_STATUS[order.status];
@@ -446,31 +406,18 @@ export default function DriverDashboard() {
             const isExpanded = expanded === order.id;
 
             return (
-              <div key={order.id} style={{
-                background: '#fff', borderRadius: 18, overflow: 'hidden',
-                boxShadow: '0 2px 12px rgba(0,0,0,0.06)', border: '1px solid #f1f5f9',
-                transition: 'all 0.2s',
-              }}>
+              <div key={order.id} className="dp-order-card">
                 {/* ── Order Header with gradient ── */}
-                <div style={{
-                  background: m.gradient, color: '#fff',
-                  padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                }}>
+                <div className="dp-order-header" style={{ background: m.gradient }}>
                   <div>
-                    <div style={{ fontWeight: 800, fontSize: 16, letterSpacing: 0.3 }}>{order.order_number}</div>
-                    <div style={{ fontSize: 11, opacity: 0.75, marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <div className="dp-order-number">{order.order_number}</div>
+                    <div className="dp-order-time">
                       <Clock width={10} height={10} /> {fmtFull(order.created_at)}
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{
-                      padding: '4px 10px', borderRadius: 10, fontSize: 11, fontWeight: 700,
-                      background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)',
-                    }}>
-                      {m.label}
-                    </span>
-                    <button onClick={() => copyToken(order.tracking_token)} title="Copy tracking link"
-                      style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 8, padding: 6, cursor: 'pointer', color: '#fff', display: 'flex' }}>
+                  <div className="dp-order-badges">
+                    <span className="dp-status-pill">{m.label}</span>
+                    <button onClick={() => copyToken(order.tracking_token)} title="Copy tracking link" className="dp-copy-btn">
                       <Copy width={14} height={14} />
                     </button>
                   </div>
@@ -478,69 +425,47 @@ export default function DriverDashboard() {
 
                 {/* Progress Steps */}
                 {['assigned', 'picked_up', 'in_transit'].includes(order.status) && (
-                  <div style={{ padding: '4px 16px 0' }}>
-                    <ProgressSteps current={order.status} />
-                  </div>
+                  <div className="dp-progress-wrap"><ProgressSteps current={order.status} /></div>
                 )}
 
                 {/* ── Recipient Info ── */}
-                <div style={{ padding: '12px 16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                    <div style={{
-                      width: 36, height: 36, borderRadius: '50%', background: m.bg,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                    }}>
-                      <User width={16} height={16} color={m.color} />
+                <div className="dp-recipient">
+                  <div className="dp-recipient-row">
+                    <div className="dp-recipient-avatar" style={{ background: m.bg }}>
+                      <User width={18} height={18} color={m.color} />
                     </div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 700, fontSize: 15, color: '#1e293b' }}>{order.recipient_name}</div>
-                      <a href={`tel:${order.recipient_phone}`} style={{ color: '#f97316', fontWeight: 600, fontSize: 13, textDecoration: 'none' }}>
-                        <Phone width={11} height={11} style={{ verticalAlign: 'middle', marginRight: 3 }} />
+                      <div className="dp-recipient-name">{order.recipient_name}</div>
+                      <a href={`tel:${order.recipient_phone}`} className="dp-recipient-phone">
+                        <Phone width={11} height={11} />
                         {order.recipient_phone}
                       </a>
                     </div>
                     <button onClick={() => setExpanded(isExpanded ? null : order.id)}
-                      style={{
-                        background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '6px 8px',
-                        cursor: 'pointer', display: 'flex', color: '#64748b', transition: 'transform 0.2s',
-                        transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
-                      }}>
+                      className={`dp-expand-btn ${isExpanded ? 'open' : ''}`}>
                       <ArrowRight width={14} height={14} />
                     </button>
                   </div>
 
                   {/* Address */}
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '8px 12px', background: '#f8fafc', borderRadius: 10 }}>
+                  <div className="dp-address">
                     <MapPin width={14} height={14} color="#94a3b8" style={{ marginTop: 2, flexShrink: 0 }} />
-                    <span style={{ fontSize: 13, color: '#475569', lineHeight: 1.5 }}>
+                    <span>
                       {order.recipient_address}
                       {order.recipient_area ? `, ${order.recipient_area}` : ''}
-                      {order.recipient_emirate ? ` \u2014 ${order.recipient_emirate}` : ''}
+                      {order.recipient_emirate ? ` — ${order.recipient_emirate}` : ''}
                     </span>
                   </div>
 
                   {/* Navigate */}
                   {(order.recipient_lat && order.recipient_lng) ? (
                     <a href={`https://maps.google.com/?q=${order.recipient_lat},${order.recipient_lng}`}
-                      target="_blank" rel="noreferrer"
-                      style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                        padding: '10px', borderRadius: 10, marginTop: 8,
-                        background: 'linear-gradient(135deg, #dbeafe, #eff6ff)', color: '#1d4ed8',
-                        fontWeight: 700, fontSize: 13, textDecoration: 'none',
-                        border: '1px solid #bfdbfe',
-                      }}>
+                      target="_blank" rel="noreferrer" className="dp-navigate has-coords">
                       <MapPin width={14} height={14} /> Navigate in Google Maps
                     </a>
                   ) : order.recipient_address && (
                     <a href={`https://maps.google.com/?q=${encodeURIComponent(order.recipient_address + ' ' + (order.recipient_emirate || 'Dubai'))}`}
-                      target="_blank" rel="noreferrer"
-                      style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                        padding: '10px', borderRadius: 10, marginTop: 8,
-                        background: '#f1f5f9', color: '#475569', fontWeight: 600, fontSize: 13,
-                        textDecoration: 'none', border: '1px solid #e2e8f0',
-                      }}>
+                      target="_blank" rel="noreferrer" className="dp-navigate no-coords">
                       <MapPin width={14} height={14} /> Search in Maps
                     </a>
                   )}
@@ -548,91 +473,68 @@ export default function DriverDashboard() {
 
                 {/* ── Expanded Details ── */}
                 {isExpanded && (
-                  <div style={{ padding: '0 16px 12px', animation: 'driverFadeIn 0.2s ease' }}>
-                    <style>{`@keyframes driverFadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}`}</style>
-
+                  <div className="dp-expanded">
                     {/* Order details grid */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
+                    <div className="dp-details-grid">
                       {[
-                        { label: 'Type', value: order.order_type?.replace(/_/g, ' ') || 'Standard', emoji: '\ud83d\udce6' },
-                        { label: 'Category', value: order.category || '\u2014', emoji: '\ud83c\udff7\ufe0f' },
-                        { label: 'Weight', value: order.weight_kg ? `${order.weight_kg} kg` : '\u2014', emoji: '\u2696\ufe0f' },
-                        { label: 'Zone', value: order.zone_name || '\u2014', emoji: '\ud83d\uddfa\ufe0f' },
-                        { label: 'Client', value: order.client_name || '\u2014', emoji: '\ud83c\udfe2' },
-                        { label: 'Sender', value: order.sender_name || '\u2014', emoji: '\ud83d\udce4' },
+                        { label: '📦 Type', value: order.order_type?.replace(/_/g, ' ') || 'Standard' },
+                        { label: '🏷️ Category', value: order.category || '—' },
+                        { label: '⚖️ Weight', value: order.weight_kg ? `${order.weight_kg} kg` : '—' },
+                        { label: '🗺️ Zone', value: order.zone_name || '—' },
+                        { label: '🏢 Client', value: order.client_name || '—' },
+                        { label: '📤 Sender', value: order.sender_name || '—' },
                       ].map(d => (
-                        <div key={d.label} style={{ background: '#f8fafc', borderRadius: 8, padding: '8px 10px', border: '1px solid #f1f5f9' }}>
-                          <div style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: 2 }}>{d.emoji} {d.label}</div>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b', textTransform: 'capitalize' }}>{d.value}</div>
+                        <div key={d.label} className="dp-detail-cell">
+                          <div className="dc-label">{d.label}</div>
+                          <div className="dc-value">{d.value}</div>
                         </div>
                       ))}
                     </div>
 
                     {/* Tracking Token */}
-                    <div style={{ background: '#f8fafc', borderRadius: 8, padding: '8px 10px', border: '1px solid #f1f5f9', marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div className="dp-tracking-row">
                       <div>
-                        <div style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>Tracking Token</div>
-                        <div style={{ fontSize: 12, fontFamily: 'monospace', color: '#475569', fontWeight: 600, marginTop: 2 }}>{order.tracking_token}</div>
+                        <div className="dp-tracking-label">Tracking Token</div>
+                        <div className="dp-tracking-value">{order.tracking_token}</div>
                       </div>
-                      <button onClick={() => copyToken(order.tracking_token)} style={{
-                        background: '#f97316', border: 'none', borderRadius: 6, padding: '5px 10px',
-                        color: '#fff', fontWeight: 700, fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
-                      }}>
+                      <button onClick={() => copyToken(order.tracking_token)} className="dp-copy-link">
                         <Copy width={12} height={12} /> Copy Link
                       </button>
                     </div>
 
                     {/* Timestamps */}
                     {(order.picked_up_at || order.in_transit_at || order.delivered_at || order.failed_at) && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
-                        {order.picked_up_at && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#6b7280' }}>
-                            <Timer width={12} height={12} /> Picked up: {fmtFull(order.picked_up_at)}
-                          </div>
-                        )}
-                        {order.in_transit_at && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#6b7280' }}>
-                            <DeliveryTruck width={12} height={12} /> In transit: {fmtFull(order.in_transit_at)}
-                          </div>
-                        )}
-                        {order.delivered_at && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#16a34a' }}>
-                            <Check width={12} height={12} /> Delivered: {fmtFull(order.delivered_at)}
-                          </div>
-                        )}
-                        {order.failed_at && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#dc2626' }}>
-                            <Xmark width={12} height={12} /> Failed: {fmtFull(order.failed_at)}
-                          </div>
-                        )}
+                      <div className="dp-timestamps">
+                        {order.picked_up_at && <div className="dp-timestamp"><Timer width={12} height={12} /> Picked up: {fmtFull(order.picked_up_at)}</div>}
+                        {order.in_transit_at && <div className="dp-timestamp"><DeliveryTruck width={12} height={12} /> In transit: {fmtFull(order.in_transit_at)}</div>}
+                        {order.delivered_at && <div className="dp-timestamp" style={{ color: '#16a34a' }}><Check width={12} height={12} /> Delivered: {fmtFull(order.delivered_at)}</div>}
+                        {order.failed_at && <div className="dp-timestamp" style={{ color: '#dc2626' }}><Xmark width={12} height={12} /> Failed: {fmtFull(order.failed_at)}</div>}
                       </div>
                     )}
                   </div>
                 )}
 
                 {/* ── Payment Strip ── */}
-                <div style={{
-                  display: 'flex', borderTop: '1px solid #f1f5f9', fontSize: 12, color: '#64748b',
-                }}>
-                  <div style={{ flex: 1, padding: '10px 16px', borderRight: '1px solid #f1f5f9', textAlign: 'center' }}>
-                    <div style={{ fontWeight: 600, fontSize: 10, color: '#94a3b8', textTransform: 'uppercase' }}>Payment</div>
-                    <div style={{ fontWeight: 700, marginTop: 2, textTransform: 'uppercase', color: order.payment_method === 'cod' ? '#d97706' : '#2563eb' }}>{order.payment_method || '\u2014'}</div>
+                <div className="dp-payment-strip">
+                  <div className="dp-payment-cell">
+                    <div className="pc-label">Payment</div>
+                    <div className="pc-value" style={{ color: order.payment_method === 'cod' ? '#d97706' : '#2563eb', textTransform: 'uppercase' }}>{order.payment_method || '—'}</div>
                   </div>
-                  <div style={{ flex: 1, padding: '10px 16px', borderRight: '1px solid #f1f5f9', textAlign: 'center' }}>
-                    <div style={{ fontWeight: 600, fontSize: 10, color: '#94a3b8', textTransform: 'uppercase' }}>Fee</div>
-                    <div style={{ fontWeight: 700, marginTop: 2 }}>{fmtAED(order.delivery_fee)}</div>
+                  <div className="dp-payment-cell">
+                    <div className="pc-label">Fee</div>
+                    <div className="pc-value">{fmtAED(order.delivery_fee)}</div>
                   </div>
                   {order.payment_method === 'cod' && parseFloat(order.cod_amount) > 0 && (
-                    <div style={{ flex: 1.5, padding: '10px 16px', textAlign: 'center', background: '#fffbeb' }}>
-                      <div style={{ fontWeight: 600, fontSize: 10, color: '#92400e', textTransform: 'uppercase' }}>{'\ud83d\udcb5'} Collect</div>
-                      <div style={{ fontWeight: 800, marginTop: 2, color: '#92400e' }}>AED {parseFloat(order.cod_amount).toFixed(0)}</div>
+                    <div className="dp-payment-cell cod-collect">
+                      <div className="pc-label">💵 Collect</div>
+                      <div className="pc-value">AED {parseFloat(order.cod_amount).toFixed(0)}</div>
                     </div>
                   )}
                 </div>
 
                 {/* ── Special Instructions ── */}
                 {order.special_instructions && (
-                  <div style={{ padding: '10px 16px', background: '#fffbeb', borderTop: '1px solid #fde68a', fontSize: 12, color: '#92400e', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                  <div className="dp-instructions">
                     <WarningTriangle width={14} height={14} style={{ flexShrink: 0, marginTop: 1 }} />
                     <span><strong>Note:</strong> {order.special_instructions}</span>
                   </div>
@@ -640,39 +542,26 @@ export default function DriverDashboard() {
 
                 {/* ── Action Buttons ── */}
                 {tab === 'active' && (
-                  <div style={{ padding: '12px 16px', borderTop: '1px solid #f1f5f9' }}>
+                  <div className="dp-actions">
                     {showCod && (
-                      <div style={{ background: '#fef3c7', border: '1.5px solid #fcd34d', borderRadius: 12, padding: '12px', marginBottom: 10 }}>
-                        <label style={{ fontSize: 11, fontWeight: 700, color: '#92400e', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
+                      <div className="dp-cod-box">
+                        <label className="dp-cod-label">
                           <Wallet width={13} height={13} /> COD Amount Collected (AED)
                         </label>
-                        <input type="number" step="0.01" placeholder={`Enter amount${order.cod_amount ? ' (Expected: ' + parseFloat(order.cod_amount).toFixed(0) + ')' : ''}`}
+                        <input type="number" step="0.01" className="dp-cod-input"
+                          placeholder={`Enter amount${order.cod_amount ? ' (Expected: ' + parseFloat(order.cod_amount).toFixed(0) + ')' : ''}`}
                           value={codInput[order.id] || ''}
                           onChange={e => setCodInput(prev => ({ ...prev, [order.id]: e.target.value }))}
-                          style={{
-                            width: '100%', padding: '10px 12px', borderRadius: 10,
-                            border: '1.5px solid #fcd34d', fontSize: 15, fontWeight: 700,
-                            color: '#92400e', background: '#fffbeb', boxSizing: 'border-box',
-                          }}
                         />
                       </div>
                     )}
-                    <div style={{ display: 'flex', gap: 8 }}>
+                    <div className="dp-action-row">
                       {next && (
                         <button onClick={() => advanceStatus(order)} disabled={isUpdating}
-                          style={{
-                            flex: 2, padding: '13px', borderRadius: 12, border: 'none',
-                            background: STATUS_META[next]?.gradient || '#f97316', color: '#fff',
-                            cursor: isUpdating ? 'not-allowed' : 'pointer', fontWeight: 800,
-                            fontSize: 14, opacity: isUpdating ? 0.7 : 1,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-                            boxShadow: `0 4px 14px ${STATUS_META[next]?.color || '#f97316'}40`,
-                          }}>
+                          className="dp-btn-advance"
+                          style={{ background: STATUS_META[next]?.gradient || '#f97316', boxShadow: `0 4px 16px ${STATUS_META[next]?.color || '#f97316'}40` }}>
                           {isUpdating ? (
-                            <>
-                              <div style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'driverSpin 0.8s linear infinite' }} />
-                              Processing...
-                            </>
+                            <><div className="dp-btn-spinner" /> Processing...</>
                           ) : (
                             <>
                               {next === 'in_transit' && <><DeliveryTruck width={16} height={16} /> {order.status === 'assigned' ? 'Start Order' : 'Start Delivery'}</>}
@@ -682,13 +571,7 @@ export default function DriverDashboard() {
                         </button>
                       )}
                       {['assigned', 'picked_up', 'in_transit'].includes(order.status) && (
-                        <button onClick={() => markFailed(order)} disabled={isUpdating}
-                          style={{
-                            flex: 1, padding: '13px', borderRadius: 12, border: '1.5px solid #fecaca',
-                            background: '#fff5f5', color: '#dc2626', cursor: isUpdating ? 'not-allowed' : 'pointer',
-                            fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center',
-                            justifyContent: 'center', gap: 5,
-                          }}>
+                        <button onClick={() => markFailed(order)} disabled={isUpdating} className="dp-btn-fail">
                           <Xmark width={14} height={14} /> Failed
                         </button>
                       )}
@@ -698,16 +581,13 @@ export default function DriverDashboard() {
 
                 {/* ── Completed/Failed timestamp strip ── */}
                 {tab !== 'active' && (
-                  <div style={{
-                    padding: '10px 16px', borderTop: '1px solid #f1f5f9', fontSize: 12, color: '#94a3b8',
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  }}>
+                  <div className="dp-completed-strip">
                     <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                       <Calendar width={12} height={12} /> {fmtDate(order.created_at)}
                     </span>
                     <span style={{ fontWeight: 600, color: order.delivered_at ? '#16a34a' : '#dc2626' }}>
-                      {order.delivered_at && `\u2713 Delivered ${fmtTime(order.delivered_at)}`}
-                      {order.failed_at && `\u2717 Failed ${fmtTime(order.failed_at)}`}
+                      {order.delivered_at && `✓ Delivered ${fmtTime(order.delivered_at)}`}
+                      {order.failed_at && `✗ Failed ${fmtTime(order.failed_at)}`}
                     </span>
                   </div>
                 )}
