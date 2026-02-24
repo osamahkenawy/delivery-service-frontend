@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Settings as SettingsIcon, User, Building, TruckDelivery, Mail,
+  Settings as SettingsIcon, User, Building, DeliveryTruck, Mail,
   Plus, Trash, CheckCircle, WarningCircle
 } from 'iconoir-react';
 import api from '../lib/api';
@@ -32,7 +32,7 @@ const SETTING_GROUPS = [
   {
     key: 'delivery',
     title: 'Delivery Defaults',
-    icon: TruckDelivery,
+    icon: DeliveryTruck,
     fields: [
       { key: 'default_emirate',          label: 'Default Emirate' },
       { key: 'max_cod_amount',           label: 'Max COD Amount (AED)',    type: 'number' },

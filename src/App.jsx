@@ -51,14 +51,21 @@ function App() {
   }, []);
 
   const checkSession = async () => {
+    const timeout = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Session check timeout')), 8000)
+    );
+    
     try {
       const token = localStorage.getItem('crm_token');
       if (token) {
         const API_URL = import.meta.env.VITE_API_URL || '/api';
-        const res = await fetch(`${API_URL}/auth/session`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-          credentials: 'include'
-        });
+        const res = await Promise.race([
+          fetch(`${API_URL}/auth/session`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+            credentials: 'include'
+          }),
+          timeout
+        ]);
         const data = await res.json();
         if (data.success && data.data) {
           setUser(data.data);
@@ -75,6 +82,10 @@ function App() {
       }
     } catch (error) {
       console.error('Session check failed:', error);
+      // Clear token on any error to force login
+      localStorage.removeItem('crm_token');
+      localStorage.removeItem('crm_user');
+      localStorage.removeItem('crm_tenant');
     } finally {
       setLoading(false);
     }
