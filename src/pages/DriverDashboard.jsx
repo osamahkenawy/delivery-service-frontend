@@ -88,9 +88,12 @@ export default function DriverDashboard() {
   const [expanded, setExpanded] = useState(null);
   const [noProfile, setNoProfile] = useState(false);
   const [gpsActive, setGpsActive] = useState(false);
+  const [gpsError, setGpsError]   = useState(null);
   const refreshRef              = useRef(null);
   const gpsRef                  = useRef(null);
   const watchRef                = useRef(null);
+  const lastPosRef              = useRef(null);   // persist GPS across re-renders
+  const dataRef                 = useRef(null);    // always-current data for sendPing
 
   const showToast = useCallback((msg, type = 'success') => {
     const id = Date.now() + Math.random();
@@ -117,64 +120,86 @@ export default function DriverDashboard() {
     return () => clearInterval(refreshRef.current);
   }, [fetchOrders]);
 
-  /* ── Continuous GPS broadcasting (every 10s when driver has active in-transit/picked_up orders) ── */
-  useEffect(() => {
-    const orders = data?.orders || [];
-    const driver = data?.driver;
-    const hasActiveTrip = orders.some(o => ['picked_up', 'in_transit'].includes(o.status));
+  /* ── Keep dataRef always current so GPS ping uses fresh data ── */
+  useEffect(() => { dataRef.current = data; }, [data]);
 
-    if (!hasActiveTrip || !driver?.id || !navigator.geolocation) {
+  /* ── Continuous GPS broadcasting (every 10s when driver has active in-transit/picked_up orders) ── */
+  const hasActiveTrip = (data?.orders || []).some(o => ['picked_up', 'in_transit'].includes(o.status));
+  const driverId = data?.driver?.id;
+
+  useEffect(() => {
+    if (!hasActiveTrip || !driverId || !navigator.geolocation) {
       // Stop broadcasting if no active trip
       if (gpsRef.current) { clearInterval(gpsRef.current); gpsRef.current = null; }
       if (watchRef.current != null) { navigator.geolocation.clearWatch(watchRef.current); watchRef.current = null; }
       setGpsActive(false);
+      setGpsError(null);
       return;
     }
 
-    // Already broadcasting
+    // Already broadcasting — don't restart
     if (gpsRef.current) return;
 
     setGpsActive(true);
-    let lastPos = null;
+    setGpsError(null);
 
-    // Use watchPosition for best accuracy + fallback interval
+    // Use watchPosition for continuous high-accuracy GPS
     watchRef.current = navigator.geolocation.watchPosition(
       (pos) => {
-        lastPos = { lat: pos.coords.latitude, lng: pos.coords.longitude, speed: pos.coords.speed, heading: pos.coords.heading };
+        lastPosRef.current = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          speed: pos.coords.speed,
+          heading: pos.coords.heading,
+          accuracy: pos.coords.accuracy,
+        };
+        setGpsError(null);
+        console.log('[GPS] Position updated:', lastPosRef.current.lat.toFixed(6), lastPosRef.current.lng.toFixed(6), 'accuracy:', pos.coords.accuracy?.toFixed(0) + 'm');
       },
-      () => {}, // ignore errors silently
-      { enableHighAccuracy: true, maximumAge: 5000 }
+      (err) => {
+        console.warn('[GPS] Error:', err.code, err.message);
+        setGpsError(err.message);
+      },
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
     );
 
     const sendPing = async () => {
-      if (!lastPos) return;
-      const activeOrder = orders.find(o => ['picked_up', 'in_transit'].includes(o.status));
+      const pos = lastPosRef.current;
+      if (!pos) { console.log('[GPS] No position yet, skipping ping'); return; }
+      const currentData = dataRef.current;
+      const currentDriverId = currentData?.driver?.id;
+      const activeOrder = (currentData?.orders || []).find(o => ['picked_up', 'in_transit'].includes(o.status));
+      if (!currentDriverId) return;
       try {
-        await api.patch(`/drivers/${driver.id}/location`, {
-          lat: lastPos.lat, lng: lastPos.lng,
-          speed: lastPos.speed || 0, heading: lastPos.heading || 0,
+        await api.patch(`/drivers/${currentDriverId}/location`, {
+          lat: pos.lat, lng: pos.lng,
+          speed: pos.speed || 0, heading: pos.heading || 0,
           order_id: activeOrder?.id || null,
         });
-      } catch { /* non-critical */ }
+        console.log('[GPS] Ping sent:', pos.lat.toFixed(6), pos.lng.toFixed(6));
+      } catch (err) { console.warn('[GPS] Ping failed:', err); }
     };
 
-    // Send immediately then every 10 seconds
-    sendPing();
+    // First ping after a short delay to let watchPosition acquire a fix
+    const initialTimeout = setTimeout(sendPing, 2000);
     gpsRef.current = setInterval(sendPing, 10000);
 
     return () => {
+      clearTimeout(initialTimeout);
       if (gpsRef.current) { clearInterval(gpsRef.current); gpsRef.current = null; }
       if (watchRef.current != null) { navigator.geolocation.clearWatch(watchRef.current); watchRef.current = null; }
       setGpsActive(false);
     };
-  }, [data]);
+  }, [hasActiveTrip, driverId]);
 
   const getGPS = () => new Promise(resolve => {
+    // Use cached position from watchPosition if available (faster)
+    if (lastPosRef.current) return resolve({ lat: lastPosRef.current.lat, lng: lastPosRef.current.lng });
     if (!navigator.geolocation) return resolve(null);
     navigator.geolocation.getCurrentPosition(
       pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
       () => resolve(null),
-      { timeout: 4000 }
+      { enableHighAccuracy: true, timeout: 8000 }
     );
   });
 
@@ -279,10 +304,15 @@ export default function DriverDashboard() {
             <div className="dp-hero-status">
               <span className={`dp-status-dot ${driver.status || 'offline'}`} />
               <span className="dp-status-text">{driver.status || 'Busy'}</span>
-              {gpsActive && (
+              {gpsActive && !gpsError && (
                 <span className="dp-gps-badge">
                   <span className="dp-gps-dot" />
                   GPS Live
+                </span>
+              )}
+              {gpsActive && gpsError && (
+                <span className="dp-gps-badge" style={{ background: 'rgba(239,68,68,0.15)', color: '#dc2626' }}>
+                  <WarningTriangle width={11} height={11} /> GPS Error
                 </span>
               )}
             </div>
