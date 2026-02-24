@@ -20,7 +20,7 @@ const STATUS_META = {
 };
 
 const NEXT_STATUS = {
-  assigned:   'picked_up',
+  assigned:   'in_transit',
   picked_up:  'in_transit',
   in_transit: 'delivered',
 };
@@ -58,6 +58,7 @@ export default function DriverDashboard() {
   const [updating, setUpdating] = useState(null);
   const [codInput, setCodInput] = useState({});
   const [toasts, setToasts]     = useState([]);
+  const [starting, setStarting] = useState(false);
   const refreshRef              = useRef(null);
 
   const showToast = useCallback((msg, type = 'success') => {
@@ -133,6 +134,22 @@ export default function DriverDashboard() {
     finally { setUpdating(null); }
   };
 
+  /* Start Trip — batch-advance all assigned orders to in_transit */
+  const startTrip = async () => {
+    setStarting(true);
+    const gps = await getGPS();
+    try {
+      const res = await api.post('/tracking/start-trip', { lat: gps?.lat, lng: gps?.lng });
+      if (res.success) {
+        showToast(res.message || `${res.started} order(s) started!`);
+        fetchOrders();
+      } else {
+        showToast(res.message || 'Failed to start trip', 'error');
+      }
+    } catch { showToast('Network error', 'error'); }
+    finally { setStarting(false); }
+  };
+
   const stats = data?.stats || {};
   const orders = data?.orders || [];
   const driver = data?.driver || {};
@@ -162,6 +179,21 @@ export default function DriverDashboard() {
           </button>
         </div>
       </div>
+
+      {/* Start Trip Banner */}
+      {tab === 'active' && orders.some(o => o.status === 'assigned') && (
+        <button onClick={startTrip} disabled={starting}
+          style={{
+            width: '100%', padding: '14px', borderRadius: 14, border: 'none', marginBottom: 16,
+            background: 'linear-gradient(135deg, #16a34a, #15803d)', color: '#fff',
+            fontWeight: 800, fontSize: 15, cursor: starting ? 'not-allowed' : 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            opacity: starting ? 0.7 : 1, boxShadow: '0 4px 14px rgba(22,163,74,.3)',
+          }}>
+          <DeliveryTruck width={18} height={18} />
+          {starting ? 'Starting...' : `Start Trip — ${orders.filter(o => o.status === 'assigned').length} order(s)`}
+        </button>
+      )}
 
       {/* Stats cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 20 }}>
@@ -368,8 +400,8 @@ export default function DriverDashboard() {
                           }}>
                           {isUpdating ? 'Processing...' : (
                             <>
-                              {next === 'picked_up'  && <><Package width={15} height={15} /> Pick Up</>}
-                              {next === 'in_transit'  && <><DeliveryTruck width={15} height={15} /> Start Delivery</>}
+                              {next === 'in_transit' && order.status === 'assigned' && <><DeliveryTruck width={15} height={15} /> Start Order</>}
+                              {next === 'in_transit' && order.status === 'picked_up' && <><DeliveryTruck width={15} height={15} /> Start Delivery</>}
                               {next === 'delivered'   && <><CheckCircle width={15} height={15} /> Deliver</>}
                             </>
                           )}

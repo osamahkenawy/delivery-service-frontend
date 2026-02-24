@@ -7,6 +7,7 @@ import {
   DollarCircle, Bell, Wallet, Page, StatsUpSquare, Settings,
   Network, Menu, LogOut, Language, Dashboard
 } from 'iconoir-react';
+import NotificationBell from './NotificationBell';
 import './Layout.css';
 
 const iconMap = {
@@ -199,6 +200,8 @@ export default function Layout({ children }) {
         </div>
 
         <div className="topbar-actions">
+          <NotificationBell />
+
           <div className="lang-switcher">
             <button className="lang-toggle" onClick={() => setShowLangMenu(!showLangMenu)}>
               <Language width={20} height={20} />
