@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Group, User, Search, EditPencil, Trash, Plus,
   Mail, Phone, Building, MapPin, Download, NavArrowRight, NavArrowLeft,
@@ -273,6 +274,7 @@ function LocationPickerMap({ lat, lng, onPick }) {
 
 /* ── Main component ── */
 export default function Clients() {
+  const navigate = useNavigate();
   const [clients,       setClients]       = useState([]);
   const [loading,       setLoading]       = useState(true);
   const [total,         setTotal]         = useState(0);
@@ -714,6 +716,12 @@ export default function Clients() {
                     background:'#f97316', color:'#fff', cursor:'pointer', fontWeight:700, fontSize:14,
                     display:'flex', alignItems:'center', justifyContent:'center', gap:7 }}>
                   <EditPencil width={15} height={15} /> Edit Client
+                </button>
+                <button onClick={() => navigate(`/orders?client_id=${drawer.id}`)}
+                  style={{ flex:1, padding:'10px', borderRadius:10, border:'none',
+                    background:'#16a34a', color:'#fff', cursor:'pointer', fontWeight:700, fontSize:14,
+                    display:'flex', alignItems:'center', justifyContent:'center', gap:7 }}>
+                  <Package width={15} height={15} /> New Order
                 </button>
                 <button onClick={e=>handleToggle(drawer,e)}
                   style={{ flex:1, padding:'10px', borderRadius:10, border:'1px solid rgba(255,255,255,0.2)',
