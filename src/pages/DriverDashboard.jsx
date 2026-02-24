@@ -244,10 +244,12 @@ export default function DriverDashboard() {
   };
 
   const stats = data?.stats || {};
+  const allTimeStats = data?.allTimeStats || {};
   const orders = data?.orders || [];
   const driver = data?.driver || {};
   const today = new Date().toLocaleDateString('en-AE', { weekday: 'long', day: 'numeric', month: 'long' });
   const assignedCount = orders.filter(o => o.status === 'assigned').length;
+  const deliveryRate = allTimeStats.total_orders > 0 ? Math.round((allTimeStats.total_delivered / allTimeStats.total_orders) * 100) : 0;
 
   /* ── No driver profile state ── */
   if (noProfile && !loading) {
@@ -258,14 +260,8 @@ export default function DriverDashboard() {
         </div>
         <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e293b', marginBottom: 8 }}>No Driver Profile</h2>
         <p style={{ color: '#64748b', fontSize: 14, lineHeight: 1.6, marginBottom: 24 }}>
-          Your account is not linked to a driver profile. Please log in with a driver account, or contact your admin to set up your driver profile.
+          Your account is not linked to a driver profile. Please contact your admin to link your account to a driver profile.
         </p>
-        <button onClick={() => navigate('/dashboard')} style={{
-          padding: '12px 28px', borderRadius: 10, border: 'none',
-          background: '#f97316', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer',
-        }}>
-          Go to Dashboard
-        </button>
         <Toast toasts={toasts} />
       </div>
     );
@@ -319,25 +315,63 @@ export default function DriverDashboard() {
           </div>
         </div>
 
-        {/* Quick Stats Row Inside Hero */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginTop: 16, position: 'relative', zIndex: 1 }}>
-          {[
-            { label: 'Active',    value: stats.active || 0,   emoji: '\ud83d\udce6', bg: 'rgba(249,115,22,0.15)' },
-            { label: 'Delivered', value: stats.delivered || 0, emoji: '\u2705', bg: 'rgba(34,197,94,0.15)' },
-            { label: 'Failed',    value: stats.failed || 0,   emoji: '\u274c', bg: 'rgba(239,68,68,0.15)' },
-            { label: 'Revenue',   value: fmtAED(stats.revenue), emoji: '\ud83d\udcb0', bg: 'rgba(14,165,233,0.15)' },
-          ].map(s => (
-            <div key={s.label} style={{
-              background: s.bg, borderRadius: 12, padding: '10px 6px', textAlign: 'center',
-              border: '1px solid rgba(255,255,255,0.06)',
-            }}>
-              <div style={{ fontSize: 16 }}>{s.emoji}</div>
-              <div style={{ fontSize: 18, fontWeight: 900, color: '#fff', marginTop: 2 }}>{s.value}</div>
-              <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase' }}>{s.label}</div>
-            </div>
-          ))}
+        {/* Quick Stats Row Inside Hero — Today */}
+        <div style={{ position: 'relative', zIndex: 1, marginTop: 16 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Today's Performance</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+            {[
+              { label: 'Active',    value: stats.active || 0,   emoji: '\ud83d\udce6', bg: 'rgba(249,115,22,0.15)' },
+              { label: 'Delivered', value: stats.delivered || 0, emoji: '\u2705', bg: 'rgba(34,197,94,0.15)' },
+              { label: 'Failed',    value: stats.failed || 0,   emoji: '\u274c', bg: 'rgba(239,68,68,0.15)' },
+              { label: 'Revenue',   value: fmtAED(stats.revenue), emoji: '\ud83d\udcb0', bg: 'rgba(14,165,233,0.15)' },
+            ].map(s => (
+              <div key={s.label} style={{
+                background: s.bg, borderRadius: 12, padding: '10px 6px', textAlign: 'center',
+                border: '1px solid rgba(255,255,255,0.06)',
+              }}>
+                <div style={{ fontSize: 16 }}>{s.emoji}</div>
+                <div style={{ fontSize: 18, fontWeight: 900, color: '#fff', marginTop: 2 }}>{s.value}</div>
+                <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase' }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
+
+      {/* ═══ All-Time Stats Card ═══ */}
+      {allTimeStats.total_orders > 0 && (
+        <div style={{
+          background: '#fff', borderRadius: 16, padding: '18px 20px', marginBottom: 16,
+          boxShadow: '0 2px 12px rgba(0,0,0,0.06)', border: '1px solid #f1f5f9',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#1e293b' }}>Overall Performance</h3>
+            <span style={{
+              padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700,
+              background: deliveryRate >= 90 ? '#dcfce7' : deliveryRate >= 70 ? '#fef3c7' : '#fee2e2',
+              color: deliveryRate >= 90 ? '#16a34a' : deliveryRate >= 70 ? '#d97706' : '#dc2626',
+            }}>
+              {deliveryRate}% Success
+            </span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+            {[
+              { label: 'Total Orders', value: allTimeStats.total_orders, color: '#3b82f6', bg: '#eff6ff' },
+              { label: 'Delivered', value: allTimeStats.total_delivered, color: '#16a34a', bg: '#f0fdf4' },
+              { label: 'Failed', value: allTimeStats.total_failed, color: '#dc2626', bg: '#fef2f2' },
+              { label: 'Earned', value: fmtAED(allTimeStats.total_revenue), color: '#0369a1', bg: '#f0f9ff' },
+            ].map(s => (
+              <div key={s.label} style={{
+                background: s.bg, borderRadius: 12, padding: '12px 8px', textAlign: 'center',
+                border: `1px solid ${s.color}15`,
+              }}>
+                <div style={{ fontSize: 20, fontWeight: 900, color: s.color }}>{s.value}</div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginTop: 2 }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ═══ Start Trip Banner ═══ */}
       {tab === 'active' && assignedCount > 0 && (

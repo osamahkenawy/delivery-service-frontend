@@ -36,7 +36,8 @@ const iconMap = {
   'performance':    Medal,
 };
 
-const navSections = [
+/* ── Admin navigation ── */
+const adminNavSections = [
   {
     titleKey: 'Main',
     items: [
@@ -91,7 +92,23 @@ const navSections = [
   },
 ];
 
-const allNavItems = navSections.flatMap(s => s.items);
+/* ── Driver navigation (minimal) ── */
+const driverNavSections = [
+  {
+    titleKey: 'Main',
+    items: [
+      { path: '/driver/orders', labelKey: 'My Deliveries',  iconKey: 'my-deliveries' },
+    ]
+  },
+  {
+    titleKey: 'Tools',
+    items: [
+      { path: '/driver/scan',   labelKey: 'Scan Shipment',  iconKey: 'driver-scan' },
+    ]
+  },
+];
+
+const allNavItems = [...adminNavSections, ...driverNavSections].flatMap(s => s.items);
 
 export default function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -168,7 +185,7 @@ export default function Layout({ children }) {
         </div>
 
         <nav className="sidebar-nav">
-          {navSections.map((section) => (
+          {(user?.role === 'driver' ? driverNavSections : adminNavSections).map((section) => (
             <div key={section.titleKey} className="nav-section">
               <div className="sidebar-nav-label">
                 {section.titleKey}
@@ -239,6 +256,7 @@ export default function Layout({ children }) {
           {user?.role === 'superadmin' && <span className="role-badge super-admin">SUPER ADMIN</span>}
           {user?.role === 'admin'      && <span className="role-badge admin">ADMIN</span>}
           {user?.role === 'dispatcher' && <span className="role-badge staff">DISPATCHER</span>}
+          {user?.role === 'driver'     && <span className="role-badge staff" style={{ background: '#f973161a', color: '#f97316', borderColor: '#f97316' }}>DRIVER</span>}
 
           <div className="user-menu-wrapper">
             <button className="user-avatar-toggle" onClick={() => setShowUserMenu(!showUserMenu)}>

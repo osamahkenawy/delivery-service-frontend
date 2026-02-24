@@ -31,7 +31,7 @@ export default function LoginPage() {
     try {
       const result = await login(username, password);
       if (result.success) {
-        navigate('/dashboard');
+        navigate(result.role === 'driver' ? '/driver/orders' : '/dashboard');
       } else {
         setError(result.message || 'Invalid credentials. Please try again.');
       }

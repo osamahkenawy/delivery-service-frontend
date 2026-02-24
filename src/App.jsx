@@ -162,42 +162,52 @@ function App() {
     );
   }
 
+  const isDriver = user?.role === 'driver';
+  const homeRoute = isDriver ? '/driver/orders' : '/dashboard';
+
   const PrivateRoute = ({ children }) => user ? <Layout>{children}</Layout> : <Navigate to="/login" />;
+  const AdminRoute = ({ children }) => {
+    if (!user) return <Navigate to="/login" />;
+    if (isDriver) return <Navigate to="/driver/orders" />;
+    return <Layout>{children}</Layout>;
+  };
 
   return (
     <AuthContext.Provider value={{ user, tenant, login, logout, checkSession, setUser, setTenant }}>
       <Routes>
         {/* Public routes */}
-        <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <LoginPage />} />
-        <Route path="/register" element={user ? <Navigate to="/dashboard" /> : <RegisterPage />} />
+        <Route path="/login" element={user ? <Navigate to={homeRoute} /> : <LoginPage />} />
+        <Route path="/register" element={user ? <Navigate to={homeRoute} /> : <RegisterPage />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/track/:token" element={<TrackingPublic />} />
-        <Route path="/" element={<Navigate to={user ? '/dashboard' : '/login'} />} />
+        <Route path="/" element={<Navigate to={user ? homeRoute : '/login'} />} />
 
-        {/* Protected delivery routes */}
-        <Route path="/dashboard"      element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-        <Route path="/orders"         element={<PrivateRoute><Orders /></PrivateRoute>} />
-        <Route path="/orders/:id"     element={<PrivateRoute><OrderDetail /></PrivateRoute>} />
-        <Route path="/drivers"        element={<PrivateRoute><Drivers /></PrivateRoute>} />
-        <Route path="/dispatch"       element={<PrivateRoute><Dispatch /></PrivateRoute>} />
-        <Route path="/clients"        element={<PrivateRoute><Clients /></PrivateRoute>} />
-        <Route path="/zones"          element={<PrivateRoute><Zones /></PrivateRoute>} />
-        <Route path="/pricing"        element={<PrivateRoute><Pricing /></PrivateRoute>} />
-        <Route path="/notifications"  element={<PrivateRoute><Notifications /></PrivateRoute>} />
-        <Route path="/wallet"         element={<PrivateRoute><Wallet /></PrivateRoute>} />
-        <Route path="/invoices"       element={<PrivateRoute><Invoices /></PrivateRoute>} />
-        <Route path="/reports"        element={<PrivateRoute><Reports /></PrivateRoute>} />
-        <Route path="/live-map"       element={<PrivateRoute><LiveMap /></PrivateRoute>} />
-        <Route path="/barcode"        element={<PrivateRoute><Barcode /></PrivateRoute>} />
-        <Route path="/driver/scan"    element={<PrivateRoute><DriverScan /></PrivateRoute>} />
+        {/* Driver routes (accessible by all authenticated users) */}
         <Route path="/driver/orders"  element={<PrivateRoute><DriverDashboard /></PrivateRoute>} />
-        <Route path="/settings"       element={<PrivateRoute><Settings /></PrivateRoute>} />
-        <Route path="/api-keys"       element={<PrivateRoute><Integrations /></PrivateRoute>} />
-        <Route path="/shipment-tracking" element={<PrivateRoute><ShipmentTracking /></PrivateRoute>} />
-        <Route path="/bulk-import"    element={<PrivateRoute><BulkImport /></PrivateRoute>} />
-        <Route path="/returns"        element={<PrivateRoute><Returns /></PrivateRoute>} />
-        <Route path="/cod"            element={<PrivateRoute><CODReconciliation /></PrivateRoute>} />
-        <Route path="/performance"    element={<PrivateRoute><Performance /></PrivateRoute>} />
+        <Route path="/driver/scan"    element={<PrivateRoute><DriverScan /></PrivateRoute>} />
+
+        {/* Admin-only routes (drivers get redirected) */}
+        <Route path="/dashboard"      element={<AdminRoute><Dashboard /></AdminRoute>} />
+        <Route path="/orders"         element={<AdminRoute><Orders /></AdminRoute>} />
+        <Route path="/orders/:id"     element={<AdminRoute><OrderDetail /></AdminRoute>} />
+        <Route path="/drivers"        element={<AdminRoute><Drivers /></AdminRoute>} />
+        <Route path="/dispatch"       element={<AdminRoute><Dispatch /></AdminRoute>} />
+        <Route path="/clients"        element={<AdminRoute><Clients /></AdminRoute>} />
+        <Route path="/zones"          element={<AdminRoute><Zones /></AdminRoute>} />
+        <Route path="/pricing"        element={<AdminRoute><Pricing /></AdminRoute>} />
+        <Route path="/notifications"  element={<AdminRoute><Notifications /></AdminRoute>} />
+        <Route path="/wallet"         element={<AdminRoute><Wallet /></AdminRoute>} />
+        <Route path="/invoices"       element={<AdminRoute><Invoices /></AdminRoute>} />
+        <Route path="/reports"        element={<AdminRoute><Reports /></AdminRoute>} />
+        <Route path="/live-map"       element={<AdminRoute><LiveMap /></AdminRoute>} />
+        <Route path="/barcode"        element={<AdminRoute><Barcode /></AdminRoute>} />
+        <Route path="/settings"       element={<AdminRoute><Settings /></AdminRoute>} />
+        <Route path="/api-keys"       element={<AdminRoute><Integrations /></AdminRoute>} />
+        <Route path="/shipment-tracking" element={<AdminRoute><ShipmentTracking /></AdminRoute>} />
+        <Route path="/bulk-import"    element={<AdminRoute><BulkImport /></AdminRoute>} />
+        <Route path="/returns"        element={<AdminRoute><Returns /></AdminRoute>} />
+        <Route path="/cod"            element={<AdminRoute><CODReconciliation /></AdminRoute>} />
+        <Route path="/performance"    element={<AdminRoute><Performance /></AdminRoute>} />
 
         {/* Super Admin Routes */}
         <Route path="/super-admin/login" element={<SuperAdminLogin />} />
