@@ -274,7 +274,7 @@ export default function DriverDashboard() {
           <div>
             <div className="dp-hero-greeting">{today}</div>
             <h2 className="dp-hero-name">
-              {driver.name ? `Hi, ${driver.name.split(' ')[0]} 👋` : 'My Deliveries'}
+              {driver.name ? `Hi, ${driver.name.split(' ')[0]}` : 'My Deliveries'}
             </h2>
             <div className="dp-hero-status">
               <span className={`dp-status-dot ${driver.status || 'offline'}`} />
@@ -301,10 +301,10 @@ export default function DriverDashboard() {
         <div className="dp-today-label">Today's Performance</div>
         <div className="dp-today-grid">
           {[
-            { label: 'Active',    value: stats.active || 0,   icon: '📦', bg: 'rgba(249,115,22,0.12)' },
-            { label: 'Delivered', value: stats.delivered || 0, icon: '✅', bg: 'rgba(34,197,94,0.12)' },
-            { label: 'Failed',    value: stats.failed || 0,   icon: '❌', bg: 'rgba(239,68,68,0.12)' },
-            { label: 'Revenue',   value: fmtAED(stats.revenue), icon: '💰', bg: 'rgba(14,165,233,0.12)' },
+            { label: 'Active',    value: stats.active || 0,   icon: <Package width={18} height={18} color="#f97316" />, bg: 'rgba(249,115,22,0.12)' },
+            { label: 'Delivered', value: stats.delivered || 0, icon: <CheckCircle width={18} height={18} color="#16a34a" />, bg: 'rgba(34,197,94,0.12)' },
+            { label: 'Failed',    value: stats.failed || 0,   icon: <Xmark width={18} height={18} color="#dc2626" />, bg: 'rgba(239,68,68,0.12)' },
+            { label: 'Revenue',   value: fmtAED(stats.revenue), icon: <DollarCircle width={18} height={18} color="#0ea5e9" />, bg: 'rgba(14,165,233,0.12)' },
           ].map(s => (
             <div key={s.label} className="dp-today-card" style={{ background: s.bg }}>
               <div className="tc-icon">{s.icon}</div>
@@ -357,7 +357,7 @@ export default function DriverDashboard() {
       {tab === 'active' && assignedCount > 0 && (
         <button onClick={startTrip} disabled={starting} className="dp-start-trip">
           <DeliveryTruck width={20} height={20} />
-          {starting ? 'Starting Trip...' : `🚀 Start Trip — ${assignedCount} Order${assignedCount > 1 ? 's' : ''}`}
+          {starting ? 'Starting Trip...' : `Start Trip — ${assignedCount} Order${assignedCount > 1 ? 's' : ''}`}
         </button>
       )}
 
@@ -477,12 +477,12 @@ export default function DriverDashboard() {
                     {/* Order details grid */}
                     <div className="dp-details-grid">
                       {[
-                        { label: '📦 Type', value: order.order_type?.replace(/_/g, ' ') || 'Standard' },
-                        { label: '🏷️ Category', value: order.category || '—' },
-                        { label: '⚖️ Weight', value: order.weight_kg ? `${order.weight_kg} kg` : '—' },
-                        { label: '🗺️ Zone', value: order.zone_name || '—' },
-                        { label: '🏢 Client', value: order.client_name || '—' },
-                        { label: '📤 Sender', value: order.sender_name || '—' },
+                        { label: 'Type', value: order.order_type?.replace(/_/g, ' ') || 'Standard' },
+                        { label: 'Category', value: order.category || '—' },
+                        { label: 'Weight', value: order.weight_kg ? `${order.weight_kg} kg` : '—' },
+                        { label: 'Zone', value: order.zone_name || '—' },
+                        { label: 'Client', value: order.client_name || '—' },
+                        { label: 'Sender', value: order.sender_name || '—' },
                       ].map(d => (
                         <div key={d.label} className="dp-detail-cell">
                           <div className="dc-label">{d.label}</div>
@@ -526,7 +526,7 @@ export default function DriverDashboard() {
                   </div>
                   {order.payment_method === 'cod' && parseFloat(order.cod_amount) > 0 && (
                     <div className="dp-payment-cell cod-collect">
-                      <div className="pc-label">💵 Collect</div>
+                      <div className="pc-label"><Wallet width={12} height={12} style={{ marginRight: 4, verticalAlign: 'middle' }} /> Collect</div>
                       <div className="pc-value">AED {parseFloat(order.cod_amount).toFixed(0)}</div>
                     </div>
                   )}
