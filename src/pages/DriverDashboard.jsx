@@ -457,16 +457,16 @@ export default function DriverDashboard() {
                     </span>
                   </div>
 
-                  {/* Navigate */}
+                  {/* Navigate — uses Google Maps directions so the phone navigates from current GPS location */}
                   {(order.recipient_lat && order.recipient_lng) ? (
-                    <a href={`https://maps.google.com/?q=${order.recipient_lat},${order.recipient_lng}`}
+                    <a href={`https://www.google.com/maps/dir/?api=1&destination=${order.recipient_lat},${order.recipient_lng}`}
                       target="_blank" rel="noreferrer" className="dp-navigate has-coords">
-                      <MapPin width={14} height={14} /> Navigate in Google Maps
+                      <MapPin width={14} height={14} /> Navigate
                     </a>
                   ) : order.recipient_address && (
-                    <a href={`https://maps.google.com/?q=${encodeURIComponent(order.recipient_address + ' ' + (order.recipient_emirate || 'Dubai'))}`}
+                    <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(order.recipient_address + ' ' + (order.recipient_emirate || 'Dubai'))}`}
                       target="_blank" rel="noreferrer" className="dp-navigate no-coords">
-                      <MapPin width={14} height={14} /> Search in Maps
+                      <MapPin width={14} height={14} /> Navigate
                     </a>
                   )}
                 </div>
