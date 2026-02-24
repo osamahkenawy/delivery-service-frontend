@@ -4,6 +4,7 @@ import { useState, useEffect, createContext } from 'react';
 // Delivery Platform Pages
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import Orders from './pages/Orders';
 import OrderDetail from './pages/OrderDetail';
@@ -169,6 +170,7 @@ function App() {
         {/* Public routes */}
         <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <LoginPage />} />
         <Route path="/register" element={user ? <Navigate to="/dashboard" /> : <RegisterPage />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/track/:token" element={<TrackingPublic />} />
         <Route path="/" element={<Navigate to={user ? '/dashboard' : '/login'} />} />
 
