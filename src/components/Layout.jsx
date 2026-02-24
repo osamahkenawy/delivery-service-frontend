@@ -5,7 +5,8 @@ import { AuthContext } from '../App';
 import {
   HomeSimple, Package, DeliveryTruck, Map, User, MapPin,
   DollarCircle, Bell, Wallet, Page, StatsUpSquare, Settings,
-  Network, Menu, LogOut, Language, Dashboard
+  Network, Menu, LogOut, Language, Dashboard, Upload,
+  RefreshDouble, CreditCard, Medal, Search
 } from 'iconoir-react';
 import NotificationBell from './NotificationBell';
 import './Layout.css';
@@ -28,6 +29,11 @@ const iconMap = {
   'reports':        StatsUpSquare,
   'settings':       Settings,
   'api-keys':       Network,
+  'shipment-tracking': Search,
+  'bulk-import':    Upload,
+  'returns':        RefreshDouble,
+  'cod':            CreditCard,
+  'performance':    Medal,
 };
 
 const navSections = [
@@ -48,6 +54,9 @@ const navSections = [
       { path: '/driver/scan',    labelKey: 'Scan Shipment',  iconKey: 'driver-scan' },
       { path: '/driver/orders',  labelKey: 'My Deliveries',  iconKey: 'my-deliveries' },
       { path: '/clients',       labelKey: 'Clients',       iconKey: 'clients' },
+      { path: '/shipment-tracking', labelKey: 'Shipment Tracking', iconKey: 'shipment-tracking' },
+      { path: '/bulk-import',    labelKey: 'Bulk Import',   iconKey: 'bulk-import' },
+      { path: '/returns',        labelKey: 'Returns',       iconKey: 'returns' },
     ]
   },
   {
@@ -62,12 +71,14 @@ const navSections = [
     items: [
       { path: '/wallet',        labelKey: 'Wallet',        iconKey: 'wallet' },
       { path: '/invoices',      labelKey: 'Invoices',      iconKey: 'invoices' },
+      { path: '/cod',           labelKey: 'COD Reconciliation', iconKey: 'cod' },
     ]
   },
   {
     titleKey: 'Analytics',
     items: [
       { path: '/reports',       labelKey: 'Reports',       iconKey: 'reports' },
+      { path: '/performance',   labelKey: 'Performance',   iconKey: 'performance' },
     ]
   },
   {

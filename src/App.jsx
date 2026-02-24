@@ -23,6 +23,11 @@ import DriverScan from './pages/DriverScan';
 import DriverDashboard from './pages/DriverDashboard';
 import Settings from './pages/Settings';
 import Integrations from './pages/Integrations';
+import ShipmentTracking from './pages/ShipmentTracking';
+import BulkImport from './pages/BulkImport';
+import Returns from './pages/Returns';
+import CODReconciliation from './pages/CODReconciliation';
+import Performance from './pages/Performance';
 
 // Super Admin Pages
 import SuperAdminLogin from './pages/SuperAdmin/SuperAdminLogin';
@@ -164,6 +169,11 @@ function App() {
         <Route path="/driver/orders"  element={<PrivateRoute><DriverDashboard /></PrivateRoute>} />
         <Route path="/settings"       element={<PrivateRoute><Settings /></PrivateRoute>} />
         <Route path="/api-keys"       element={<PrivateRoute><Integrations /></PrivateRoute>} />
+        <Route path="/shipment-tracking" element={<PrivateRoute><ShipmentTracking /></PrivateRoute>} />
+        <Route path="/bulk-import"    element={<PrivateRoute><BulkImport /></PrivateRoute>} />
+        <Route path="/returns"        element={<PrivateRoute><Returns /></PrivateRoute>} />
+        <Route path="/cod"            element={<PrivateRoute><CODReconciliation /></PrivateRoute>} />
+        <Route path="/performance"    element={<PrivateRoute><Performance /></PrivateRoute>} />
 
         {/* Super Admin Routes */}
         <Route path="/super-admin/login" element={<SuperAdminLogin />} />
