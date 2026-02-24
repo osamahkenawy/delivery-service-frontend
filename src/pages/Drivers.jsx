@@ -110,6 +110,7 @@ export default function Drivers() {
   const [showForm,   setShowForm]   = useState(false);
   const [selected,   setSelected]   = useState(null);
   const [form,       setForm]       = useState(EMPTY_FORM);
+  const [credentialsModal, setCredentialsModal] = useState(null);
   const [zones,      setZones]      = useState([]);
   const [saving,     setSaving]     = useState(false);
   const [error,      setError]      = useState('');
@@ -224,10 +225,7 @@ export default function Drivers() {
       if (res.success) {
         // Show driver account credentials on new creation
         if (!selected && res.account) {
-          const { username, password } = res.account;
-          setTimeout(() => {
-            alert(`✅ Driver Account Created!\n\nUsername: ${username}\nPassword: ${password}\n\nThe driver can login with these credentials to manage their deliveries.`);
-          }, 300);
+          setCredentialsModal(res.account);
         }
         closeForm();
         fetchDrivers();
@@ -777,10 +775,10 @@ export default function Drivers() {
                   </div>
                   {!selected && (
                     <div className="form-field">
-                      <label>Password *</label>
-                      <input required={!selected} type="password" value={form.password}
+                      <label>Password</label>
+                      <input type="password" value={form.password}
                         onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                        placeholder="Set login password" />
+                        placeholder="Leave empty for auto-generated" />
                     </div>
                   )}
                 </div>
@@ -847,6 +845,93 @@ export default function Drivers() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Driver Credentials Modal ── */}
+      {credentialsModal && (
+        <div className="modal-overlay" onClick={() => setCredentialsModal(null)}>
+          <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: 440, borderRadius: 16 }}>
+            {/* Success header */}
+            <div style={{
+              background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+              padding: '28px 24px 22px',
+              borderRadius: '16px 16px 0 0',
+              textAlign: 'center',
+              color: '#fff',
+            }}>
+              <div style={{
+                width: 56, height: 56, borderRadius: '50%', background: 'rgba(255,255,255,0.2)',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                marginBottom: 12, fontSize: 28,
+              }}>
+                <Check width={32} height={32} strokeWidth={2.5} />
+              </div>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, letterSpacing: '-0.01em' }}>
+                Driver Account Created
+              </h3>
+              <p style={{ margin: '6px 0 0', opacity: 0.85, fontSize: '0.85rem' }}>
+                {credentialsModal.isDefault
+                  ? 'A default password was auto-generated'
+                  : 'Using the password you set'}
+              </p>
+            </div>
+
+            {/* Credentials body */}
+            <div style={{ padding: '24px' }}>
+              <div style={{
+                background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12,
+                overflow: 'hidden', marginBottom: 16,
+              }}>
+                <div style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '14px 16px', borderBottom: '1px solid #e2e8f0',
+                }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Username</span>
+                  <span style={{ fontSize: '0.95rem', fontWeight: 600, fontFamily: 'monospace', color: '#1e293b' }}>{credentialsModal.username}</span>
+                </div>
+                <div style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '14px 16px',
+                }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Password</span>
+                  <span style={{ fontSize: '0.95rem', fontWeight: 600, fontFamily: 'monospace', color: '#1e293b' }}>{credentialsModal.password}</span>
+                </div>
+              </div>
+
+              {credentialsModal.isDefault && (
+                <div style={{
+                  background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 10,
+                  padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'flex-start',
+                  marginBottom: 16,
+                }}>
+                  <span style={{ fontSize: 18, flexShrink: 0, marginTop: 1 }}>⚠️</span>
+                  <p style={{ margin: 0, fontSize: '0.82rem', color: '#9a3412', lineHeight: 1.5 }}>
+                    This is an auto-generated password. Share it securely with the driver and advise them to change it after first login.
+                  </p>
+                </div>
+              )}
+
+              <button
+                className="btn-primary-action"
+                onClick={() => {
+                  const text = `Username: ${credentialsModal.username}\nPassword: ${credentialsModal.password}`;
+                  navigator.clipboard?.writeText(text);
+                  setCredentialsModal(null);
+                }}
+                style={{ width: '100%', padding: '12px', borderRadius: 10, fontSize: '0.9rem', fontWeight: 600 }}
+              >
+                Copy Credentials & Close
+              </button>
+              <button
+                className="btn-outline-action"
+                onClick={() => setCredentialsModal(null)}
+                style={{ width: '100%', padding: '10px', borderRadius: 10, marginTop: 8, fontSize: '0.85rem' }}
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
