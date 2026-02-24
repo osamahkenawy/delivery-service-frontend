@@ -613,7 +613,29 @@ export default function Drivers() {
                               lng: parseFloat(viewDetail.last_lng),
                               type: 'driver',
                               label: viewDriver.full_name,
-                              popup: `<strong>${viewDriver.full_name}</strong><br/>Last ping: ${fmtPing(viewDetail.last_ping)}`
+                              popup: (
+                                <div style={{ minWidth: 180, fontFamily: 'Inter, system-ui, sans-serif', fontSize: '0.82rem' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', fontWeight: 700, fontSize: '0.9rem' }}>
+                                    <span style={{ width: 28, height: 28, borderRadius: '50%', background: '#16a34a', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.75rem' }}>
+                                      {viewDriver.full_name?.charAt(0)}
+                                    </span>
+                                    {viewDriver.full_name}
+                                  </div>
+                                  {viewDriver.vehicle_type && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#374151', marginTop: 4 }}>
+                                      <span>🚗</span>
+                                      <span style={{ textTransform: 'capitalize' }}>{viewDriver.vehicle_type}</span>
+                                      <span style={{ color: '#9ca3af' }}>•</span>
+                                      <span style={{ fontFamily: 'monospace', fontWeight: 600, background: '#f3f4f6', padding: '1px 6px', borderRadius: 4 }}>{viewDriver.vehicle_plate || '—'}</span>
+                                    </div>
+                                  )}
+                                  {viewDetail.last_ping && (
+                                    <div style={{ marginTop: 6, color: '#6b7280', fontSize: '0.76rem' }}>
+                                      📍 Last ping: {fmtPing(viewDetail.last_ping)}
+                                    </div>
+                                  )}
+                                </div>
+                              )
                             }]}
                             height={160} zoom={14} />
                         </div>

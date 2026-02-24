@@ -58,6 +58,190 @@ export default function Dispatch() {
     catch { /* ignore */ }
   };
 
+  /* ── Popup styles ── */
+  const popupStyles = {
+    card: { minWidth: 240, fontFamily: 'Inter, system-ui, sans-serif', fontSize: '0.82rem', lineHeight: 1.5 },
+    header: (bg, color) => ({
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      padding: '8px 12px', borderRadius: '8px 8px 0 0',
+      background: bg, color, fontWeight: 700, fontSize: '0.85rem',
+    }),
+    body: { padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 6 },
+    row: { display: 'flex', alignItems: 'center', gap: 6, color: '#374151' },
+    icon: { width: 14, height: 14, flexShrink: 0, opacity: 0.6 },
+    label: { fontSize: '0.72rem', color: '#9ca3af', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' },
+    value: { fontWeight: 500 },
+    badge: (bg, color) => ({
+      display: 'inline-flex', padding: '2px 8px', borderRadius: 12,
+      fontSize: '0.72rem', fontWeight: 700, background: bg, color, textTransform: 'capitalize',
+    }),
+    divider: { borderTop: '1px solid #f3f4f6', margin: '2px 0' },
+    driverTag: {
+      display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px',
+      background: '#f0fdf4', borderRadius: 8, border: '1px solid #bbf7d0',
+    },
+    codTag: {
+      display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 8px',
+      background: '#fef3c7', borderRadius: 6, fontWeight: 700, color: '#92400e', fontSize: '0.78rem',
+    },
+  };
+
+  const statusBadgeInfo = (status) => {
+    const map = {
+      pending:    { bg: '#fef3c7', color: '#d97706', label: 'Pending' },
+      confirmed:  { bg: '#dbeafe', color: '#1d4ed8', label: 'Confirmed' },
+      assigned:   { bg: '#ede9fe', color: '#7c3aed', label: 'Assigned' },
+      picked_up:  { bg: '#fce7f3', color: '#be185d', label: 'Picked Up' },
+      in_transit: { bg: '#e0f2fe', color: '#0369a1', label: 'In Transit' },
+      delivered:  { bg: '#dcfce7', color: '#16a34a', label: 'Delivered' },
+    };
+    return map[status] || map.pending;
+  };
+
+  /* ── Order Popup (rich JSX) ── */
+  const OrderPopup = ({ o, variant }) => {
+    const si = statusBadgeInfo(o.status);
+    const headerBg = variant === 'unassigned' ? 'linear-gradient(135deg, #f59e0b, #d97706)' : 'linear-gradient(135deg, #3b82f6, #2563eb)';
+    return (
+      <div style={popupStyles.card}>
+        <div style={{ ...popupStyles.header('#fff', '#fff'), background: headerBg }}>
+          <span>Order #{o.order_number || o.id}</span>
+          <span style={popupStyles.badge(si.bg, si.color)}>{si.label}</span>
+        </div>
+        <div style={popupStyles.body}>
+          {/* Recipient */}
+          <div>
+            <div style={popupStyles.label}>Recipient</div>
+            <div style={{ ...popupStyles.row, fontWeight: 600, fontSize: '0.88rem' }}>
+              <span>👤</span> {o.recipient_name || '—'}
+            </div>
+            {o.recipient_phone && (
+              <div style={popupStyles.row}>
+                <span>📱</span> <span style={popupStyles.value}>{o.recipient_phone}</span>
+              </div>
+            )}
+          </div>
+
+          <div style={popupStyles.divider} />
+
+          {/* Address */}
+          <div>
+            <div style={popupStyles.label}>Delivery Address</div>
+            <div style={popupStyles.row}>
+              <span>📍</span> <span style={popupStyles.value}>{o.recipient_address || '—'}</span>
+            </div>
+            {(o.recipient_area || o.recipient_emirate) && (
+              <div style={{ ...popupStyles.row, fontSize: '0.78rem', color: '#6b7280' }}>
+                <span>🏙️</span> {[o.recipient_area, o.recipient_emirate].filter(Boolean).join(', ')}
+              </div>
+            )}
+            {o.zone_name && (
+              <div style={{ ...popupStyles.row, fontSize: '0.78rem', color: '#6b7280' }}>
+                <span>🗺️</span> Zone: {o.zone_name}
+              </div>
+            )}
+          </div>
+
+          {/* Driver (if assigned) */}
+          {o.driver_name && (
+            <>
+              <div style={popupStyles.divider} />
+              <div>
+                <div style={popupStyles.label}>Driver</div>
+                <div style={popupStyles.driverTag}>
+                  <span style={{ width: 24, height: 24, borderRadius: '50%', background: '#16a34a', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.7rem' }}>
+                    {o.driver_name.charAt(0)}
+                  </span>
+                  <span style={{ fontWeight: 600 }}>{o.driver_name}</span>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Payment / COD */}
+          {(o.payment_method || o.cod_amount > 0) && (
+            <>
+              <div style={popupStyles.divider} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {o.payment_method && (
+                  <span style={popupStyles.badge('#f3f4f6', '#374151')}>
+                    {o.payment_method === 'cod' ? '💵 COD' : o.payment_method === 'prepaid' ? '💳 Prepaid' : o.payment_method}
+                  </span>
+                )}
+                {o.cod_amount > 0 && (
+                  <span style={popupStyles.codTag}>AED {parseFloat(o.cod_amount).toFixed(0)}</span>
+                )}
+                {o.delivery_fee > 0 && (
+                  <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>Fee: AED {parseFloat(o.delivery_fee).toFixed(0)}</span>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Description / Instructions */}
+          {(o.description || o.special_instructions) && (
+            <>
+              <div style={popupStyles.divider} />
+              <div style={{ fontSize: '0.76rem', color: '#6b7280', fontStyle: 'italic', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                📋 {o.special_instructions || o.description}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  /* ── Driver Popup (rich JSX) ── */
+  const DriverPopup = ({ d }) => (
+    <div style={popupStyles.card}>
+      <div style={{ ...popupStyles.header('#fff', '#fff'), background: 'linear-gradient(135deg, #22c55e, #16a34a)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.8rem' }}>
+            {d.full_name?.charAt(0)}
+          </span>
+          <span>{d.full_name}</span>
+        </div>
+        <span style={popupStyles.badge('#dcfce7', '#16a34a')}>Available</span>
+      </div>
+      <div style={popupStyles.body}>
+        <div>
+          <div style={popupStyles.label}>Vehicle</div>
+          <div style={popupStyles.row}>
+            <span>🚗</span>
+            <span style={{ ...popupStyles.value, textTransform: 'capitalize' }}>{d.vehicle_type || '—'}</span>
+            <span style={{ color: '#9ca3af' }}>•</span>
+            <span style={{ fontFamily: 'monospace', fontWeight: 600, background: '#f3f4f6', padding: '1px 6px', borderRadius: 4 }}>{d.vehicle_plate || '—'}</span>
+          </div>
+        </div>
+        {d.phone && (
+          <>
+            <div style={popupStyles.divider} />
+            <div style={popupStyles.row}>
+              <span>📱</span> <span style={popupStyles.value}>{d.phone}</span>
+            </div>
+          </>
+        )}
+        {d.zone_name && (
+          <>
+            <div style={popupStyles.divider} />
+            <div style={popupStyles.row}>
+              <span>🗺️</span> <span style={popupStyles.value}>Zone: {d.zone_name}</span>
+            </div>
+          </>
+        )}
+        {d.active_orders > 0 && (
+          <>
+            <div style={popupStyles.divider} />
+            <div style={popupStyles.row}>
+              <span>📦</span> <span style={popupStyles.value}>{d.active_orders} active order{d.active_orders > 1 ? 's' : ''}</span>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+
   /* ── Build map data ── */
   const buildMapMarkers = () => {
     const markers = [];
@@ -66,7 +250,7 @@ export default function Dispatch() {
         markers.push({
           lat: parseFloat(o.recipient_lat), lng: parseFloat(o.recipient_lng),
           type: 'delivery', label: `#${o.id}`,
-          popup: `<strong>#${o.id}</strong><br/>${o.recipient_name}<br/>${o.recipient_address || ''}<br/><em style="color:#d97706">Unassigned</em>`,
+          popup: <OrderPopup o={o} variant="unassigned" />,
           id: `unassigned-${o.id}`,
         });
       }
@@ -76,7 +260,7 @@ export default function Dispatch() {
         markers.push({
           lat: parseFloat(o.recipient_lat), lng: parseFloat(o.recipient_lng),
           type: 'order', label: `#${o.id}`,
-          popup: `<strong>#${o.id}</strong><br/>${o.recipient_name}<br/>${o.driver_name || ''}<br/><em style="color:#3b82f6">${o.status}</em>`,
+          popup: <OrderPopup o={o} variant="active" />,
           id: `active-${o.id}`,
         });
       }
@@ -86,7 +270,7 @@ export default function Dispatch() {
         markers.push({
           lat: parseFloat(d.last_lat), lng: parseFloat(d.last_lng),
           type: 'driver', label: d.full_name?.split(' ')[0],
-          popup: `<strong>${d.full_name}</strong><br/>${d.vehicle_type} &bull; ${d.vehicle_plate}<br/><em style="color:#16a34a">Available</em>`,
+          popup: <DriverPopup d={d} />,
           id: `driver-${d.id}`,
         });
       }

@@ -96,7 +96,16 @@ export default function TrackingPublic() {
       if (markerRef.current) { markerRef.current.setLatLng([lat, lng]); }
       else {
         markerRef.current = L.marker([lat, lng], { icon: driverIcon }).addTo(mapObjRef.current)
-          .bindPopup('<b>Your Driver</b><br>' + (order.driver_name || ''));
+          .bindPopup(`<div style="min-width:180px;font-family:Inter,system-ui,sans-serif">
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:linear-gradient(135deg,#f97316,#ea580c);border-radius:8px 8px 0 0;color:#fff;font-weight:700;font-size:13px">
+              <span style="width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-size:11px">🚗</span>
+              Your Driver
+            </div>
+            <div style="padding:8px 10px;font-size:12px;color:#374151">
+              <div style="font-weight:600;font-size:13px;margin-bottom:2px">${order.driver_name || 'Driver'}</div>
+              ${order.driver_phone ? `<div style="color:#6b7280">📱 ${order.driver_phone}</div>` : ''}
+            </div>
+          </div>`);
       }
       if (order.recipient_lat && order.recipient_lng) {
         const destIcon = L.divIcon({
@@ -105,7 +114,17 @@ export default function TrackingPublic() {
           iconSize: [36, 36], iconAnchor: [18, 18],
         });
         L.marker([order.recipient_lat, order.recipient_lng], { icon: destIcon }).addTo(mapObjRef.current)
-          .bindPopup('<b>' + order.recipient_name + '</b><br>' + order.recipient_address);
+          .bindPopup(`<div style="min-width:180px;font-family:Inter,system-ui,sans-serif">
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:linear-gradient(135deg,#3b82f6,#2563eb);border-radius:8px 8px 0 0;color:#fff;font-weight:700;font-size:13px">
+              <span style="width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-size:11px">📍</span>
+              Delivery Location
+            </div>
+            <div style="padding:8px 10px;font-size:12px;color:#374151">
+              <div style="font-weight:600;font-size:13px;margin-bottom:2px">${order.recipient_name || ''}</div>
+              <div style="color:#6b7280">${order.recipient_address || ''}</div>
+              ${order.recipient_area ? `<div style="color:#9ca3af;font-size:11px;margin-top:2px">🏙️ ${order.recipient_area}${order.recipient_emirate ? ', ' + order.recipient_emirate : ''}</div>` : ''}
+            </div>
+          </div>`);
         mapObjRef.current.fitBounds([[lat, lng], [order.recipient_lat, order.recipient_lng]], { padding: [40, 40] });
       } else {
         mapObjRef.current.setView([lat, lng], 14);

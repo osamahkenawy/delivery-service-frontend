@@ -570,12 +570,14 @@
 }
 .leaflet-popup-content-wrapper {
   border-radius: 12px !important;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.12) !important;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.15) !important;
   padding: 0 !important;
+  overflow: hidden;
 }
 .leaflet-popup-content {
-  margin: 12px 16px !important;
+  margin: 0 !important;
   font-family: inherit !important;
+  line-height: 1.4 !important;
 }
 .leaflet-popup-tip {
   box-shadow: 0 2px 6px rgba(0,0,0,0.08) !important;

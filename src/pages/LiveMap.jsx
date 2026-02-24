@@ -186,36 +186,61 @@ export default function LiveMap() {
                 icon={driverIcon(d.status)}
               >
                 <Popup>
-                  <div style={{ minWidth: 180 }}>
-                    <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 6 }}>
-                      🚚 {d.full_name}
+                  <div style={{ minWidth: 220, fontFamily: 'Inter, system-ui, sans-serif', fontSize: '0.82rem', lineHeight: 1.5 }}>
+                    {/* Header */}
+                    <div style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '8px 12px', borderRadius: '8px 8px 0 0',
+                      background: `linear-gradient(135deg, ${STATUS_COLOR[d.status] || '#94a3b8'}, ${STATUS_COLOR[d.status] || '#94a3b8'}cc)`,
+                      color: '#fff', fontWeight: 700, fontSize: '0.85rem',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.8rem' }}>
+                          {d.full_name?.charAt(0)}
+                        </span>
+                        {d.full_name}
+                      </div>
+                      <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '0.7rem', fontWeight: 700, background: 'rgba(255,255,255,0.25)' }}>
+                        {STATUS_LABELS[d.status] || d.status}
+                      </span>
                     </div>
-                    <div style={{ fontSize: 12, color: '#475569', marginBottom: 4 }}>
-                      {d.vehicle_type?.replace('_', ' ')} · {d.phone}
+                    {/* Body */}
+                    <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#374151' }}>
+                        <span>🚗</span>
+                        <span style={{ textTransform: 'capitalize', fontWeight: 500 }}>{d.vehicle_type?.replace('_', ' ') || '—'}</span>
+                        {d.phone && (
+                          <>
+                            <span style={{ color: '#d1d5db' }}>|</span>
+                            <span style={{ fontWeight: 500 }}>📱 {d.phone}</span>
+                          </>
+                        )}
+                      </div>
+                      {d.zone_name && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#6b7280', fontSize: '0.78rem' }}>
+                          <span>🗺️</span> Zone: {d.zone_name}
+                        </div>
+                      )}
+                      {d.current_order && (
+                        <>
+                          <div style={{ borderTop: '1px solid #f3f4f6', margin: '2px 0' }} />
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px', background: '#fff7ed', borderRadius: 6, border: '1px solid #fed7aa' }}>
+                            <span>📦</span>
+                            <span style={{ fontWeight: 600, color: '#ea580c' }}>{d.current_order}</span>
+                          </div>
+                        </>
+                      )}
+                      {d.speed != null && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#6b7280', fontSize: '0.76rem' }}>
+                          <span>⚡</span> Speed: {parseFloat(d.speed).toFixed(0)} km/h
+                        </div>
+                      )}
+                      {d.last_ping && (
+                        <div style={{ color: '#9ca3af', fontSize: '0.72rem', marginTop: 2 }}>
+                          📍 Last ping: {new Date(d.last_ping).toLocaleTimeString()}
+                        </div>
+                      )}
                     </div>
-                    {d.zone_name && (
-                      <div style={{ fontSize: 12, color: '#64748b', marginBottom: 4 }}>
-                        📍 Zone: {d.zone_name}
-                      </div>
-                    )}
-                    {d.current_order && (
-                      <div style={{ fontSize: 12, fontWeight: 600, color: '#f97316' }}>
-                        📦 {d.current_order}
-                      </div>
-                    )}
-                    <div style={{ marginTop: 8, padding: '3px 8px', borderRadius: 99, display: 'inline-block', fontSize: 11, fontWeight: 700, background: (STATUS_COLOR[d.status] || '#94a3b8') + '20', color: STATUS_COLOR[d.status] || '#94a3b8' }}>
-                      {STATUS_LABELS[d.status] || d.status}
-                    </div>
-                    {d.speed != null && (
-                      <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>
-                        Speed: {parseFloat(d.speed).toFixed(0)} km/h
-                      </div>
-                    )}
-                    {d.last_ping && (
-                      <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
-                        Last ping: {new Date(d.last_ping).toLocaleTimeString()}
-                      </div>
-                    )}
                   </div>
                 </Popup>
               </Marker>

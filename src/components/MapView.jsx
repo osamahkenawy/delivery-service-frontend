@@ -90,7 +90,9 @@ export default function MapView({
               {m.popup && (
                 <Popup>
                   <div className="map-popup">
-                    {m.popup}
+                    {typeof m.popup === 'string'
+                      ? <span dangerouslySetInnerHTML={{ __html: m.popup }} />
+                      : m.popup}
                   </div>
                 </Popup>
               )}
