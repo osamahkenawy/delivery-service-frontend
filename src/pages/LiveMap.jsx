@@ -71,6 +71,12 @@ export default function LiveMap() {
         setDrivers(map);
       }
     });
+    if (!document.getElementById('leaflet-zoom-spacing')) {
+      const style = document.createElement('style');
+      style.id = 'leaflet-zoom-spacing';
+      style.textContent = '.leaflet-control-zoom { display: flex; flex-direction: column; gap: 8px; } .leaflet-control-zoom-in, .leaflet-control-zoom-out { margin: 0 !important; }';
+      document.head.appendChild(style);
+    }
   }, []);
 
   /* ── Socket.io subscription ────────────────────────────────── */

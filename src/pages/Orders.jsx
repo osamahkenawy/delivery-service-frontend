@@ -52,7 +52,7 @@ const EMIRATES      = ['Dubai','Abu Dhabi','Sharjah','Ajman','Ras Al Khaimah','F
 const PAYMENT_MAP   = { cod:'Cash on Delivery', prepaid:'Prepaid', credit:'Credit', wallet:'Wallet' };
 const INPUT  = { width:'100%', padding:'10px 13px', borderRadius:9, border:'1px solid #e2e8f0', fontSize:14, boxSizing:'border-box', outline:'none' };
 const LABEL  = { display:'block', fontSize:12, fontWeight:700, color:'#374151', marginBottom:6, textTransform:'uppercase', letterSpacing:'0.04em' };
-const LIMIT  = 20;
+const LIMIT  = 10;
 
 const STEPS = [
   { num:1, title:'Client & Sender',  desc:'Select client or enter sender details' },
@@ -63,7 +63,7 @@ const STEPS = [
 const EMPTY_FORM = {
   client_id:'', sender_name:'', sender_phone:'', sender_address:'',
   sender_lat:'', sender_lng:'',
-  recipient_name:'', recipient_phone:'', recipient_address:'', recipient_area:'',
+  recipient_name:'', recipient_phone:'', recipient_email:'', recipient_address:'', recipient_area:'',
   recipient_emirate:'Dubai', recipient_lat:'', recipient_lng:'',
   zone_id:'', order_type:'standard', category:'parcel',
   payment_method:'cod', cod_amount:'', delivery_fee:'', discount:'',
@@ -317,17 +317,30 @@ export default function Orders() {
       if (k === 'client_id' && v) {
         const c = clients.find(cl => String(cl.id) === String(v));
         if (c) {
+          // Auto-fill sender info
           next.sender_name    = c.full_name || '';
           next.sender_phone   = c.phone || '';
           next.sender_address = [c.address_line1, c.area, c.city].filter(Boolean).join(', ');
           next.sender_lat     = c.latitude || '';
           next.sender_lng     = c.longitude || '';
-          if (c.zone_id && !next.zone_id) next.zone_id = String(c.zone_id);
+          // Auto-fill delivery/recipient defaults from client location
+          next.recipient_address = [c.address_line1, c.area, c.city].filter(Boolean).join(', ');
+          next.recipient_area    = c.area || '';
+          next.recipient_emirate = c.emirate || 'Dubai';
+          next.recipient_lat     = c.latitude || '';
+          next.recipient_lng     = c.longitude || '';
+          next.recipient_email   = c.email || '';
+          if (c.zone_id) next.zone_id = String(c.zone_id);
         }
       }
       if (k === 'client_id' && !v) {
         next.sender_name = ''; next.sender_phone = ''; next.sender_address = '';
         next.sender_lat = ''; next.sender_lng = '';
+        // Clear recipient auto-fill too
+        next.recipient_address = ''; next.recipient_area = '';
+        next.recipient_emirate = 'Dubai'; next.recipient_lat = ''; next.recipient_lng = '';
+        next.recipient_email = '';
+        next.zone_id = '';
       }
       return next;
     });
@@ -370,6 +383,13 @@ export default function Orders() {
       f.sender_address = [presetClient.address_line1, presetClient.area, presetClient.city].filter(Boolean).join(', ');
       f.sender_lat = presetClient.latitude || '';
       f.sender_lng = presetClient.longitude || '';
+      // Also pre-fill delivery defaults from client
+      f.recipient_address = [presetClient.address_line1, presetClient.area, presetClient.city].filter(Boolean).join(', ');
+      f.recipient_area    = presetClient.area || '';
+      f.recipient_emirate = presetClient.emirate || 'Dubai';
+      f.recipient_lat     = presetClient.latitude || '';
+      f.recipient_lng     = presetClient.longitude || '';
+      f.recipient_email   = presetClient.email || '';
       if (presetClient.zone_id) f.zone_id = String(presetClient.zone_id);
     }
     setForm(f);
@@ -387,6 +407,7 @@ export default function Orders() {
       sender_lng:         order.sender_lng         || '',
       recipient_name:     order.recipient_name     || '',
       recipient_phone:    order.recipient_phone    || '',
+      recipient_email:    order.recipient_email    || '',
       recipient_address:  order.recipient_address  || '',
       recipient_area:     order.recipient_area     || '',
       recipient_emirate:  order.recipient_emirate  || 'Dubai',
@@ -469,21 +490,35 @@ export default function Orders() {
     fetchOrderDetail(order.id);
   };
 
-  /* CSV export */
-  const exportCSV = () => {
-    if (!orders.length) return;
-    const headers = ['Order #','Status','Client','Recipient','Phone','Emirate','Zone','Type','Payment','COD','Fee','Date'];
-    const rows = orders.map(o => [
-      o.order_number, o.status, o.client_name||'Walk-in', o.recipient_name, o.recipient_phone,
-      o.recipient_emirate, o.zone_name||'', o.order_type, o.payment_method,
-      o.cod_amount||0, o.delivery_fee||0, fmtDate(o.created_at)
-    ]);
-    const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n');
-    const blob = new Blob([csv], { type:'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `orders-${new Date().toISOString().slice(0,10)}.csv`; a.click();
-    URL.revokeObjectURL(url);
+  /* CSV export — fetches ALL orders with current filters */
+  const [exporting, setExporting] = useState(false);
+  const exportCSV = async () => {
+    setExporting(true);
+    try {
+      const p = new URLSearchParams({ page: 1, limit: 10000 });
+      if (filters.status)     p.append('status', filters.status);
+      if (filters.search)     p.append('search', filters.search);
+      if (filters.date_from)  p.append('date_from', filters.date_from);
+      if (filters.date_to)    p.append('date_to', filters.date_to);
+      if (filters.order_type) p.append('order_type', filters.order_type);
+      if (filters.client_id)  p.append('client_id', filters.client_id);
+      const res = await api.get(`/orders?${p}`);
+      const allOrders = res.success ? (res.data || []) : [];
+      if (!allOrders.length) { setExporting(false); return; }
+      const headers = ['Order #','Status','Client','Recipient','Phone','Emirate','Zone','Type','Payment','COD Amount','Delivery Fee','Date'];
+      const rows = allOrders.map(o => [
+        o.order_number, o.status, o.client_name||'Walk-in', o.recipient_name, o.recipient_phone,
+        o.recipient_emirate, o.zone_name||'', o.order_type, o.payment_method,
+        o.cod_amount||0, o.delivery_fee||0, fmtDate(o.created_at)
+      ]);
+      const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type:'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `orders-${new Date().toISOString().slice(0,10)}.csv`; a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) { console.error(e); }
+    setExporting(false);
   };
 
   const clearFilters = () => setFilters({ status:'', search:'', date_from:'', date_to:'', order_type:'', client_id:'' });
@@ -505,11 +540,13 @@ export default function Orders() {
           </p>
         </div>
         <div style={{ display:'flex', gap:10 }}>
-          <button onClick={exportCSV} title="Export CSV"
-            style={{ padding:'10px 16px', borderRadius:10, border:'1px solid #e2e8f0', background:'#fff',
-              cursor:'pointer', fontWeight:600, fontSize:14, color:'#475569',
+          <button onClick={exportCSV} disabled={exporting} title="Export all orders as CSV"
+            style={{ padding:'10px 16px', borderRadius:10, border:'1px solid #e2e8f0',
+              background: exporting ? '#f8fafc' : '#fff',
+              cursor: exporting ? 'not-allowed' : 'pointer', fontWeight:600, fontSize:14,
+              color: exporting ? '#94a3b8' : '#475569',
               display:'flex', alignItems:'center', gap:7 }}>
-            <Download width={15} height={15} /> Export
+            <Download width={15} height={15} /> {exporting ? 'Exporting…' : 'Export'}
           </button>
           <button onClick={() => openNew()}
             style={{ padding:'10px 22px', borderRadius:10, border:'none',
@@ -704,28 +741,52 @@ export default function Orders() {
             </div>
 
             {/* Pagination */}
-            {total > LIMIT && (
-              <div style={{ padding:'13px 18px', borderTop:'1px solid #f1f5f9', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                <span style={{ fontSize:13, color:'#64748b' }}>
-                  Showing {(page-1)*LIMIT+1}\u2013{Math.min(page*LIMIT,total)} of {total}
-                </span>
-                <div style={{ display:'flex', gap:8 }}>
-                  <button disabled={page===1} onClick={() => setPage(p=>p-1)}
-                    style={{ padding:'7px 14px', borderRadius:8, border:'1px solid #e2e8f0',
-                      background:page===1?'#f8fafc':'#fff', cursor:page===1?'not-allowed':'pointer',
-                      fontSize:13, fontWeight:600, display:'flex', alignItems:'center', gap:5 }}>
-                    <NavArrowLeft width={14} height={14} /> Prev
-                  </button>
-                  <span style={{ padding:'7px 12px', fontSize:13, color:'#64748b', fontWeight:600 }}>Page {page}</span>
-                  <button disabled={page*LIMIT>=total} onClick={() => setPage(p=>p+1)}
-                    style={{ padding:'7px 14px', borderRadius:8, border:'1px solid #e2e8f0',
-                      background:page*LIMIT>=total?'#f8fafc':'#fff', cursor:page*LIMIT>=total?'not-allowed':'pointer',
-                      fontSize:13, fontWeight:600, display:'flex', alignItems:'center', gap:5 }}>
-                    Next <NavArrowRight width={14} height={14} />
-                  </button>
+            {totalPages > 1 && (() => {
+              /* build visible page numbers: always show first, last, current ±2, with ellipsis */
+              const delta = 2;
+              const range = [];
+              for (let i = Math.max(2, page - delta); i <= Math.min(totalPages - 1, page + delta); i++) range.push(i);
+              const pages = [1, ...range, totalPages].filter((v,i,a) => a.indexOf(v) === i).sort((a,b)=>a-b);
+              const btnBase = { padding:'7px 11px', borderRadius:8, border:'1px solid #e2e8f0',
+                fontSize:13, fontWeight:600, cursor:'pointer', minWidth:36, textAlign:'center' };
+              return (
+                <div style={{ padding:'14px 18px', borderTop:'1px solid #f1f5f9', display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:8 }}>
+                  <span style={{ fontSize:13, color:'#64748b' }}>
+                    Showing {(page-1)*LIMIT+1}–{Math.min(page*LIMIT,total)} of <strong>{total}</strong> orders
+                  </span>
+                  <div style={{ display:'flex', gap:6, alignItems:'center', flexWrap:'wrap' }}>
+                    <button disabled={page===1} onClick={() => setPage(p=>p-1)}
+                      style={{ ...btnBase, background:page===1?'#f8fafc':'#fff', cursor:page===1?'not-allowed':'pointer',
+                        display:'flex', alignItems:'center', gap:4, opacity:page===1?0.5:1 }}>
+                      <NavArrowLeft width={14} height={14} /> Prev
+                    </button>
+                    {pages.map((p2, i) => {
+                      const prev = pages[i - 1];
+                      return (
+                        <>
+                          {prev && p2 - prev > 1 && (
+                            <span key={`e${p2}`} style={{ padding:'7px 4px', fontSize:13, color:'#94a3b8' }}>…</span>
+                          )}
+                          <button key={p2} onClick={() => setPage(p2)}
+                            style={{ ...btnBase,
+                              background: p2 === page ? '#244066' : '#fff',
+                              color: p2 === page ? '#fff' : '#374151',
+                              border: p2 === page ? '1px solid #244066' : '1px solid #e2e8f0',
+                              fontWeight: p2 === page ? 800 : 600 }}>
+                            {p2}
+                          </button>
+                        </>
+                      );
+                    })}
+                    <button disabled={page>=totalPages} onClick={() => setPage(p=>p+1)}
+                      style={{ ...btnBase, background:page>=totalPages?'#f8fafc':'#fff', cursor:page>=totalPages?'not-allowed':'pointer',
+                        display:'flex', alignItems:'center', gap:4, opacity:page>=totalPages?0.5:1 }}>
+                      Next <NavArrowRight width={14} height={14} />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </>
         )}
       </div>
@@ -736,9 +797,9 @@ export default function Orders() {
       {drawer && (
         <>
           <div onClick={() => { setDrawer(null); setDrawerFull(null); }}
-            style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.35)', zIndex:900 }} />
+            style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.35)', zIndex:9990 }} />
           <div style={{ position:'fixed', top:0, right:0, bottom:0, width:540, maxWidth:'96vw',
-            background:'#f8fafc', zIndex:901, overflowY:'auto',
+            background:'#f8fafc', zIndex:9991, overflowY:'auto',
             boxShadow:'-8px 0 40px rgba(0,0,0,0.14)', display:'flex', flexDirection:'column' }}>
 
             {/* Drawer Header */}
@@ -1083,63 +1144,82 @@ export default function Orders() {
                 )}
 
                 {/* Step 2: Recipient & Delivery */}
-                {step === 2 && (
-                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
-                    <div>
-                      <label style={LABEL}>Recipient Name *</label>
-                      <input required value={form.recipient_name} onChange={e=>set('recipient_name',e.target.value)}
-                        style={INPUT} placeholder="Full name" autoFocus />
-                    </div>
-                    <div>
-                      <label style={LABEL}>Recipient Phone *</label>
-                      <input required value={form.recipient_phone} onChange={e=>set('recipient_phone',e.target.value)}
-                        style={INPUT} placeholder="+971 50 000 0000" />
-                    </div>
+                {step === 2 && (() => {
+                  const selectedClient = form.client_id ? clients.find(cl => String(cl.id) === String(form.client_id)) : null;
+                  const hasClientLocation = selectedClient && (selectedClient.address_line1 || selectedClient.area || selectedClient.latitude);
+                  return (
+                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+                      {/* Client location auto-fill notice */}
+                      {hasClientLocation && (
+                        <div style={{ gridColumn:'1/-1', padding:'10px 14px', background:'#eff6ff', borderRadius:10, border:'1px solid #dbeafe', fontSize:12, display:'flex', alignItems:'center', gap:8 }}>                          <MapPin width={15} height={15} color="#3b82f6" />
+                          <div>
+                            <div style={{ fontWeight:700, color:'#1d4ed8', marginBottom:2 }}>Delivery location pre-filled from client: {selectedClient.full_name}</div>
+                            <div style={{ color:'#64748b' }}>You can change any field below to use a different delivery address.</div>
+                          </div>
+                        </div>
+                      )}
 
-                    <AddressSearch onSelect={({ lat, lng, display }) => {
-                      set('recipient_lat', lat);
-                      set('recipient_lng', lng);
-                      if (display) set('recipient_address', display);
-                    }} />
+                      <div>
+                        <label style={LABEL}>Recipient Name *</label>
+                        <input required value={form.recipient_name} onChange={e=>set('recipient_name',e.target.value)}
+                          style={INPUT} placeholder="Full name" autoFocus />
+                      </div>
+                      <div>
+                        <label style={LABEL}>Recipient Phone *</label>
+                        <input required value={form.recipient_phone} onChange={e=>set('recipient_phone',e.target.value)}
+                          style={INPUT} placeholder="+971 50 000 0000" />
+                      </div>
+                      <div>
+                        <label style={LABEL}>Recipient Email</label>
+                        <input type="email" value={form.recipient_email} onChange={e=>set('recipient_email',e.target.value)}
+                          style={INPUT} placeholder="recipient@email.com" />
+                      </div>
 
-                    <div style={{ gridColumn:'1/-1' }}>
-                      <label style={LABEL}>Delivery Address *</label>
-                      <input required value={form.recipient_address} onChange={e=>set('recipient_address',e.target.value)}
-                        style={INPUT} placeholder="Building, Street, Area" />
+                      <AddressSearch onSelect={({ lat, lng, display }) => {
+                        set('recipient_lat', lat);
+                        set('recipient_lng', lng);
+                        if (display) set('recipient_address', display);
+                      }} />
+
+                      <div style={{ gridColumn:'1/-1' }}>
+                        <label style={LABEL}>Delivery Address *</label>
+                        <input required value={form.recipient_address} onChange={e=>set('recipient_address',e.target.value)}
+                          style={INPUT} placeholder="Building, Street, Area" />
+                      </div>
+                      <div>
+                        <label style={LABEL}>Area</label>
+                        <input value={form.recipient_area} onChange={e=>set('recipient_area',e.target.value)}
+                          style={INPUT} placeholder="JVC, Downtown, etc." />
+                      </div>
+                      <div>
+                        <label style={LABEL}>Emirate</label>
+                        <select value={form.recipient_emirate} onChange={e=>set('recipient_emirate',e.target.value)} style={INPUT}>
+                          {EMIRATES.map(em => <option key={em} value={em}>{em}</option>)}
+                        </select>
+                      </div>
+                      <div style={{ gridColumn:'1/-1' }}>
+                        <label style={LABEL}>Delivery Zone</label>
+                        <select value={form.zone_id} onChange={e=>set('zone_id',e.target.value)} style={INPUT}>
+                          <option value="">Select zone...</option>
+                          {zones.filter(z=>z.is_active).map(z =>
+                            <option key={z.id} value={z.id}>{z.name} \u2014 {z.emirate}{z.base_delivery_fee ? ` (AED ${z.base_delivery_fee})` : ''}</option>
+                          )}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={LABEL}>Order Type</label>
+                        <select value={form.order_type} onChange={e=>set('order_type',e.target.value)} style={INPUT}>
+                          {ORDER_TYPES.map(t => <option key={t} value={t}>{fmtType(t)}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={LABEL}>Scheduled At</label>
+                        <input type="datetime-local" value={form.scheduled_at} onChange={e=>set('scheduled_at',e.target.value)}
+                          style={INPUT} />
+                      </div>
                     </div>
-                    <div>
-                      <label style={LABEL}>Area</label>
-                      <input value={form.recipient_area} onChange={e=>set('recipient_area',e.target.value)}
-                        style={INPUT} placeholder="JVC, Downtown, etc." />
-                    </div>
-                    <div>
-                      <label style={LABEL}>Emirate</label>
-                      <select value={form.recipient_emirate} onChange={e=>set('recipient_emirate',e.target.value)} style={INPUT}>
-                        {EMIRATES.map(em => <option key={em} value={em}>{em}</option>)}
-                      </select>
-                    </div>
-                    <div style={{ gridColumn:'1/-1' }}>
-                      <label style={LABEL}>Delivery Zone</label>
-                      <select value={form.zone_id} onChange={e=>set('zone_id',e.target.value)} style={INPUT}>
-                        <option value="">Select zone...</option>
-                        {zones.filter(z=>z.is_active).map(z =>
-                          <option key={z.id} value={z.id}>{z.name} \u2014 {z.emirate}{z.base_delivery_fee ? ` (AED ${z.base_delivery_fee})` : ''}</option>
-                        )}
-                      </select>
-                    </div>
-                    <div>
-                      <label style={LABEL}>Order Type</label>
-                      <select value={form.order_type} onChange={e=>set('order_type',e.target.value)} style={INPUT}>
-                        {ORDER_TYPES.map(t => <option key={t} value={t}>{fmtType(t)}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label style={LABEL}>Scheduled At</label>
-                      <input type="datetime-local" value={form.scheduled_at} onChange={e=>set('scheduled_at',e.target.value)}
-                        style={INPUT} />
-                    </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* Step 3: Package & Payment */}
                 {step === 3 && (

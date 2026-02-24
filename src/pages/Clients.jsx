@@ -42,7 +42,7 @@ const STATUS_COLORS = {
 };
 const INPUT = { width:'100%', padding:'10px 13px', borderRadius:9, border:'1px solid #e2e8f0', fontSize:14, boxSizing:'border-box', outline:'none' };
 const LABEL = { display:'block', fontSize:12, fontWeight:700, color:'#374151', marginBottom:6, textTransform:'uppercase', letterSpacing:'0.04em' };
-const LIMIT = 20;
+const LIMIT = 10;
 const emptyForm = {
   full_name:'', company_name:'', email:'', phone:'', phone_alt:'',
   type:'individual', client_category:'other',
@@ -254,6 +254,11 @@ function LocationPickerMap({ lat, lng, onPick }) {
       const l = document.createElement('link'); l.id='lf-css'; l.rel='stylesheet';
       l.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'; document.head.appendChild(l);
     }
+    if (!document.getElementById('lf-zoom-spacing')) {
+      const s = document.createElement('style'); s.id='lf-zoom-spacing';
+      s.textContent = '.leaflet-control-zoom { display: flex; flex-direction: column; gap: 8px; } .leaflet-control-zoom-in, .leaflet-control-zoom-out { margin: 0 !important; }';
+      document.head.appendChild(s);
+    }
     if (window.L) { initMap(); }
     else {
       const s = document.createElement('script'); s.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
@@ -292,6 +297,7 @@ export default function Clients() {
   const [saving,        setSaving]        = useState(false);
   const [formError,     setFormError]     = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [exporting, setExporting] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const set = (k, v) => setForm(p => {
     const next = { ...p, [k]: v };
@@ -415,15 +421,27 @@ export default function Clients() {
     }
   };
 
-  const exportCSV = () => {
+  const exportCSV = async () => {
+    setExporting(true);
+    const params = new URLSearchParams({ limit: 10000 });
+    if (search)        params.set('search',  search);
+    if (typeFilter)    params.set('type',    typeFilter);
+    if (emirateFilter) params.set('emirate', emirateFilter);
+    const res = await api.get(`/clients?${params}`);
+    setExporting(false);
+    if (!res.success) { showToast('Failed to export', 'error'); return; }
+    const data = res.data || [];
+    let filtered = data;
+    if (statusFilter === 'active')   filtered = filtered.filter(c => !!c.is_active);
+    if (statusFilter === 'inactive') filtered = filtered.filter(c => !c.is_active);
     const headers = ['ID','Name','Company','Type','Phone','Email','Emirate','Orders','Delivered','Credit Limit','Status'];
-    const rows = clients.map(c => [
+    const rows = filtered.map(c => [
       c.id, c.full_name, c.company_name||'', TYPE_META[c.type]?.label||c.type,
       c.phone, c.email||'', c.emirate||'',
       c.total_orders||0, c.delivered_orders||0, c.credit_limit||0,
       c.is_active?'Active':'Inactive',
     ]);
-    const csv = [headers, ...rows].map(r => r.map(v=>`"${v}"`).join(',')).join('\n');
+    const csv = [headers, ...rows].map(r => r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
     a.download = `clients-${new Date().toISOString().slice(0,10)}.csv`;
@@ -450,11 +468,11 @@ export default function Clients() {
           </p>
         </div>
         <div style={{ display:'flex', gap:10 }}>
-          <button onClick={exportCSV}
+          <button onClick={exportCSV} disabled={exporting}
             style={{ padding:'10px 18px', borderRadius:10, border:'1px solid #e2e8f0', background:'#fff',
-              cursor:'pointer', fontWeight:600, fontSize:13, color:'#475569',
-              display:'flex', alignItems:'center', gap:7 }}>
-            <Download width={15} height={15} /> Export CSV
+              cursor:exporting?'not-allowed':'pointer', fontWeight:600, fontSize:13, color:'#475569',
+              display:'flex', alignItems:'center', gap:7, opacity:exporting?0.6:1 }}>
+            <Download width={15} height={15} /> {exporting ? 'Exporting…' : 'Export CSV'}
           </button>
           <button onClick={openCreate}
             style={{ padding:'10px 22px', borderRadius:10, border:'none',
@@ -647,29 +665,58 @@ export default function Clients() {
                 </tbody>
               </table>
             </div>
-            {total > LIMIT && (
-              <div style={{ padding:'13px 18px', borderTop:'1px solid #f1f5f9',
-                display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                <span style={{ fontSize:13, color:'#64748b' }}>
-                  Showing {(page-1)*LIMIT+1}–{Math.min(page*LIMIT,total)} of {total}
-                </span>
-                <div style={{ display:'flex', gap:8 }}>
-                  <button disabled={page===1} onClick={()=>setPage(p=>p-1)}
-                    style={{ padding:'7px 14px', borderRadius:8, border:'1px solid #e2e8f0',
-                      background:page===1?'#f8fafc':'#fff', cursor:page===1?'not-allowed':'pointer',
-                      fontSize:13, fontWeight:600, display:'flex', alignItems:'center', gap:5 }}>
-                    <NavArrowLeft width={14} height={14} /> Prev
-                  </button>
-                  <span style={{ padding:'7px 12px', fontSize:13, color:'#64748b', fontWeight:600 }}>Page {page}</span>
-                  <button disabled={page*LIMIT>=total} onClick={()=>setPage(p=>p+1)}
-                    style={{ padding:'7px 14px', borderRadius:8, border:'1px solid #e2e8f0',
-                      background:page*LIMIT>=total?'#f8fafc':'#fff', cursor:page*LIMIT>=total?'not-allowed':'pointer',
-                      fontSize:13, fontWeight:600, display:'flex', alignItems:'center', gap:5 }}>
-                    Next <NavArrowRight width={14} height={14} />
-                  </button>
+            {total > LIMIT && (() => {
+              const maxPages = Math.ceil(total / LIMIT);
+              const getPageNumbers = () => {
+                const pages = [];
+                if (maxPages <= 7) {
+                  for (let i = 1; i <= maxPages; i++) pages.push(i);
+                } else {
+                  pages.push(1);
+                  if (page > 3) pages.push('...');
+                  for (let i = Math.max(2, page - 1); i <= Math.min(page + 1, maxPages - 1); i++) {
+                    if (!pages.includes(i)) pages.push(i);
+                  }
+                  if (page < maxPages - 2) pages.push('...');
+                  if (!pages.includes(maxPages)) pages.push(maxPages);
+                }
+                return pages;
+              };
+              const pageNumbers = getPageNumbers();
+              return (
+                <div style={{ padding:'13px 18px', borderTop:'1px solid #f1f5f9',
+                  display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                  <span style={{ fontSize:13, color:'#64748b' }}>
+                    Showing {(page-1)*LIMIT+1}–{Math.min(page*LIMIT,total)} of <strong>{total}</strong> clients
+                  </span>
+                  <div style={{ display:'flex', gap:6, alignItems:'center' }}>
+                    <button disabled={page===1} onClick={()=>setPage(p=>p-1)}
+                      style={{ padding:'7px 11px', borderRadius:8, border:'1px solid #e2e8f0',
+                        background:page===1?'#f8fafc':'#fff', cursor:page===1?'not-allowed':'pointer',
+                        fontSize:12, fontWeight:600, opacity:page===1?0.5:1, display:'flex', alignItems:'center', gap:4 }}>
+                      <NavArrowLeft width={13} height={13} /> Prev
+                    </button>
+                    {pageNumbers.map((p, i) => p === '...' ? (
+                      <span key={i} style={{ padding:'4px 8px', color:'#94a3b8', fontSize:12 }}>…</span>
+                    ) : (
+                      <button key={p} onClick={()=>setPage(p)}
+                        style={{ padding:'6px 11px', borderRadius:6, border:'1px solid #e2e8f0',
+                          background:page===p?'#244066':'#fff', color:page===p?'#fff':'#475569',
+                          cursor:'pointer', fontSize:12, fontWeight:page===p?700:600,
+                          transition:'all 0.2s' }}>
+                        {p}
+                      </button>
+                    ))}
+                    <button disabled={page*LIMIT>=total} onClick={()=>setPage(p=>p+1)}
+                      style={{ padding:'7px 11px', borderRadius:8, border:'1px solid #e2e8f0',
+                        background:page*LIMIT>=total?'#f8fafc':'#fff', cursor:page*LIMIT>=total?'not-allowed':'pointer',
+                        fontSize:12, fontWeight:600, opacity:page*LIMIT>=total?0.5:1, display:'flex', alignItems:'center', gap:4 }}>
+                      Next <NavArrowRight width={13} height={13} />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </>
         )}
       </div>
@@ -678,9 +725,9 @@ export default function Clients() {
       {drawer && (
         <>
           <div onClick={() => setDrawer(null)}
-            style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.35)', zIndex:900 }} />
+            style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.35)', zIndex:9990 }} />
           <div style={{ position:'fixed', top:0, right:0, bottom:0, width:510, maxWidth:'96vw',
-            background:'#f8fafc', zIndex:901, overflowY:'auto',
+            background:'#f8fafc', zIndex:9991, overflowY:'auto',
             boxShadow:'-8px 0 40px rgba(0,0,0,0.14)', display:'flex', flexDirection:'column' }}>
 
             <div style={{ background:'linear-gradient(135deg,#1e293b,#334155)', padding:'26px 26px 22px', position:'relative' }}>
@@ -895,11 +942,6 @@ export default function Clients() {
                 {/* ── Step 2: Business Info ── */}
                 {step === 2 && (
                   <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
-                    <div style={{ gridColumn:'1/-1' }}>
-                      <label style={LABEL}>Company Name</label>
-                      <input value={form.company_name} onChange={e=>set('company_name',e.target.value)}
-                        style={INPUT} placeholder="Acme LLC" />
-                    </div>
                     <div>
                       <label style={LABEL}>Client Type</label>
                       <select value={form.type} onChange={e=>set('type',e.target.value)} style={INPUT}>
@@ -912,6 +954,13 @@ export default function Clients() {
                         {CATEGORIES.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase()+c.slice(1)}</option>)}
                       </select>
                     </div>
+                    {form.type !== 'individual' && (
+                      <div style={{ gridColumn:'1/-1' }}>
+                        <label style={LABEL}>Company Name</label>
+                        <input value={form.company_name} onChange={e=>set('company_name',e.target.value)}
+                          style={INPUT} placeholder="Acme LLC" />
+                      </div>
+                    )}
                     <div style={{ gridColumn:'1/-1' }}>
                       <label style={LABEL}>Emirate</label>
                       <select value={form.emirate} onChange={e=>set('emirate',e.target.value)} style={INPUT}>
@@ -945,102 +994,121 @@ export default function Clients() {
                 )}
 
                 {/* ── Step 3: Address & Settings ── */}
-                {step === 3 && (
-                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
-                    <div style={{ gridColumn:'1/-1' }}>
-                      <label style={LABEL}>Street Address</label>
-                      <input value={form.address_line1} onChange={e=>set('address_line1',e.target.value)}
-                        style={INPUT} placeholder="Building, Street, Floor, Flat" />
-                    </div>
-                    <div>
-                      <label style={LABEL}>Area / Community</label>
-                      <input value={form.area} onChange={e=>set('area',e.target.value)}
-                        style={INPUT} placeholder="Downtown, JVC, Business Bay…" />
-                    </div>
-                    <div>
-                      <label style={LABEL}>City</label>
-                      <input value={form.city} onChange={e=>set('city',e.target.value)}
-                        style={INPUT} placeholder="Dubai" />
-                    </div>
-                    <div>
-                      <label style={LABEL}>Credit Limit (AED)</label>
-                      <input type="number" min="0" value={form.credit_limit}
-                        onChange={e=>set('credit_limit',e.target.value)}
-                        style={INPUT} placeholder="0 = No limit" />
-                    </div>
+                {step === 3 && (() => {
+                  const zoneData = form.zone_id ? zones.find(z => String(z.id) === String(form.zone_id)) : null;
+                  return (
+                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+                      {/* Active Toggle at Top */}
+                      <div style={{ gridColumn:'1/-1', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px', background:'#f0fdf4', borderRadius:10, border:'1px solid #dcfce7', marginBottom:4 }}>
+                        <label style={{ fontSize:14, fontWeight:700, color:'#16a34a', margin:0, cursor:'pointer', userSelect:'none' }}>
+                          Active Status
+                        </label>
+                        <button type="button" onClick={() => set('is_active', !form.is_active)}
+                          style={{
+                            position:'relative', width:52, height:28, borderRadius:99, border:'none',
+                            background: form.is_active ? '#16a34a' : '#cbd5e1', cursor:'pointer',
+                            transition:'background 0.3s',
+                            padding:0, display:'flex', alignItems:'center',
+                            boxShadow: form.is_active ? '0 0 0 3px rgba(22,163,74,0.1)' : 'none'
+                          }}>
+                          <span style={{
+                            position:'absolute', left: form.is_active ? '26px' : '2px',
+                            width:24, height:24, background:'#fff', borderRadius:'50%',
+                            transition:'left 0.3s', boxShadow:'0 2px 4px rgba(0,0,0,0.1)'
+                          }} />
+                        </button>
+                      </div>
 
-                    {/* Location / GPS */}
-                    <div style={{ gridColumn:'1/-1', background:'#f8fafc', borderRadius:12, padding:16, border:'1px solid #e2e8f0' }}>
-                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
-                        <span style={{ fontSize:13, fontWeight:700, color:'#374151', display:'flex', alignItems:'center', gap:6 }}>
-                          <MapPin width={14} height={14} color="#f97316" /> Location
-                        </span>
-                        <div style={{ display:'flex', gap:8 }}>
-                          {form.zone_id && (() => {
-                            const z = zones.find(zz => String(zz.id) === String(form.zone_id));
-                            return z?.center_lat ? (
-                              <button type="button"
-                                onClick={() => { set('latitude', String(z.center_lat)); set('longitude', String(z.center_lng)); }}
-                                style={{ padding:'5px 10px', fontSize:11, borderRadius:7, border:'1px solid #f97316',
-                                  background:'#fff7ed', color:'#f97316', cursor:'pointer', fontWeight:600 }}>
-                                Use Zone Center
-                              </button>
-                            ) : null;
-                          })()}
-                          <button type="button"
-                            onClick={() => navigator.geolocation?.getCurrentPosition(
-                              p => { set('latitude', p.coords.latitude.toFixed(7)); set('longitude', p.coords.longitude.toFixed(7)); },
-                              () => {}
-                            )}
-                            style={{ padding:'5px 10px', fontSize:11, borderRadius:7, border:'1px solid #6366f1',
-                              background:'#eef2ff', color:'#6366f1', cursor:'pointer', fontWeight:600 }}>
-                            📍 My GPS
-                          </button>
-                        </div>
-                      </div>
-                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+                      {/* Search Location - Full Width */}
+                      <div style={{ gridColumn:'1/-1' }}>
                         <AddressSearch onSelect={({ lat, lng }) => { set('latitude', lat); set('longitude', lng); }} />
-                        <div>
-                          <label style={{ ...LABEL, marginBottom:4 }}>Latitude</label>
-                          <input type="number" step="any" value={form.latitude}
-                            onChange={e=>set('latitude',e.target.value)}
-                            style={INPUT} placeholder="e.g. 25.2048" />
-                        </div>
-                        <div>
-                          <label style={{ ...LABEL, marginBottom:4 }}>Longitude</label>
-                          <input type="number" step="any" value={form.longitude}
-                            onChange={e=>set('longitude',e.target.value)}
-                            style={INPUT} placeholder="e.g. 55.2708" />
-                        </div>
                       </div>
-                      <div style={{ marginTop:12 }}>
+
+                      {/* Latitude & Longitude - Side by Side */}
+                      <div>
+                        <label style={{ ...LABEL, marginBottom:4 }}>Latitude</label>
+                        <input type="number" step="any" value={form.latitude}
+                          onChange={e=>set('latitude',e.target.value)}
+                          style={INPUT} placeholder="e.g. 25.2048" />
+                      </div>
+                      <div>
+                        <label style={{ ...LABEL, marginBottom:4 }}>Longitude</label>
+                        <input type="number" step="any" value={form.longitude}
+                          onChange={e=>set('longitude',e.target.value)}
+                          style={INPUT} placeholder="e.g. 55.2708" />
+                      </div>
+
+                      {/* Zone Helper Buttons */}
+                      <div style={{ gridColumn:'1/-1', display:'flex', gap:8 }}>
+                        {zoneData?.center_lat && (
+                          <button type="button"
+                            onClick={() => { set('latitude', String(zoneData.center_lat)); set('longitude', String(zoneData.center_lng)); }}
+                            style={{ padding:'7px 12px', fontSize:12, borderRadius:7, border:'1px solid #f97316',
+                              background:'#fff7ed', color:'#f97316', cursor:'pointer', fontWeight:600 }}>
+                            Use Zone Center
+                          </button>
+                        )}
+                        <button type="button"
+                          onClick={() => navigator.geolocation?.getCurrentPosition(
+                            p => { set('latitude', p.coords.latitude.toFixed(7)); set('longitude', p.coords.longitude.toFixed(7)); },
+                            () => {}
+                          )}
+                          style={{ padding:'7px 12px', fontSize:12, borderRadius:7, border:'1px solid #6366f1',
+                            background:'#eef2ff', color:'#6366f1', cursor:'pointer', fontWeight:600 }}>
+                          📍 My GPS
+                        </button>
+                      </div>
+
+                      {/* Street Address */}
+                      <div style={{ gridColumn:'1/-1' }}>
+                        <label style={LABEL}>Street Address</label>
+                        <input value={form.address_line1} onChange={e=>set('address_line1',e.target.value)}
+                          style={INPUT} placeholder="Building, Street, Floor, Flat" />
+                      </div>
+
+                      {/* Area & City - Auto-fetch from Zone */}
+                      <div>
+                        <label style={LABEL}>Area / Community</label>
+                        <input value={form.area} onChange={e=>set('area',e.target.value)}
+                          style={INPUT} placeholder={zoneData?.name ? `e.g. ${zoneData.name}` : "Downtown, JVC, Business Bay…"}
+                          disabled={!!zoneData} />
+                        {zoneData && <div style={{ fontSize:11, color:'#16a34a', marginTop:4, display:'flex', alignItems:'center', gap:3 }}><CheckCircle width={12} height={12} /> Auto-populated from zone</div>}
+                      </div>
+                      <div>
+                        <label style={LABEL}>City</label>
+                        <input value={form.city} onChange={e=>set('city',e.target.value)}
+                          style={INPUT} placeholder={zoneData?.city ? zoneData.city : "Dubai"}
+                          disabled={!!zoneData} />
+                        {zoneData && <div style={{ fontSize:11, color:'#16a34a', marginTop:4, display:'flex', alignItems:'center', gap:3 }}><CheckCircle width={12} height={12} /> Auto-populated from zone</div>}
+                      </div>
+
+                      {/* Credit Limit */}
+                      <div style={{ gridColumn:'1/-1' }}>
+                        <label style={LABEL}>Credit Limit (AED)</label>
+                        <input type="number" min="0" value={form.credit_limit}
+                          onChange={e=>set('credit_limit',e.target.value)}
+                          style={INPUT} placeholder="0 = No limit" />
+                      </div>
+
+                      {/* Map */}
+                      <div style={{ gridColumn:'1/-1', marginTop:8 }}>
                         <LocationPickerMap
                           lat={form.latitude}
                           lng={form.longitude}
                           onPick={(lat, lng) => { set('latitude', lat); set('longitude', lng); }}
                         />
                       </div>
-                      <p style={{ margin:'8px 0 0', fontSize:11, color:'#94a3b8' }}>
-                        Search an address or click the map / drag the marker to set exact location.
-                      </p>
+
+                      {/* Internal Notes */}
+                      <div style={{ gridColumn:'1/-1' }}>
+                        <label style={LABEL}>Internal Notes</label>
+                        <textarea rows={3} value={form.notes} onChange={e=>set('notes',e.target.value)}
+                          style={{ ...INPUT, resize:'vertical' }}
+                          placeholder="Any internal notes or special instructions…" />
+                      </div>
                     </div>
-                    <div style={{ display:'flex', alignItems:'center', gap:9, paddingTop:22 }}>
-                      <input type="checkbox" id="chk_active"
-                        checked={!!form.is_active}
-                        onChange={e=>set('is_active',e.target.checked)}
-                        style={{ width:16, height:16, accentColor:'#f97316', cursor:'pointer' }} />
-                      <label htmlFor="chk_active" style={{ fontSize:14, fontWeight:600, cursor:'pointer', color:'#374151' }}>
-                        Active client
-                      </label>
-                    </div>
-                    <div style={{ gridColumn:'1/-1' }}>
-                      <label style={LABEL}>Internal Notes</label>
-                      <textarea rows={3} value={form.notes} onChange={e=>set('notes',e.target.value)}
-                        style={{ ...INPUT, resize:'vertical' }}
-                        placeholder="Any internal notes or special instructions…" />
-                    </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
 
               {/* Footer nav — sticky */}

@@ -12,6 +12,12 @@ function ensureLeaflet() {
     link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
     document.head.appendChild(link);
   }
+  if (!document.getElementById('leaflet-zoom-spacing')) {
+    const style = document.createElement('style');
+    style.id = 'leaflet-zoom-spacing';
+    style.textContent = '.leaflet-control-zoom { display: flex; flex-direction: column; gap: 8px; } .leaflet-control-zoom-in, .leaflet-control-zoom-out { margin: 0 !important; }';
+    document.head.appendChild(style);
+  }
   if (!document.getElementById('leaflet-js')) {
     const script = document.createElement('script');
     script.id = 'leaflet-js';

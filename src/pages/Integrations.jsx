@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Key, Webhook, DataTransferBoth, Plus, Trash, RefreshDouble,
-  Copy, Check, LinkExternal, Lock, CheckCircle, Clock
+  Key, Network, DataTransferBoth, Plus, Trash, RefreshDouble,
+  Copy, Check, ArrowUpRight, Lock, CheckCircle, Clock
 } from 'iconoir-react';
 import api from '../lib/api';
 import './Integrations.css';
@@ -199,7 +199,7 @@ function WebhooksTab() {
       {loading ? <div className="loading-state">Loading…</div>
        : webhooks.length === 0 ? (
         <div className="empty-state">
-          <Webhook width={42} height={42} className="empty-state-icon" />
+          <Network width={42} height={42} className="empty-state-icon" />
           <div className="empty-state-title">No webhook endpoints</div>
           <div className="empty-state-sub">Add an endpoint to receive real-time delivery events</div>
           <button className="btn-primary" style={{marginTop:16}} onClick={openCreate}><Plus width={14} height={14} /> Add First Endpoint</button>
@@ -212,7 +212,7 @@ function WebhooksTab() {
                 <div className="intg-webhook-info">
                   <div className="intg-webhook-name">{wh.name}</div>
                   <a href={wh.url} target="_blank" rel="noreferrer" className="intg-webhook-url">
-                    {trunc(wh.url,65)} <LinkExternal width={11} height={11} />
+                    {trunc(wh.url,65)} <ArrowUpRight width={11} height={11} />
                   </a>
                   {wh.description && <div className="intg-webhook-desc">{wh.description}</div>}
                 </div>
@@ -388,7 +388,7 @@ function DeliveryLogTab() {
 
 const TABS = [
   { id:'api-keys', label:'API Keys',     icon: Key },
-  { id:'webhooks', label:'Webhooks',     icon: Webhook },
+  { id:'webhooks', label:'Webhooks',     icon: Network },
   { id:'log',      label:'Delivery Log', icon: DataTransferBoth },
 ];
 

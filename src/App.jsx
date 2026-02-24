@@ -92,29 +92,40 @@ function App() {
   };
 
   const login = async (username, password) => {
-    const API_URL = import.meta.env.VITE_API_URL || '/api';
-    const res = await fetch(`${API_URL}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ username, password }),
-    });
-    const data = await res.json();
-    if (data.success) {
-      const token = data.token || data.data?.token;
-      const userData = data.user || data.data;
-      if (token && userData) {
-        localStorage.setItem('crm_token', token);
-        localStorage.setItem('crm_user', JSON.stringify(userData));
-        if (userData.tenant) {
-          localStorage.setItem('crm_tenant', JSON.stringify(userData.tenant));
-          setTenant(userData.tenant);
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || '/api';
+      const loginTimeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Login request timed out')), 10000)
+      );
+      const res = await Promise.race([
+        fetch(`${API_URL}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ username, password }),
+        }),
+        loginTimeout
+      ]);
+      const data = await res.json();
+      if (data.success) {
+        const token = data.token || data.data?.token;
+        const userData = data.user || data.data;
+        if (token && userData) {
+          localStorage.setItem('crm_token', token);
+          localStorage.setItem('crm_user', JSON.stringify(userData));
+          if (userData.tenant) {
+            localStorage.setItem('crm_tenant', JSON.stringify(userData.tenant));
+            setTenant(userData.tenant);
+          }
+          setUser(userData);
+          return { success: true, role: userData.role };
         }
-        setUser(userData);
-        return { success: true, role: userData.role };
       }
+      return { success: false, message: data.message || 'Login failed' };
+    } catch (err) {
+      console.error('[login error]', err);
+      return { success: false, message: err.message === 'Login request timed out' ? 'Server not responding. Please try again.' : 'Connection error. Please try again.' };
     }
-    return { success: false, message: data.message };
   };
 
   const logout = async () => {
