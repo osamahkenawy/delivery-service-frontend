@@ -9,7 +9,12 @@ export function getSocket() {
   if (!socket) {
     socket = io(API_BASE, {
       autoConnect: false,
-      transports: ['websocket', 'polling'],
+      transports: ['polling', 'websocket'],   // polling first — more reliable through HTTPS proxy
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 20000,
     });
   }
   return socket;
