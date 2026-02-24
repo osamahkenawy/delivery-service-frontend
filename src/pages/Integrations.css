@@ -1,0 +1,346 @@
+/* ════════════════════════════════════════════════════════════
+   Integrations Page  (intg- prefix)
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Tab bar ──────────────────────────────────────────────── */
+.intg-tab-bar {
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid #f1f5f9;
+  margin-bottom: 24px;
+  padding-bottom: 0;
+}
+
+.intg-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border: none;
+  background: transparent;
+  border-radius: 8px 8px 0 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+  margin-bottom: -2px;
+  border-bottom: 2px solid transparent;
+}
+
+.intg-tab-btn:hover {
+  color: #1e293b;
+  background: #f8fafc;
+}
+
+.intg-tab-btn.active {
+  color: #f97316;
+  border-bottom-color: #f97316;
+  font-weight: 600;
+}
+
+.intg-tab-body {
+  min-height: 300px;
+}
+
+/* ── Section header ───────────────────────────────────────── */
+.intg-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.intg-section-title {
+  margin: 0 0 4px;
+  font-size: 17px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.intg-section-sub {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* ── New-key banner ───────────────────────────────────────── */
+.intg-key-banner {
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+}
+
+.intg-key-banner-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: #15803d;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.intg-key-banner-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.intg-key-code {
+  flex: 1;
+  background: #fff;
+  border: 1px solid #86efac;
+  border-radius: 8px;
+  padding: 9px 14px;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 13px;
+  word-break: break-all;
+  color: #166534;
+}
+
+.intg-copy-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 9px 16px;
+  border-radius: 8px;
+  border: 1px solid #16a34a;
+  background: #fff;
+  color: #16a34a;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+
+.intg-copy-btn.copied,
+.intg-copy-btn:hover {
+  background: #16a34a;
+  color: #fff;
+}
+
+.intg-dismiss {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+  margin-top: 10px;
+  text-decoration: underline;
+}
+
+.intg-dismiss:hover { color: #475569; }
+
+/* ── Key preview in table ─────────────────────────────────── */
+.intg-key-preview {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 12px;
+  background: #f8fafc;
+  padding: 3px 8px;
+  border-radius: 6px;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+/* ── Webhook cards ────────────────────────────────────────── */
+.intg-webhook-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.intg-webhook-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px 20px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.intg-webhook-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.intg-webhook-card.inactive {
+  opacity: 0.6;
+}
+
+.intg-webhook-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.intg-webhook-info { flex: 1; min-width: 0; }
+
+.intg-webhook-name {
+  font-weight: 700;
+  font-size: 15px;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.intg-webhook-url {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #3b82f6;
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.intg-webhook-url:hover { text-decoration: underline; }
+
+.intg-webhook-desc {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.intg-webhook-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* ── Event chips ──────────────────────────────────────────── */
+.intg-webhook-events {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+
+.intg-event-chip {
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 20px;
+  border: 1px solid #bfdbfe;
+  white-space: nowrap;
+}
+
+.intg-webhook-last {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-bottom: 10px;
+}
+
+/* ── Test result inline alert ─────────────────────────────── */
+.intg-test-result {
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+
+.intg-test-result.success {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+
+.intg-test-result.fail {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+}
+
+/* ── Webhook card actions ─────────────────────────────────── */
+.intg-webhook-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 12px;
+  margin-top: 4px;
+}
+
+/* ── Event group selector in modal ───────────────────────── */
+.intg-event-groups {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+@media (max-width: 680px) {
+  .intg-event-groups { grid-template-columns: 1fr; }
+}
+
+.intg-event-group {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.intg-event-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 14px;
+  background: #f8fafc;
+  cursor: pointer;
+  user-select: none;
+}
+
+.intg-event-group-header:hover { background: #f1f5f9; }
+
+.intg-event-group-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.intg-event-group-sel {
+  font-size: 11px;
+  color: #64748b;
+  background: #e2e8f0;
+  padding: 1px 7px;
+  border-radius: 10px;
+}
+
+.intg-event-checkboxes {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 6px 4px;
+}
+
+.intg-event-check {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #475569;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.intg-event-check:hover { background: #f8fafc; }
+
+.intg-event-check input[type="checkbox"] {
+  accent-color: #f97316;
+  width: 13px;
+  height: 13px;
+  cursor: pointer;
+  flex-shrink: 0;
+}

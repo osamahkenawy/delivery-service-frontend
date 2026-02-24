@@ -1,243 +1,294 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import {
+  Settings as SettingsIcon, User, Building, TruckDelivery, Mail,
+  Plus, Trash, CheckCircle, WarningCircle
+} from 'iconoir-react';
 import api from '../lib/api';
+import './Settings.css';
 
-const TABS = ['General', 'Users'];
+const fmtDate = d => d ? new Date(d).toLocaleDateString('en-AE', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 
-export default function Settings() {
-  const [tab, setTab] = useState('General');
-  const [settings, setSettings] = useState({});
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState('');
-  const [error, setError] = useState('');
-  const [showAddUser, setShowAddUser] = useState(false);
-  const [userForm, setUserForm] = useState({ full_name: '', email: '', phone: '', password: '', role: 'dispatcher' });
-  const [savingUser, setSavingUser] = useState(false);
-  const [userError, setUserError] = useState('');
+const ROLE_BADGE = {
+  superadmin: 'badge-purple',
+  admin:      'badge-blue',
+  dispatcher: 'badge-green',
+  driver:     'badge-yellow',
+  client:     'badge-gray',
+};
 
-  useEffect(() => {
-    fetchData();
+const SETTING_GROUPS = [
+  {
+    key: 'company',
+    title: 'Company',
+    icon: Building,
+    fields: [
+      { key: 'company_name',    label: 'Company Name' },
+      { key: 'company_phone',   label: 'Company Phone' },
+      { key: 'company_email',   label: 'Company Email',   type: 'email' },
+      { key: 'company_address', label: 'Company Address', span: true },
+      { key: 'vat_number',      label: 'VAT Number' },
+    ],
+  },
+  {
+    key: 'delivery',
+    title: 'Delivery Defaults',
+    icon: TruckDelivery,
+    fields: [
+      { key: 'default_emirate',          label: 'Default Emirate' },
+      { key: 'max_cod_amount',           label: 'Max COD Amount (AED)',    type: 'number' },
+      { key: 'default_delivery_fee',     label: 'Default Delivery Fee (AED)', type: 'number' },
+      { key: 'driver_commission_percent',label: 'Driver Commission (%)',   type: 'number' },
+    ],
+  },
+  {
+    key: 'notifications',
+    title: 'Notifications',
+    icon: Mail,
+    fields: [
+      { key: 'sms_sender_id', label: 'SMS Sender ID' },
+      { key: 'smtp_host',     label: 'SMTP Host' },
+      { key: 'smtp_port',     label: 'SMTP Port',  type: 'number' },
+      { key: 'smtp_user',     label: 'SMTP User' },
+    ],
+  },
+];
+
+const TABS = [
+  { id: 'general', label: 'General',  icon: SettingsIcon },
+  { id: 'users',   label: 'Users',    icon: User },
+];
+
+/* ════════════════════════════════════════════════════════════ */
+function GeneralTab({ settings, setSettings, onSave, saving, success, error }) {
+  return (
+    <form onSubmit={onSave}>
+      {success && (
+        <div className="stg-alert stg-alert-success">
+          <CheckCircle width={16} height={16} /> {success}
+        </div>
+      )}
+      {error && (
+        <div className="stg-alert stg-alert-error">
+          <WarningCircle width={16} height={16} /> {error}
+        </div>
+      )}
+      {SETTING_GROUPS.map(group => (
+        <div key={group.key} className="stg-group">
+          <div className="stg-group-header">
+            <group.icon width={17} height={17} />
+            <span>{group.title}</span>
+          </div>
+          <div className="stg-group-body">
+            <div className="stg-fields-grid">
+              {group.fields.map(({ key, label, type, span }) => (
+                <div key={key} className={`form-group${span ? ' stg-span-full' : ''}`}>
+                  <label>{label}</label>
+                  <input
+                    type={type || 'text'}
+                    value={settings[key] || ''}
+                    onChange={e => setSettings(s => ({ ...s, [key]: e.target.value }))}
+                    className="form-input"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ))}
+      <div className="stg-save-row">
+        <button type="submit" className="btn-primary" disabled={saving}>
+          {saving ? 'Saving…' : 'Save Settings'}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════ */
+function UsersTab() {
+  const [users,      setUsers]      = useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [showModal,  setShowModal]  = useState(false);
+  const [form,       setForm]       = useState({ username:'', full_name:'', email:'', phone:'', password:'', role:'dispatcher' });
+  const [saving,     setSaving]     = useState(false);
+  const [userError,  setUserError]  = useState('');
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const res = await api.get('/settings/users');
+    if (res.success) setUsers(res.data || []);
+    setLoading(false);
   }, []);
 
-  const fetchData = async () => {
-    setLoading(true);
-    const [sRes, uRes] = await Promise.all([
-      api.get('/settings'),
-      api.get('/settings/users'),
-    ]);
-    if (sRes.success) setSettings(sRes.data || {});
-    if (uRes.success) setUsers(uRes.data || []);
-    setLoading(false);
-  };
+  useEffect(() => { load(); }, [load]);
 
-  const handleSaveSettings = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    setError('');
-    setSuccess('');
-    const res = await api.put('/settings', settings);
-    if (res.success) setSuccess('Settings saved successfully');
-    else setError(res.message || 'Failed to save');
-    setSaving(false);
-    setTimeout(() => setSuccess(''), 3000);
-  };
-
-  const handleAddUser = async (e) => {
-    e.preventDefault();
-    setSavingUser(true);
-    setUserError('');
-    const res = await api.post('/settings/users', userForm);
+  const handleAdd = async e => {
+    e.preventDefault(); setSaving(true); setUserError('');
+    const res = await api.post('/settings/users', form);
     if (res.success) {
-      setShowAddUser(false);
-      setUserForm({ full_name: '', email: '', phone: '', password: '', role: 'dispatcher' });
-      api.get('/settings/users').then(r => r.success && setUsers(r.data || []));
+      setShowModal(false);
+      setForm({ username:'', full_name:'', email:'', phone:'', password:'', role:'dispatcher' });
+      load();
     } else {
       setUserError(res.message || 'Failed to create user');
     }
-    setSavingUser(false);
+    setSaving(false);
   };
 
-  const handleDeleteUser = async (id) => {
+  const del = async id => {
     if (!confirm('Remove this user?')) return;
     await api.delete(`/settings/users/${id}`);
-    api.get('/settings/users').then(r => r.success && setUsers(r.data || []));
+    load();
   };
 
-  const ROLE_COLORS = {
-    superadmin:  { bg: '#ede9fe', color: '#7c3aed' },
-    admin:       { bg: '#dbeafe', color: '#1d4ed8' },
-    dispatcher:  { bg: '#dcfce7', color: '#16a34a' },
-    driver:      { bg: '#fef3c7', color: '#d97706' },
-    client:      { bg: '#f1f5f9', color: '#64748b' },
-  };
+  return (
+    <div>
+      <div className="intg-section-header">
+        <div>
+          <h3 className="intg-section-title">Team Members</h3>
+          <p className="intg-section-sub">{users.length} user{users.length!==1?'s':''} in your workspace</p>
+        </div>
+        <button className="btn-primary" onClick={() => { setUserError(''); setShowModal(true); }}>
+          <Plus width={16} height={16} /> Add User
+        </button>
+      </div>
 
-  const settingGroups = [
-    {
-      title: 'Company',
-      fields: [
-        { key: 'company_name', label: 'Company Name' },
-        { key: 'company_phone', label: 'Company Phone' },
-        { key: 'company_email', label: 'Company Email', type: 'email' },
-        { key: 'company_address', label: 'Company Address' },
-        { key: 'vat_number', label: 'VAT Number' },
-      ],
-    },
-    {
-      title: 'Delivery Defaults',
-      fields: [
-        { key: 'default_emirate', label: 'Default Emirate' },
-        { key: 'max_cod_amount', label: 'Max COD Amount (AED)', type: 'number' },
-        { key: 'default_delivery_fee', label: 'Default Delivery Fee (AED)', type: 'number' },
-        { key: 'driver_commission_percent', label: 'Driver Commission (%)', type: 'number' },
-      ],
-    },
-    {
-      title: 'Notifications',
-      fields: [
-        { key: 'sms_sender_id', label: 'SMS Sender ID' },
-        { key: 'smtp_host', label: 'SMTP Host' },
-        { key: 'smtp_port', label: 'SMTP Port', type: 'number' },
-        { key: 'smtp_user', label: 'SMTP User' },
-      ],
-    },
-  ];
+      {loading ? <div className="loading-state">Loading…</div>
+       : users.length === 0 ? (
+        <div className="empty-state">
+          <User width={40} height={40} className="empty-state-icon" />
+          <div className="empty-state-title">No team members yet</div>
+        </div>
+      ) : (
+        <div className="data-card">
+          <table className="data-table">
+            <thead>
+              <tr>{['Name','Username','Email','Phone','Role','Joined','Actions'].map(h=><th key={h}>{h}</th>)}</tr>
+            </thead>
+            <tbody>
+              {users.map(u => (
+                <tr key={u.id}>
+                  <td>
+                    <div className="td-primary">{u.full_name}</div>
+                  </td>
+                  <td className="td-secondary">{u.username || '—'}</td>
+                  <td className="td-secondary">{u.email}</td>
+                  <td className="td-secondary">{u.phone || '—'}</td>
+                  <td>
+                    <span className={`badge ${ROLE_BADGE[u.role]||'badge-gray'}`}>{u.role}</span>
+                  </td>
+                  <td className="td-secondary">{fmtDate(u.created_at)}</td>
+                  <td>
+                    {u.role !== 'superadmin' && (
+                      <button className="btn-danger-sm" onClick={() => del(u.id)}>
+                        <Trash width={13} height={13} />
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {showModal && (
+        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setShowModal(false)}>
+          <div className="modal-box">
+            <div className="modal-header">
+              <h3>Add Team Member</h3>
+              <button className="modal-close" onClick={()=>setShowModal(false)}>✕</button>
+            </div>
+            {userError && <div className="stg-alert stg-alert-error"><WarningCircle width={15}/> {userError}</div>}
+            <form onSubmit={handleAdd}>
+              <div className="form-grid-2">
+                <div className="form-group">
+                  <label>Full Name *</label>
+                  <input required value={form.full_name} onChange={e=>setForm(f=>({...f,full_name:e.target.value}))} className="form-input" placeholder="Ahmed Al Mansoori" />
+                </div>
+                <div className="form-group">
+                  <label>Username *</label>
+                  <input required value={form.username} onChange={e=>setForm(f=>({...f,username:e.target.value}))} className="form-input" placeholder="ahmed.mansoori" />
+                </div>
+                <div className="form-group">
+                  <label>Email *</label>
+                  <input required type="email" value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))} className="form-input" placeholder="ahmed@company.ae" />
+                </div>
+                <div className="form-group">
+                  <label>Phone</label>
+                  <input value={form.phone} onChange={e=>setForm(f=>({...f,phone:e.target.value}))} className="form-input" placeholder="+971 50 000 0000" />
+                </div>
+                <div className="form-group">
+                  <label>Password *</label>
+                  <input required type="password" value={form.password} onChange={e=>setForm(f=>({...f,password:e.target.value}))} className="form-input" />
+                </div>
+                <div className="form-group">
+                  <label>Role</label>
+                  <select value={form.role} onChange={e=>setForm(f=>({...f,role:e.target.value}))} className="form-select">
+                    {['admin','dispatcher','driver','client'].map(r=><option key={r} value={r}>{r}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn-ghost" onClick={()=>setShowModal(false)}>Cancel</button>
+                <button type="submit" className="btn-primary" disabled={saving}>{saving?'Creating…':'Create User'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════
+   MAIN
+═══════════════════════════════════════════════════════════════ */
+export default function Settings() {
+  const [tab,      setTab]      = useState('general');
+  const [settings, setSettings] = useState({});
+  const [loading,  setLoading]  = useState(true);
+  const [saving,   setSaving]   = useState(false);
+  const [success,  setSuccess]  = useState('');
+  const [error,    setError]    = useState('');
+
+  useEffect(() => {
+    api.get('/settings').then(res => {
+      if (res.success) setSettings(res.data || {});
+      setLoading(false);
+    });
+  }, []);
+
+  const handleSave = async e => {
+    e.preventDefault(); setSaving(true); setError(''); setSuccess('');
+    const res = await api.put('/settings', settings);
+    if (res.success) { setSuccess('Settings saved successfully'); setTimeout(() => setSuccess(''), 3500); }
+    else setError(res.message || 'Failed to save settings');
+    setSaving(false);
+  };
 
   return (
     <div className="page-container">
-      <div style={{ marginBottom: 24 }}>
-        <h2 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>Settings</h2>
-        <p style={{ margin: 0, color: '#64748b', fontSize: 14 }}>Configure your delivery platform</p>
+      <div className="page-header-row">
+        <div>
+          <h2 className="page-heading">Settings</h2>
+          <p className="page-subheading">Configure your delivery platform</p>
+        </div>
       </div>
 
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 24, background: '#f1f5f9', borderRadius: 10, padding: 4, width: 'fit-content' }}>
+      <div className="intg-tab-bar">
         {TABS.map(t => (
-          <button key={t} onClick={() => setTab(t)}
-            style={{ padding: '8px 20px', borderRadius: 8, border: 'none', background: tab === t ? '#fff' : 'transparent', color: tab === t ? '#f97316' : '#64748b', fontWeight: tab === t ? 700 : 400, cursor: 'pointer', fontSize: 14, boxShadow: tab === t ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}>
-            {t}
+          <button key={t.id} className={`intg-tab-btn${tab===t.id?' active':''}`} onClick={()=>setTab(t.id)}>
+            <t.icon width={15} height={15} /> {t.label}
           </button>
         ))}
       </div>
 
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: 40, color: '#94a3b8' }}>Loading...</div>
-      ) : tab === 'General' ? (
-        <form onSubmit={handleSaveSettings}>
-          {success && <div style={{ background: '#dcfce7', color: '#16a34a', padding: '10px 16px', borderRadius: 8, marginBottom: 16, fontSize: 14 }}>{success}</div>}
-          {error && <div style={{ background: '#fee2e2', color: '#dc2626', padding: '10px 16px', borderRadius: 8, marginBottom: 16, fontSize: 14 }}>{error}</div>}
-          {settingGroups.map(group => (
-            <div key={group.title} style={{ background: '#fff', borderRadius: 12, padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', marginBottom: 20 }}>
-              <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 700, color: '#1e293b' }}>{group.title}</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                {group.fields.map(({ key, label, type }) => (
-                  <div key={key}>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6, color: '#475569' }}>{label}</label>
-                    <input type={type || 'text'} value={settings[key] || ''}
-                      onChange={e => setSettings(s => ({ ...s, [key]: e.target.value }))}
-                      style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14, boxSizing: 'border-box' }} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <button type="submit" disabled={saving}
-              style={{ padding: '10px 28px', borderRadius: 8, border: 'none', background: '#f97316', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: 15 }}>
-              {saving ? 'Saving...' : 'Save Settings'}
-            </button>
-          </div>
-        </form>
-      ) : (
-        /* Users Tab */
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-            <button onClick={() => setShowAddUser(true)}
-              style={{ background: '#f97316', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 20px', fontWeight: 600, cursor: 'pointer', fontSize: 14 }}>
-              + Add User
-            </button>
-          </div>
-          <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                  {['Name', 'Email', 'Phone', 'Role', 'Created', 'Actions'].map(h => (
-                    <th key={h} style={{ padding: '12px 20px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {users.length === 0 ? (
-                  <tr><td colSpan={6} style={{ textAlign: 'center', padding: 40, color: '#94a3b8' }}>No users</td></tr>
-                ) : users.map(user => {
-                  const rc = ROLE_COLORS[user.role] || ROLE_COLORS.client;
-                  return (
-                    <tr key={user.id} style={{ borderBottom: '1px solid #f8fafc' }}>
-                      <td style={{ padding: '14px 20px' }}>
-                        <div style={{ fontWeight: 600 }}>{user.full_name}</div>
-                      </td>
-                      <td style={{ padding: '14px 20px', fontSize: 14, color: '#475569' }}>{user.email}</td>
-                      <td style={{ padding: '14px 20px', fontSize: 14, color: '#475569' }}>{user.phone || '—'}</td>
-                      <td style={{ padding: '14px 20px' }}>
-                        <span style={{ ...rc, padding: '4px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600 }}>{user.role}</span>
-                      </td>
-                      <td style={{ padding: '14px 20px', fontSize: 13, color: '#64748b' }}>{new Date(user.created_at).toLocaleDateString()}</td>
-                      <td style={{ padding: '14px 20px' }}>
-                        {user.role !== 'superadmin' && (
-                          <button onClick={() => handleDeleteUser(user.id)}
-                            style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid #fecaca', background: '#fff', color: '#dc2626', cursor: 'pointer', fontSize: 13 }}>
-                            Remove
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Add User Modal */}
-          {showAddUser && (
-            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ background: '#fff', borderRadius: 16, padding: 32, width: '100%', maxWidth: 460 }}>
-                <h3 style={{ margin: '0 0 20px', fontSize: 20, fontWeight: 700 }}>Add User</h3>
-                {userError && <div style={{ background: '#fee2e2', color: '#dc2626', padding: '10px 16px', borderRadius: 8, marginBottom: 16, fontSize: 14 }}>{userError}</div>}
-                <form onSubmit={handleAddUser}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                    {[
-                      { field: 'full_name', label: 'Full Name', required: true },
-                      { field: 'email', label: 'Email', type: 'email', required: true },
-                      { field: 'phone', label: 'Phone' },
-                      { field: 'password', label: 'Password', type: 'password', required: true },
-                    ].map(({ field, label, required, type }) => (
-                      <div key={field}>
-                        <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>{label}{required && ' *'}</label>
-                        <input required={required} type={type || 'text'} value={userForm[field]}
-                          onChange={e => setUserForm(f => ({ ...f, [field]: e.target.value }))}
-                          style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14, boxSizing: 'border-box' }} />
-                      </div>
-                    ))}
-                    <div style={{ gridColumn: '1 / -1' }}>
-                      <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>Role</label>
-                      <select value={userForm.role} onChange={e => setUserForm(f => ({ ...f, role: e.target.value }))}
-                        style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14 }}>
-                        {['admin', 'dispatcher', 'driver', 'client'].map(r => <option key={r} value={r}>{r}</option>)}
-                      </select>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 12, marginTop: 24, justifyContent: 'flex-end' }}>
-                    <button type="button" onClick={() => setShowAddUser(false)} style={{ padding: '10px 20px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontWeight: 500 }}>Cancel</button>
-                    <button type="submit" disabled={savingUser} style={{ padding: '10px 24px', borderRadius: 8, border: 'none', background: '#f97316', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
-                      {savingUser ? 'Creating...' : 'Create User'}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      {loading ? <div className="loading-state">Loading…</div>
+       : tab === 'general'
+          ? <GeneralTab settings={settings} setSettings={setSettings} onSave={handleSave} saving={saving} success={success} error={error} />
+          : <UsersTab />
+      }
     </div>
   );
 }
