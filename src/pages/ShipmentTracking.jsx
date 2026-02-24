@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Search, Package, DeliveryTruck, MapPin, Clock, Check, Xmark,
   Eye, Copy, NavArrowRight, ArrowDown, ArrowUp, Calendar,
   User, Phone, Mail, Cube, WarningCircle, RefreshDouble,
-  Map, Timer, CreditCard, EditPencil
+  Map, Timer, CreditCard, EditPencil, OpenNewWindow, ShareAndroid,
 } from 'iconoir-react';
 import { api } from '../lib/api';
 import './ShipmentTracking.css';
@@ -19,6 +20,11 @@ const STATUS_ICONS = {
   in_transit: DeliveryTruck, delivered: Check, failed: Xmark,
   returned: ArrowDown, cancelled: Xmark
 };
+const STATUS_COLORS = {
+  pending: '#94a3b8', confirmed: '#2563eb', assigned: '#7c3aed',
+  picked_up: '#be185d', in_transit: '#0369a1', delivered: '#16a34a',
+  failed: '#dc2626', returned: '#ea580c', cancelled: '#64748b'
+};
 
 function getProgressPercent(status) {
   const map = { pending: 10, confirmed: 25, assigned: 40, picked_up: 55, in_transit: 75, delivered: 100, failed: 80, returned: 90, cancelled: 0 };
@@ -31,6 +37,7 @@ function formatDate(d) {
 }
 
 export default function ShipmentTracking() {
+  const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
@@ -42,7 +49,39 @@ export default function ShipmentTracking() {
   const [drawerLoading, setDrawerLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [quickTrack, setQuickTrack] = useState('');
+  const [quickResult, setQuickResult] = useState(null);
+  const [quickLoading, setQuickLoading] = useState(false);
+  const [toasts, setToasts] = useState([]);
   const limit = 30;
+
+  const showToast = useCallback((msg, type = 'success') => {
+    const id = Date.now() + Math.random();
+    setToasts(t => [...t, { id, msg, type }]);
+    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 3000);
+  }, []);
+
+  const copyPublicLink = (token) => {
+    const url = `${window.location.origin}/track/${token}`;
+    navigator.clipboard.writeText(url);
+    showToast('Public tracking link copied!');
+  };
+
+  const openPublicTracking = (token) => {
+    window.open(`/track/${token}`, '_blank');
+  };
+
+  const doQuickTrack = async () => {
+    if (!quickTrack.trim()) return;
+    setQuickLoading(true);
+    setQuickResult(null);
+    try {
+      const res = await api.get(`/tracking/${quickTrack.trim()}`);
+      if (res.success) setQuickResult(res.data);
+      else showToast('Shipment not found', 'error');
+    } catch { showToast('Tracking token not found', 'error'); }
+    finally { setQuickLoading(false); }
+  };
 
   const loadOrders = useCallback(async () => {
     setLoading(true);
@@ -100,6 +139,7 @@ export default function ShipmentTracking() {
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
+    showToast('Copied to clipboard!');
   };
 
   const totalPages = Math.ceil(total / limit);
@@ -114,6 +154,23 @@ export default function ShipmentTracking() {
 
   return (
     <div className="trk-page">
+      {/* Toast Notifications */}
+      <div style={{ position: 'fixed', top: 24, right: 24, zIndex: 9999, display: 'flex', flexDirection: 'column', gap: 10, pointerEvents: 'none' }}>
+        {toasts.map(t => (
+          <div key={t.id} style={{
+            display: 'flex', alignItems: 'center', gap: 10, padding: '12px 18px',
+            borderRadius: 12, fontWeight: 600, fontSize: 14, minWidth: 260,
+            boxShadow: '0 8px 30px rgba(0,0,0,0.15)',
+            background: t.type === 'success' ? '#16a34a' : '#dc2626',
+            color: '#fff', animation: 'slideInRight 0.3s ease',
+          }}>
+            {t.type === 'success' ? <Check width={16} height={16} /> : <WarningCircle width={16} height={16} />}
+            {t.msg}
+          </div>
+        ))}
+      </div>
+      <style>{`@keyframes slideInRight{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}`}</style>
+
       {/* Hero */}
       <div className="module-hero">
         <div className="module-hero-left">
@@ -124,10 +181,98 @@ export default function ShipmentTracking() {
           </div>
         </div>
         <div className="module-hero-actions">
+          <button className="module-btn module-btn-outline" onClick={() => navigate('/dispatch')}>
+            <Map size={16} /> Dispatch Map
+          </button>
           <button className="module-btn module-btn-outline" onClick={loadOrders}>
             <RefreshDouble size={16} /> Refresh
           </button>
         </div>
+      </div>
+
+      {/* Quick Track */}
+      <div style={{
+        background: 'linear-gradient(135deg, #1e293b, #334155)', borderRadius: 16, padding: 20,
+        marginBottom: 24, display: 'flex', flexDirection: 'column', gap: 12,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#fff' }}>
+          <Search width={18} height={18} />
+          <span style={{ fontWeight: 800, fontSize: 16 }}>Quick Track</span>
+          <span style={{ fontSize: 12, color: '#94a3b8', marginLeft: 4 }}>Enter a tracking token to get instant status</span>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input
+            value={quickTrack} onChange={e => setQuickTrack(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && doQuickTrack()}
+            placeholder="Paste tracking token here..."
+            style={{
+              flex: 1, padding: '12px 16px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.15)',
+              background: 'rgba(255,255,255,0.08)', color: '#fff', fontSize: 14, fontFamily: 'monospace',
+            }}
+          />
+          <button onClick={doQuickTrack} disabled={quickLoading}
+            style={{
+              padding: '12px 24px', borderRadius: 10, border: 'none',
+              background: '#f97316', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 6,
+            }}>
+            {quickLoading ? 'Tracking...' : <><Search width={14} height={14} /> Track</>}
+          </button>
+        </div>
+
+        {/* Quick Track Result */}
+        {quickResult && (
+          <div style={{
+            background: 'rgba(255,255,255,0.08)', borderRadius: 12, padding: 16, marginTop: 4,
+            border: '1px solid rgba(255,255,255,0.1)', animation: 'slideInRight 0.3s ease',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <div>
+                <span style={{ fontWeight: 800, fontSize: 16, color: '#fff' }}>{quickResult.order_number}</span>
+                <span style={{
+                  display: 'inline-block', marginLeft: 10, padding: '3px 10px', borderRadius: 8,
+                  fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
+                  background: STATUS_COLORS[quickResult.status] + '30',
+                  color: STATUS_COLORS[quickResult.status] || '#fff',
+                }}>
+                  {STATUS_LABELS[quickResult.status]}
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button onClick={() => copyPublicLink(quickResult.tracking_token)}
+                  style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600 }}>
+                  <Copy width={12} height={12} /> Copy Link
+                </button>
+                <button onClick={() => openPublicTracking(quickResult.tracking_token)}
+                  style={{ background: '#f97316', border: 'none', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600 }}>
+                  <OpenNewWindow width={12} height={12} /> Live Track
+                </button>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+              <div style={{ fontSize: 12, color: '#94a3b8' }}>
+                <div style={{ fontWeight: 600, marginBottom: 2 }}>Recipient</div>
+                <div style={{ color: '#fff', fontWeight: 700 }}>{quickResult.recipient_name}</div>
+              </div>
+              <div style={{ fontSize: 12, color: '#94a3b8' }}>
+                <div style={{ fontWeight: 600, marginBottom: 2 }}>Driver</div>
+                <div style={{ color: '#fff', fontWeight: 700 }}>{quickResult.driver_name || 'Unassigned'}</div>
+              </div>
+              <div style={{ fontSize: 12, color: '#94a3b8' }}>
+                <div style={{ fontWeight: 600, marginBottom: 2 }}>Area</div>
+                <div style={{ color: '#fff', fontWeight: 700 }}>{quickResult.recipient_area || quickResult.recipient_emirate || '—'}</div>
+              </div>
+            </div>
+            {/* Mini progress */}
+            <div style={{ marginTop: 10, background: 'rgba(255,255,255,0.1)', borderRadius: 6, height: 6, overflow: 'hidden' }}>
+              <div style={{
+                height: '100%', borderRadius: 6, transition: 'width 0.5s',
+                width: `${getProgressPercent(quickResult.status)}%`,
+                background: quickResult.status === 'delivered' ? '#22c55e' : ['failed','returned','cancelled'].includes(quickResult.status) ? '#ef4444' : '#f97316',
+              }} />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Stats */}
@@ -254,6 +399,14 @@ export default function ShipmentTracking() {
                           <button className="trk-action-btn view" onClick={() => openDrawer(order)} title="View details">
                             <Eye size={14} />
                           </button>
+                          <button className="trk-action-btn" onClick={() => copyPublicLink(order.tracking_token)} title="Copy public tracking link"
+                            style={{ background: '#f0fdf4', color: '#16a34a' }}>
+                            <ShareAndroid size={14} />
+                          </button>
+                          <button className="trk-action-btn" onClick={() => openPublicTracking(order.tracking_token)} title="Open live tracking"
+                            style={{ background: '#eff6ff', color: '#2563eb' }}>
+                            <OpenNewWindow size={14} />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -281,7 +434,21 @@ export default function ShipmentTracking() {
           <div className="trk-drawer">
             <div className="trk-drawer-header">
               <h3><Package size={20} /> Shipment Details</h3>
-              <button className="trk-drawer-close" onClick={closeDrawer}><Xmark size={18} /></button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {selectedOrder.tracking_token && (
+                  <>
+                    <button onClick={() => copyPublicLink(selectedOrder.tracking_token)}
+                      style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: '#16a34a' }}>
+                      <Copy size={12} /> Copy Link
+                    </button>
+                    <button onClick={() => openPublicTracking(selectedOrder.tracking_token)}
+                      style={{ background: '#f97316', border: 'none', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: '#fff' }}>
+                      <OpenNewWindow size={12} /> Live Track
+                    </button>
+                  </>
+                )}
+                <button className="trk-drawer-close" onClick={closeDrawer}><Xmark size={18} /></button>
+              </div>
             </div>
             <div className="trk-drawer-body">
               {drawerLoading ? (
@@ -541,6 +708,26 @@ export default function ShipmentTracking() {
                       </div>
                     </div>
                   )}
+
+                  {/* Quick Actions */}
+                  <div style={{ display: 'flex', gap: 8, marginTop: 20, paddingTop: 16, borderTop: '1px solid #f1f5f9' }}>
+                    <button onClick={() => { closeDrawer(); navigate(`/orders`); }}
+                      style={{
+                        flex: 1, padding: '12px', borderRadius: 10, border: '1px solid #e2e8f0',
+                        background: '#fff', color: '#475569', fontWeight: 700, fontSize: 13,
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                      }}>
+                      <EditPencil size={14} /> Edit Order
+                    </button>
+                    <button onClick={() => { closeDrawer(); navigate('/dispatch'); }}
+                      style={{
+                        flex: 1, padding: '12px', borderRadius: 10, border: 'none',
+                        background: '#f97316', color: '#fff', fontWeight: 700, fontSize: 13,
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                      }}>
+                      <Map size={14} /> View on Map
+                    </button>
+                  </div>
                 </>
               ) : (
                 <div className="trk-empty">

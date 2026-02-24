@@ -235,6 +235,14 @@ export default function OrderDetail() {
             >
               <Box3dPoint width={14} height={14} /> Track
             </a>
+            <button className="btn-outline-action" onClick={() => navigate('/dispatch')}
+              style={{ color: '#16a34a', borderColor: '#bbf7d0' }}>
+              <DeliveryTruck width={14} height={14} /> Dispatch
+            </button>
+            <button className="btn-outline-action" onClick={() => navigate('/shipment-tracking')}
+              style={{ color: '#2563eb', borderColor: '#bfdbfe' }}>
+              <MapPin width={14} height={14} /> All Tracking
+            </button>
           </div>
         </div>
       </div>

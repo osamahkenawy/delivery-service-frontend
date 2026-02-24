@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Package, DeliveryTruck, MapPin, Refresh, Check, Xmark, WarningTriangle, Map as MapIcon, ViewGrid
 } from 'iconoir-react';
@@ -15,6 +16,7 @@ const STATUS_STYLE = {
 };
 
 export default function Dispatch() {
+  const navigate = useNavigate();
   const [board, setBoard]                 = useState({ unassigned: [], active_deliveries: [], available_drivers: [] });
   const [loading, setLoading]             = useState(true);
   const [assigning, setAssigning]         = useState(null);
@@ -328,6 +330,27 @@ export default function Dispatch() {
           <p className="page-subheading">Assign drivers to orders in real time</p>
         </div>
         <div style={{ display:'flex', gap: 10, alignItems:'center' }}>
+          <button onClick={() => navigate('/orders')} style={{
+            padding: '8px 14px', borderRadius: 10, border: '1px solid #e2e8f0', background: '#fff',
+            cursor: 'pointer', fontWeight: 600, fontSize: 13, color: '#475569',
+            display: 'flex', alignItems: 'center', gap: 5,
+          }}>
+            <Package width={14} height={14} /> Orders
+          </button>
+          <button onClick={() => navigate('/live-map')} style={{
+            padding: '8px 14px', borderRadius: 10, border: '1px solid #bfdbfe', background: '#eff6ff',
+            cursor: 'pointer', fontWeight: 600, fontSize: 13, color: '#2563eb',
+            display: 'flex', alignItems: 'center', gap: 5,
+          }}>
+            <MapIcon width={14} height={14} /> Live Map
+          </button>
+          <button onClick={() => navigate('/shipment-tracking')} style={{
+            padding: '8px 14px', borderRadius: 10, border: '1px solid #bbf7d0', background: '#f0fdf4',
+            cursor: 'pointer', fontWeight: 600, fontSize: 13, color: '#16a34a',
+            display: 'flex', alignItems: 'center', gap: 5,
+          }}>
+            <MapPin width={14} height={14} /> Track
+          </button>
           <div className="view-toggle">
             <button className={`view-toggle-btn ${view === 'board' ? 'active' : ''}`} onClick={() => setView('board')}>
               <ViewGrid width={15} height={15} /> Board

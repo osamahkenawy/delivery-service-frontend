@@ -308,9 +308,21 @@ export default function Dashboard() {
             <div className="quick-action-icon"><MapPin width={24} height={24} /></div>
             <span>Dispatch</span>
           </Link>
+          <Link to="/shipment-tracking" className="quick-action-card">
+            <div className="quick-action-icon" style={{ background: '#e0f2fe' }}><MapPin width={24} height={24} color="#0369a1" /></div>
+            <span>Track Shipments</span>
+          </Link>
+          <Link to="/live-map" className="quick-action-card">
+            <div className="quick-action-icon" style={{ background: '#fce7f3' }}><MapPin width={24} height={24} color="#be185d" /></div>
+            <span>Live Map</span>
+          </Link>
           <Link to="/clients" className="quick-action-card">
             <div className="quick-action-icon"><Activity width={24} height={24} /></div>
             <span>Clients</span>
+          </Link>
+          <Link to="/bulk-import" className="quick-action-card">
+            <div className="quick-action-icon" style={{ background: '#ede9fe' }}><Package width={24} height={24} color="#7c3aed" /></div>
+            <span>Bulk Import</span>
           </Link>
           <Link to="/wallet" className="quick-action-card">
             <div className="quick-action-icon"><DollarCircle width={24} height={24} /></div>

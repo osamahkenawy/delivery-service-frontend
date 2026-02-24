@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   Package, Plus, Search, EditPencil, Trash, Eye, DeliveryTruck,
   Check, Xmark, NavArrowRight, NavArrowLeft, Filter, Copy,
   Clock, MapPin, User, Phone, Building, Download,
   WarningTriangle, CheckCircle, StatsUpSquare, Wallet,
   DollarCircle, Calendar, Box3dPoint, Hashtag,
-  CreditCard, Weight, Prohibition, Refresh, Group,
+  CreditCard, Weight, Prohibition, Refresh, Group, OpenNewWindow, ShareAndroid,
 } from 'iconoir-react';
 import api from '../lib/api';
 import './CRMPages.css';
@@ -209,6 +209,7 @@ function AddressSearch({ onSelect }) {
    ══════════════════════════════════════════════════════════════ */
 export default function Orders() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   /* state */
   const [orders,     setOrders]     = useState([]);
   const [loading,    setLoading]    = useState(true);
@@ -540,6 +541,18 @@ export default function Orders() {
           </p>
         </div>
         <div style={{ display:'flex', gap:10 }}>
+          <button onClick={() => navigate('/shipment-tracking')} title="Track shipments"
+            style={{ padding:'10px 16px', borderRadius:10, border:'1px solid #bfdbfe',
+              background:'#eff6ff', cursor:'pointer', fontWeight:600, fontSize:14,
+              color:'#2563eb', display:'flex', alignItems:'center', gap:7 }}>
+            <MapPin width={15} height={15} /> Track
+          </button>
+          <button onClick={() => navigate('/dispatch')} title="Dispatch board"
+            style={{ padding:'10px 16px', borderRadius:10, border:'1px solid #d9f99d',
+              background:'#f7fee7', cursor:'pointer', fontWeight:600, fontSize:14,
+              color:'#65a30d', display:'flex', alignItems:'center', gap:7 }}>
+            <DeliveryTruck width={15} height={15} /> Dispatch
+          </button>
           <button onClick={exportCSV} disabled={exporting} title="Export all orders as CSV"
             style={{ padding:'10px 16px', borderRadius:10, border:'1px solid #e2e8f0',
               background: exporting ? '#f8fafc' : '#fff',
@@ -725,6 +738,20 @@ export default function Orders() {
                               cursor:'pointer', fontSize:13, fontWeight:600, color:'#374151', display:'flex', alignItems:'center', gap:5 }}>
                             <EditPencil width={13} height={13} /> Edit
                           </button>
+                          {o.tracking_token && (
+                            <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/track/${o.tracking_token}`); showToast('Tracking link copied!'); }} title="Copy public tracking link"
+                              style={{ padding:'6px 8px', borderRadius:8, border:'1px solid #bbf7d0', background:'#f0fdf4',
+                                color:'#16a34a', cursor:'pointer', display:'flex', alignItems:'center' }}>
+                              <ShareAndroid width={13} height={13} />
+                            </button>
+                          )}
+                          {o.tracking_token && (
+                            <button onClick={() => window.open(`/track/${o.tracking_token}`, '_blank')} title="Live track"
+                              style={{ padding:'6px 8px', borderRadius:8, border:'1px solid #bfdbfe', background:'#eff6ff',
+                                color:'#2563eb', cursor:'pointer', display:'flex', alignItems:'center' }}>
+                              <OpenNewWindow width={13} height={13} />
+                            </button>
+                          )}
                           {!['delivered','cancelled','returned'].includes(o.status) && (
                             <button onClick={() => setCancelConfirm(o)} title="Cancel"
                               style={{ padding:'6px 10px', borderRadius:8, border:'1px solid #fecaca',
@@ -838,8 +865,16 @@ export default function Orders() {
                   style={{ flex:1, padding:'10px', borderRadius:10, border:'none',
                     background:'#f97316', color:'#fff', cursor:'pointer', fontWeight:700, fontSize:14,
                     display:'flex', alignItems:'center', justifyContent:'center', gap:7 }}>
-                  <EditPencil width={15} height={15} /> Edit Order
+                  <EditPencil width={15} height={15} /> Edit
                 </button>
+                {drawer.tracking_token && (
+                  <button onClick={() => window.open(`/track/${drawer.tracking_token}`, '_blank')}
+                    style={{ flex:1, padding:'10px', borderRadius:10, border:'none',
+                      background:'#2563eb', color:'#fff', cursor:'pointer', fontWeight:700, fontSize:14,
+                      display:'flex', alignItems:'center', justifyContent:'center', gap:7 }}>
+                    <OpenNewWindow width={14} height={14} /> Track Live
+                  </button>
+                )}
                 {!['delivered','cancelled','returned'].includes(drawer.status) && (
                   <button onClick={() => { setDrawer(null); setCancelConfirm(drawer); }}
                     style={{ flex:1, padding:'10px', borderRadius:10, border:'1px solid rgba(255,255,255,0.2)',

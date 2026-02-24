@@ -222,6 +222,13 @@ export default function Drivers() {
         ? await api.put(`/drivers/${selected.id}`, payload)
         : await api.post('/drivers', payload);
       if (res.success) {
+        // Show driver account credentials on new creation
+        if (!selected && res.account) {
+          const { username, password } = res.account;
+          setTimeout(() => {
+            alert(`✅ Driver Account Created!\n\nUsername: ${username}\nPassword: ${password}\n\nThe driver can login with these credentials to manage their deliveries.`);
+          }, 300);
+        }
         closeForm();
         fetchDrivers();
       } else {
