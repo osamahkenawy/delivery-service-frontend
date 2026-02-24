@@ -110,7 +110,7 @@ export default function NotificationBell() {
 
   /* ── styles ──────────────────────────────────────────────── */
   const s = {
-    wrapper: { position: 'relative' },
+    wrapper: { position: 'relative', zIndex: 1100 },
     btn: {
       position: 'relative', width: 42, height: 42, borderRadius: 12,
       border: '1px solid var(--border)', background: open ? 'var(--bg-hover)' : 'transparent',
@@ -125,10 +125,10 @@ export default function NotificationBell() {
       border: '2px solid var(--bg-card)',
     },
     dropdown: {
-      position: 'absolute', top: 'calc(100% + 8px)', right: 0,
-      width: 380, maxHeight: 480, background: 'var(--bg-card)',
+      position: 'fixed', top: 70, right: 20,
+      width: 380, maxHeight: 'calc(100vh - 100px)', background: 'var(--bg-card)',
       border: '1px solid var(--border)', borderRadius: 16,
-      boxShadow: '0 12px 40px rgba(0,0,0,.18)', zIndex: 999,
+      boxShadow: '0 16px 48px rgba(0,0,0,.22)', zIndex: 10000,
       display: 'flex', flexDirection: 'column', overflow: 'hidden',
     },
     header: {
