@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell } from 'iconoir-react';
+import {
+  Bell, BellNotification, Check, CheckCircle, WarningTriangle,
+  Xmark, Package, DeliveryTruck, MapPin, Mail,
+  Clock, User,
+} from 'iconoir-react';
 import api from '../lib/api';
 import { getSocket } from '../lib/socketClient';
 
@@ -14,10 +18,34 @@ function timeAgo(dateStr) {
   return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-const TYPE_ICON = {
-  info: '🔔', success: '✅', warning: '⚠️', error: '❌',
-  order: '📦', driver: '🚚', assignment: '🗺️', delivery: '📬',
+/* ── icon + color config per notification type ────────────── */
+const TYPE_CONFIG = {
+  info:       { Icon: Bell,            color: '#6366f1', bg: '#eef2ff' },
+  success:    { Icon: CheckCircle,     color: '#16a34a', bg: '#ecfdf5' },
+  warning:    { Icon: WarningTriangle, color: '#f59e0b', bg: '#fffbeb' },
+  error:      { Icon: Xmark,           color: '#dc2626', bg: '#fef2f2' },
+  order:      { Icon: Package,         color: '#3b82f6', bg: '#eff6ff' },
+  order_update: { Icon: Package,       color: '#f97316', bg: '#fff7ed' },
+  driver:     { Icon: DeliveryTruck,   color: '#8b5cf6', bg: '#f5f3ff' },
+  assignment: { Icon: MapPin,          color: '#0d9488', bg: '#f0fdfa' },
+  delivery:   { Icon: Mail,            color: '#ec4899', bg: '#fdf2f8' },
 };
+
+/* ── icon-name–to-Component fallback map (for backend icon field) */
+const ICON_NAME_MAP = {
+  clock: Clock, check: CheckCircle, user: User, package: Package,
+  truck: DeliveryTruck, delivery: CheckCircle, error: Xmark,
+  returned: DeliveryTruck, cancelled: Xmark, assignment: MapPin,
+};
+
+function getNotifConfig(n) {
+  const cfg = TYPE_CONFIG[n.type] || TYPE_CONFIG.info;
+  // If icon field is a text icon-name from backend, try to resolve
+  if (n.icon && ICON_NAME_MAP[n.icon]) {
+    return { ...cfg, Icon: ICON_NAME_MAP[n.icon] };
+  }
+  return cfg;
+}
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
@@ -48,7 +76,7 @@ export default function NotificationBell() {
   /* ── initial load + polling ──────────────────────────────── */
   useEffect(() => {
     fetchCount();
-    const interval = setInterval(fetchCount, 30000); // every 30s
+    const interval = setInterval(fetchCount, 30000);
     return () => clearInterval(interval);
   }, [fetchCount]);
 
@@ -108,98 +136,145 @@ export default function NotificationBell() {
     else if (n.order_id) navigate(`/orders?highlight=${n.order_id}`);
   };
 
-  /* ── styles ──────────────────────────────────────────────── */
-  const s = {
-    wrapper: { position: 'relative', zIndex: 1100 },
-    btn: {
-      position: 'relative', width: 42, height: 42, borderRadius: 12,
-      border: '1px solid var(--border)', background: open ? 'var(--bg-hover)' : 'transparent',
-      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      transition: 'all .15s',
-    },
-    badge: {
-      position: 'absolute', top: -4, right: -4, minWidth: 18, height: 18,
-      borderRadius: 9, background: '#dc2626', color: '#fff',
-      fontSize: '.65rem', fontWeight: 800, display: 'flex',
-      alignItems: 'center', justifyContent: 'center', padding: '0 5px',
-      border: '2px solid var(--bg-card)',
-    },
-    dropdown: {
-      position: 'fixed', top: 70, right: 20,
-      width: 380, maxHeight: 'calc(100vh - 100px)', background: 'var(--bg-card)',
-      border: '1px solid var(--border)', borderRadius: 16,
-      boxShadow: '0 16px 48px rgba(0,0,0,.22)', zIndex: 10000,
-      display: 'flex', flexDirection: 'column', overflow: 'hidden',
-    },
-    header: {
-      padding: '14px 18px', borderBottom: '1px solid var(--border)',
-      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    },
-    list: { flex: 1, overflowY: 'auto', maxHeight: 360 },
-    item: (read) => ({
-      padding: '12px 18px', cursor: 'pointer', transition: 'background .1s',
-      borderBottom: '1px solid var(--border)',
-      background: read ? 'transparent' : 'rgba(249,115,22,.04)',
-    }),
-    footer: {
-      padding: '10px 18px', borderTop: '1px solid var(--border)',
-      textAlign: 'center',
-    },
-  };
-
   return (
-    <div ref={ref} style={s.wrapper}>
-      <button style={s.btn} onClick={() => setOpen(!open)} title="Notifications">
+    <div ref={ref} style={{ position: 'relative', zIndex: 1100 }}>
+      {/* ── Trigger Button ───────────────────────────────── */}
+      <button
+        onClick={() => setOpen(!open)}
+        title="Notifications"
+        style={{
+          position: 'relative', width: 42, height: 42, borderRadius: 12,
+          border: '1px solid var(--border)', background: open ? 'var(--bg-hover)' : 'transparent',
+          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          transition: 'all .15s',
+        }}
+      >
         <Bell width={20} height={20} strokeWidth={1.8} color="var(--text-secondary)" />
         {unreadCount > 0 && (
-          <span style={s.badge}>{unreadCount > 99 ? '99+' : unreadCount}</span>
+          <span style={{
+            position: 'absolute', top: -4, right: -4, minWidth: 18, height: 18,
+            borderRadius: 9, background: '#f97316', color: '#fff',
+            fontSize: '.65rem', fontWeight: 800, display: 'flex',
+            alignItems: 'center', justifyContent: 'center', padding: '0 5px',
+            border: '2px solid var(--bg-card)',
+            animation: 'bellPulse 2s infinite',
+          }}>
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </span>
         )}
       </button>
 
+      {/* ── Dropdown ─────────────────────────────────────── */}
       {open && (
-        <div style={s.dropdown}>
+        <div style={{
+          position: 'fixed', top: 70, right: 20,
+          width: 400, maxHeight: 'calc(100vh - 100px)', background: 'var(--bg-card)',
+          border: '1px solid var(--border)', borderRadius: 16,
+          boxShadow: '0 20px 60px rgba(0,0,0,.18)', zIndex: 10000,
+          display: 'flex', flexDirection: 'column', overflow: 'hidden',
+          animation: 'bellDropIn .2s ease-out',
+        }}>
+
           {/* Header */}
-          <div style={s.header}>
-            <span style={{ fontWeight: 800, fontSize: '.95rem' }}>Notifications</span>
-            {unreadCount > 0 && (
-              <button onClick={markAllRead}
-                style={{
-                  border: 'none', background: 'transparent', color: '#f97316',
-                  fontSize: '.78rem', fontWeight: 700, cursor: 'pointer',
+          <div style={{
+            padding: '16px 20px', borderBottom: '1px solid var(--border)',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            background: 'var(--bg-hover)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <BellNotification width={18} height={18} style={{ color: '#f97316' }} />
+              <span style={{ fontWeight: 800, fontSize: '.95rem', color: 'var(--text-primary)' }}>Notifications</span>
+              {unreadCount > 0 && (
+                <span style={{
+                  background: '#f97316', color: '#fff', fontSize: '.65rem', fontWeight: 700,
+                  padding: '1px 7px', borderRadius: 10, minWidth: 18, textAlign: 'center',
                 }}>
-                Mark all read
+                  {unreadCount}
+                </span>
+              )}
+            </div>
+            {unreadCount > 0 && (
+              <button onClick={markAllRead} style={{
+                border: 'none', background: 'transparent', color: '#f97316',
+                fontSize: '.78rem', fontWeight: 700, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 4,
+              }}>
+                <Check width={13} height={13} /> Mark all read
               </button>
             )}
           </div>
 
           {/* List */}
-          <div style={s.list}>
+          <div style={{ flex: 1, overflowY: 'auto', maxHeight: 380 }}>
             {loading ? (
-              <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontSize: '.85rem' }}>
+              <div style={{ padding: 50, textAlign: 'center', color: 'var(--text-muted)', fontSize: '.85rem' }}>
+                <div style={{
+                  width: 28, height: 28, border: '3px solid var(--border)',
+                  borderTopColor: '#f97316', borderRadius: '50%',
+                  animation: 'notifSpin .8s linear infinite',
+                  margin: '0 auto 10px',
+                }} />
                 Loading...
               </div>
             ) : notifications.length === 0 ? (
               <div style={{ padding: 50, textAlign: 'center' }}>
-                <div style={{ fontSize: '2rem', marginBottom: 8 }}>🔔</div>
-                <div style={{ color: 'var(--text-muted)', fontSize: '.85rem' }}>No notifications yet</div>
+                <div style={{
+                  width: 60, height: 60, borderRadius: '50%',
+                  background: 'linear-gradient(135deg, var(--bg-hover), var(--border))',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  margin: '0 auto 12px', color: 'var(--text-muted)',
+                }}>
+                  <Bell width={28} height={28} />
+                </div>
+                <div style={{ fontWeight: 600, fontSize: '.9rem', color: 'var(--text-primary)', marginBottom: 4 }}>
+                  All caught up!
+                </div>
+                <div style={{ color: 'var(--text-muted)', fontSize: '.82rem' }}>
+                  No notifications yet
+                </div>
               </div>
             ) : (
-              notifications.map(n => (
-                <div key={n.id} style={s.item(n.is_read)}
-                  onClick={() => handleClick(n)}
-                  onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
-                  onMouseLeave={e => e.currentTarget.style.background = n.is_read ? 'transparent' : 'rgba(249,115,22,.04)'}>
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                    <span style={{ fontSize: '1.1rem', lineHeight: 1 }}>
-                      {n.icon || TYPE_ICON[n.type] || '🔔'}
-                    </span>
+              notifications.map(n => {
+                const cfg = getNotifConfig(n);
+                return (
+                  <div key={n.id}
+                    onClick={() => handleClick(n)}
+                    style={{
+                      padding: '14px 20px', cursor: 'pointer',
+                      transition: 'background .12s',
+                      borderBottom: '1px solid var(--border)',
+                      background: n.is_read ? 'transparent' : 'rgba(249,115,22,.03)',
+                      borderLeft: n.is_read ? 'none' : '3px solid #f97316',
+                      display: 'flex', gap: 12, alignItems: 'flex-start',
+                      position: 'relative',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = n.is_read ? 'var(--bg-hover)' : 'rgba(249,115,22,.06)'}
+                    onMouseLeave={e => e.currentTarget.style.background = n.is_read ? 'transparent' : 'rgba(249,115,22,.03)'}
+                  >
+                    {/* Icon */}
+                    <div style={{
+                      width: 36, height: 36, borderRadius: 10,
+                      background: cfg.bg, color: cfg.color,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0,
+                    }}>
+                      <cfg.Icon width={16} height={16} />
+                    </div>
+
+                    {/* Content */}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
-                        <span style={{ fontWeight: n.is_read ? 600 : 800, fontSize: '.82rem', color: 'var(--text-primary)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                        <span style={{
+                          fontWeight: n.is_read ? 600 : 700, fontSize: '.82rem',
+                          color: 'var(--text-primary)', lineHeight: 1.3,
+                        }}>
                           {n.title}
                         </span>
                         {!n.is_read && (
-                          <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#f97316', flexShrink: 0 }} />
+                          <span style={{
+                            width: 8, height: 8, borderRadius: '50%', background: '#f97316',
+                            flexShrink: 0, animation: 'bellPulse 2s infinite',
+                          }} />
                         )}
                       </div>
                       <div style={{
@@ -209,28 +284,52 @@ export default function NotificationBell() {
                       }}>
                         {n.body}
                       </div>
-                      <div style={{ fontSize: '.7rem', color: 'var(--text-muted)', marginTop: 4, opacity: .7 }}>
+                      <div style={{
+                        fontSize: '.7rem', color: 'var(--text-muted)', marginTop: 5,
+                        display: 'flex', alignItems: 'center', gap: 4,
+                      }}>
+                        <Clock width={11} height={11} />
                         {timeAgo(n.created_at)}
                       </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 
           {/* Footer */}
-          <div style={s.footer}>
+          <div style={{
+            padding: '12px 20px', borderTop: '1px solid var(--border)',
+            textAlign: 'center', background: 'var(--bg-hover)',
+          }}>
             <button onClick={() => { setOpen(false); navigate('/notifications'); }}
               style={{
                 border: 'none', background: 'transparent', color: '#f97316',
                 fontSize: '.82rem', fontWeight: 700, cursor: 'pointer',
+                display: 'inline-flex', alignItems: 'center', gap: 5,
               }}>
-              View All Notifications →
+              View All Notifications
+              <span style={{ fontSize: '.9rem' }}>&rarr;</span>
             </button>
           </div>
         </div>
       )}
+
+      {/* ── Inline keyframes ─────────────────────────────── */}
+      <style>{`
+        @keyframes bellPulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.6; transform: scale(1.3); }
+        }
+        @keyframes bellDropIn {
+          from { opacity: 0; transform: translateY(-8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes notifSpin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }
