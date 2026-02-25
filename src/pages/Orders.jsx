@@ -132,6 +132,76 @@ function StatusPill({ status }) {
   );
 }
 
+/* ── Order Number Tooltip ── */
+function OrderNumCell({ orderNumber, trackingToken, onCopyToken, copied }) {
+  const [show, setShow] = useState(false);
+  const displayNum = orderNumber ? orderNumber.substring(0, 5) + (orderNumber.length > 5 ? '…' : '') : '—';
+  const [justCopied, setJustCopied] = useState(false);
+
+  const handleCopy = (e) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(orderNumber).then(() => {
+      setJustCopied(true);
+      setTimeout(() => setJustCopied(false), 1500);
+    });
+  };
+
+  return (
+    <div style={{ position: 'relative', display: 'inline-block' }}
+      onMouseEnter={() => setShow(true)}
+      onMouseLeave={() => setShow(false)}>
+      <div style={{ fontWeight: 700, color: '#1e293b', fontSize: 14, cursor: 'default', letterSpacing: '.02em' }}>
+        {displayNum}
+      </div>
+      {show && (
+        <div style={{
+          position: 'absolute', left: 0, top: '110%', zIndex: 9999,
+          background: '#1e293b', color: '#fff', borderRadius: 10,
+          padding: '10px 14px', minWidth: 230, boxShadow: '0 8px 24px rgba(0,0,0,.22)',
+          pointerEvents: 'all',
+        }}
+          onMouseEnter={() => setShow(true)}
+          onMouseLeave={() => setShow(false)}>
+          {/* Arrow */}
+          <div style={{ position: 'absolute', top: -7, left: 14, width: 14, height: 14, background: '#1e293b', transform: 'rotate(45deg)', borderRadius: 2 }} />
+          <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 5 }}>Order Number</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{
+              fontFamily: 'monospace', fontSize: 14, fontWeight: 700, letterSpacing: '.03em',
+              color: '#f97316', userSelect: 'all', cursor: 'text',
+            }}>{orderNumber}</span>
+            <button
+              onClick={handleCopy}
+              title="Copy order number"
+              style={{
+                background: justCopied ? '#22c55e' : 'rgba(255,255,255,0.15)',
+                border: 'none', borderRadius: 6, cursor: 'pointer',
+                padding: '3px 8px', color: '#fff', fontSize: 11, fontWeight: 600,
+                transition: 'background .2s', flexShrink: 0,
+              }}>
+              {justCopied ? '✓ Copied' : <Copy width={12} height={12} />}
+            </button>
+          </div>
+          {trackingToken && (
+            <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+              <div style={{ fontSize: 10, color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 3 }}>Tracking Token</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontFamily: 'monospace', fontSize: 11, color: '#94a3b8', userSelect: 'all', cursor: 'text' }}>{trackingToken}</span>
+                <button
+                  onClick={e => { e.stopPropagation(); onCopyToken(trackingToken); }}
+                  title="Copy tracking token"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: '#64748b' }}>
+                  <Copy width={11} height={11} />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function StepBar({ current }) {
   return (
     <div style={{ display:'flex', padding:'18px 28px 0', position:'relative' }}>
@@ -722,15 +792,12 @@ export default function Orders() {
                       onMouseOver={e=>e.currentTarget.style.background='#fafbfc'}
                       onMouseOut={e=>e.currentTarget.style.background='#fff'}>
                       <td style={{ padding:'13px 16px' }}>
-                        <div style={{ fontWeight:700, color:'#1e293b', fontSize:14 }}>{o.order_number}</div>
-                        <div style={{ fontSize:11, color:'#94a3b8', fontFamily:'monospace', marginTop:2,
-                          display:'flex', alignItems:'center', gap:4 }}>
-                          {o.tracking_token}
-                          <button onClick={e => { e.stopPropagation(); copyToken(o.tracking_token); }}
-                            style={{ background:'none', border:'none', cursor:'pointer', padding:0, color:'#94a3b8' }}>
-                            <Copy width={10} height={10} />
-                          </button>
-                        </div>
+                        <OrderNumCell
+                          orderNumber={o.order_number}
+                          trackingToken={o.tracking_token}
+                          onCopyToken={copyToken}
+                          copied={copied}
+                        />
                       </td>
                       <td style={{ padding:'13px 16px' }}><StatusPill status={o.status} /></td>
                       <td style={{ padding:'13px 16px' }}>

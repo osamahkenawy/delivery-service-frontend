@@ -1,224 +1,751 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import {
+  Page, Download, Eye, Search, Trash, Check, Clock, WarningTriangle,
+  Xmark, DollarCircle, CheckCircleSolid, SendDiagonalSolid,
+  ClockSolid, FlashSolid, WarningCircleSolid, XmarkCircleSolid,
+  Prohibition, GraphUp, Timer, RefreshDouble
+} from 'iconoir-react';
 import api from '../lib/api';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
-const STATUS_COLORS = {
-  draft:    { bg: '#f1f5f9', color: '#64748b' },
-  sent:     { bg: '#dbeafe', color: '#1d4ed8' },
-  paid:     { bg: '#dcfce7', color: '#16a34a' },
-  overdue:  { bg: '#fee2e2', color: '#dc2626' },
-  cancelled:{ bg: '#fef3c7', color: '#d97706' },
+/* ── Status config ─────────────────────────────────────────────────────────── */
+const STATUS_CONFIG = {
+  draft:          { color: '#3b82f6', bg: '#eff6ff', label: 'Draft',     Icon: Page },
+  sent:           { color: '#d97706', bg: '#fef3c7', label: 'Sent',      Icon: SendDiagonalSolid },
+  paid:           { color: '#16a34a', bg: '#dcfce7', label: 'Paid',      Icon: CheckCircleSolid },
+  partially_paid: { color: '#7c3aed', bg: '#f3e8ff', label: 'Partial',   Icon: FlashSolid },
+  overdue:        { color: '#ef4444', bg: '#fee2e2', label: 'Overdue',   Icon: WarningCircleSolid },
+  void:           { color: '#64748b', bg: '#f1f5f9', label: 'Void',      Icon: Prohibition },
+  cancelled:      { color: '#94a3b8', bg: '#f8fafc', label: 'Cancelled', Icon: XmarkCircleSolid },
 };
 
+/* ═══════════════════════════ MAIN COMPONENT ═══════════════════════════ */
 export default function Invoices() {
   const [invoices, setInvoices] = useState([]);
-  const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showGenerate, setShowGenerate] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
-  const [genForm, setGenForm] = useState({ client_id: '', period_start: '', period_end: '', notes: '' });
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(1);
-  const PER_PAGE = 15;
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [showDetails, setShowDetails] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const PER_PAGE = 12;
 
-  useEffect(() => {
-    Promise.all([
-      api.get('/invoices').then(r => r.success && setInvoices(r.data || [])),
-      api.get('/clients').then(r => r.success && setClients(r.data || [])),
-    ]).then(() => setLoading(false));
+  useEffect(() => { fetchInvoices(); }, []);
+
+  const fetchInvoices = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/invoices');
+      if (res.success) setInvoices(res.data || []);
+    } catch (err) {
+      console.error('Failed to fetch invoices:', err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const handleGenerate = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    setError('');
-    const res = await api.post('/invoices/generate', genForm);
-    if (res.success) {
-      setShowGenerate(false);
-      setGenForm({ client_id: '', period_start: '', period_end: '', notes: '' });
-      api.get('/invoices').then(r => r.success && setInvoices(r.data || []));
-    } else {
-      setError(res.message || 'Failed to generate invoice');
-    }
-    setSaving(false);
-  };
-
-  const handleStatus = async (id, status) => {
-    await api.patch(`/invoices/${id}/status`, { status });
-    api.get('/invoices').then(r => r.success && setInvoices(r.data || []));
+  const handleStatusChange = async (invoiceId, newStatus) => {
+    try {
+      const res = await api.patch(`/invoices/${invoiceId}/status`, { status: newStatus });
+      if (res.success) {
+        fetchInvoices();
+        if (showDetails) setShowDetails(false);
+      }
+    } catch (err) { console.error('Failed to update status:', err); }
   };
 
   const downloadPDF = async (inv) => {
-    const token = localStorage.getItem('crm_token');
-    const res = await fetch(`${API_BASE}/invoices/${inv.id}/pdf`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) { alert('Failed to generate PDF'); return; }
-    const blob = await res.blob();
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href = url;
-    a.download = `${inv.invoice_number || 'invoice-' + inv.id}.pdf`;
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+      const token = localStorage.getItem('crm_token');
+      const res = await fetch(`${API_BASE}/invoices/${inv.id}/pdf`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return alert('Failed to generate PDF');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${inv.invoice_number || 'invoice-' + inv.id}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) { console.error('Error downloading PDF:', err); }
   };
 
-  const filtered = statusFilter ? invoices.filter(i => i.status === statusFilter) : invoices;
-  const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
-  const total = Math.ceil(filtered.length / PER_PAGE);
+  const viewDetails = async (inv) => {
+    try {
+      setDetailLoading(true);
+      setShowDetails(true);
+      const res = await api.get(`/invoices/${inv.id}`);
+      if (res.success) setSelectedInvoice(res.data);
+      else setSelectedInvoice(inv);
+    } catch {
+      setSelectedInvoice(inv);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
 
+  const deleteInvoice = async (invoiceId) => {
+    if (!confirm('Delete this invoice? This action cannot be undone.')) return;
+    try {
+      const res = await api.delete(`/invoices/${invoiceId}`);
+      if (res.success) fetchInvoices();
+    } catch (err) { console.error('Failed to delete invoice:', err); }
+  };
+
+  /* ── Filter & Paginate ── */
+  let filtered = invoices;
+  if (statusFilter) filtered = filtered.filter(i => i.status === statusFilter);
+  if (searchTerm) {
+    const term = searchTerm.toLowerCase();
+    filtered = filtered.filter(i =>
+      (i.invoice_number || '').toLowerCase().includes(term) ||
+      (i.client_name || '').toLowerCase().includes(term) ||
+      (i.order_number || '').toLowerCase().includes(term)
+    );
+  }
+  const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const totalPages = Math.ceil(filtered.length / PER_PAGE);
+
+  /* ── Stats ── */
   const totalAmount = invoices.reduce((s, i) => s + parseFloat(i.total_amount || 0), 0);
   const paidAmount = invoices.filter(i => i.status === 'paid').reduce((s, i) => s + parseFloat(i.total_amount || 0), 0);
+  const pendingAmount = invoices.filter(i => ['draft', 'sent', 'partially_paid'].includes(i.status)).reduce((s, i) => s + parseFloat(i.total_amount || 0), 0);
+  const overdueAmount = invoices.filter(i => i.status === 'overdue').reduce((s, i) => s + parseFloat(i.total_amount || 0), 0);
+  const paidPct = totalAmount > 0 ? ((paidAmount / totalAmount) * 100).toFixed(0) : 0;
 
+  /* ── Helpers ── */
+  const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+  const fmtMoney = (v) => parseFloat(v || 0).toFixed(2);
+
+  const statCards = [
+    { label: 'TOTAL INVOICED', value: `AED ${fmtMoney(totalAmount)}`,   sub: `${invoices.length} invoices`,    cardColor: 'primary', bg: '#fff7ed', iconColor: '#f97316', Icon: DollarCircle },
+    { label: 'COLLECTED',      value: `AED ${fmtMoney(paidAmount)}`,    sub: `${paidPct}% rate`,               cardColor: 'success', bg: '#dcfce7', iconColor: '#16a34a', Icon: CheckCircleSolid },
+    { label: 'PENDING',        value: `AED ${fmtMoney(pendingAmount)}`, sub: `${invoices.filter(i => ['draft','sent','partially_paid'].includes(i.status)).length} invoices`, cardColor: 'warning', bg: '#fef3c7', iconColor: '#d97706', Icon: ClockSolid },
+    { label: 'OVERDUE',        value: `AED ${fmtMoney(overdueAmount)}`, sub: `${invoices.filter(i => i.status === 'overdue').length} invoices`, cardColor: 'danger', bg: '#fee2e2', iconColor: '#ef4444', Icon: WarningTriangle },
+  ];
+
+  /* ═══════════════════════════ RENDER ═══════════════════════════ */
   return (
-    <div className="page-container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>Invoices</h2>
-          <p style={{ margin: 0, color: '#64748b', fontSize: 14 }}>{invoices.length} invoices</p>
+    <div style={{ padding: 24 }}>
+
+      {/* ── Hero (shared module-hero class, same as ShipmentTracking) ── */}
+      <div className="module-hero">
+        <div className="module-hero-left">
+          <div className="module-hero-icon">
+            <Page width={26} height={26} />
+          </div>
+          <div>
+            <h1 className="module-hero-title">Invoices</h1>
+            <p className="module-hero-sub">Auto-generated from confirmed orders · Real-time payment tracking</p>
+          </div>
         </div>
-        <button onClick={() => setShowGenerate(true)}
-          style={{ background: '#f97316', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 20px', fontWeight: 600, cursor: 'pointer', fontSize: 14 }}>
-          + Generate Invoice
-        </button>
+        <div className="module-hero-actions">
+          <button className="module-btn module-btn-outline" onClick={fetchInvoices}>
+            <RefreshDouble width={16} height={16} /> Refresh
+          </button>
+        </div>
       </div>
 
-      {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 24 }}>
-        {[
-          { label: 'Total Invoiced', value: `AED ${totalAmount.toFixed(2)}`, color: '#f97316' },
-          { label: 'Collected', value: `AED ${paidAmount.toFixed(2)}`, color: '#16a34a' },
-          { label: 'Outstanding', value: `AED ${(totalAmount - paidAmount).toFixed(2)}`, color: '#dc2626' },
-          ...Object.entries(STATUS_COLORS).map(([s, sc]) => ({
-            label: s.charAt(0).toUpperCase() + s.slice(1),
-            value: invoices.filter(i => i.status === s).length,
-            color: sc.color,
-          })),
-        ].map(stat => (
-          <div key={stat.label} style={{ background: '#fff', borderRadius: 12, padding: '16px 20px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-            <div style={{ fontSize: 20, fontWeight: 800, color: stat.color }}>{stat.value}</div>
-            <div style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>{stat.label}</div>
+      {/* ── Stat Cards (same style as ShipmentTracking) ── */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+        gap: 16,
+        marginBottom: 24,
+      }}>
+        {statCards.map((s, i) => (
+          <div key={i} style={{
+            background: '#fff',
+            border: '1px solid #f1f5f9',
+            borderRadius: 14,
+            padding: '18px 20px',
+            position: 'relative',
+            overflow: 'hidden',
+            transition: 'transform 0.2s, box-shadow 0.2s',
+          }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.06)'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
+          >
+            {/* Color top bar */}
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: s.iconColor }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div style={{
+                width: 46, height: 46,
+                borderRadius: 12,
+                background: s.bg,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                <s.Icon width={22} height={22} color={s.iconColor} />
+              </div>
+              <div>
+                <span style={{ fontSize: 22, fontWeight: 800, color: '#1e293b', display: 'block' }}>{s.value}</span>
+                <span style={{ fontSize: 11, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>{s.label}</span>
+              </div>
+            </div>
           </div>
         ))}
       </div>
 
-      {/* Filters */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-        <button onClick={() => setStatusFilter('')}
-          style={{ padding: '6px 14px', borderRadius: 20, border: 'none', background: !statusFilter ? '#f97316' : '#f1f5f9', color: !statusFilter ? '#fff' : '#475569', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
-          All
-        </button>
-        {Object.keys(STATUS_COLORS).map(s => (
-          <button key={s} onClick={() => setStatusFilter(s)}
-            style={{ padding: '6px 14px', borderRadius: 20, border: 'none', background: statusFilter === s ? '#f97316' : '#f1f5f9', color: statusFilter === s ? '#fff' : '#475569', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
-            {s}
-          </button>
-        ))}
+      {/* ── Search & Filters ── */}
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 20, alignItems: 'center' }}>
+        <div style={{ position: 'relative', flex: 1, minWidth: 200, maxWidth: 360 }}>
+          <Search width={16} height={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+          <input
+            type="text"
+            placeholder="Search by invoice #, client, order..."
+            value={searchTerm}
+            onChange={e => { setSearchTerm(e.target.value); setPage(1); }}
+            style={{
+              width: '100%',
+              height: 38,
+              padding: '0 14px 0 38px',
+              border: '1px solid #e0e0e0',
+              borderRadius: 10,
+              fontSize: 13,
+              background: '#fff',
+              outline: 'none',
+              transition: 'border-color 0.2s, box-shadow 0.2s',
+            }}
+            onFocus={e => { e.target.style.borderColor = '#f97316'; e.target.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.08)'; }}
+            onBlur={e => { e.target.style.borderColor = '#e0e0e0'; e.target.style.boxShadow = 'none'; }}
+          />
+        </div>
+
+        <FilterPill active={!statusFilter} onClick={() => { setStatusFilter(''); setPage(1); }}>
+          All ({invoices.length})
+        </FilterPill>
+        {Object.entries(STATUS_CONFIG).filter(([k]) => !['void','cancelled'].includes(k)).map(([key, cfg]) => {
+          const IconComp = cfg.Icon;
+          return (
+            <FilterPill key={key} active={statusFilter === key} onClick={() => { setStatusFilter(key); setPage(1); }} color={cfg.color}>
+              <IconComp width={13} height={13} /> {cfg.label} ({invoices.filter(i => i.status === key).length})
+            </FilterPill>
+          );
+        })}
       </div>
 
+      {/* ── Invoice Grid ── */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: 40, color: '#94a3b8' }}>Loading...</div>
+        <div style={{ textAlign: 'center', padding: 80 }}>
+          <div className="trk-spinner" style={{ margin: '0 auto 16px' }} />
+          <div style={{ fontSize: 14, color: '#94a3b8', fontWeight: 500 }}>Loading invoices...</div>
+        </div>
+      ) : paged.length === 0 ? (
+        <div style={{
+          textAlign: 'center',
+          padding: '60px 32px',
+          background: '#fff',
+          borderRadius: 16,
+          border: '2px dashed #e2e8f0'
+        }}>
+          <Page width={44} height={44} color="#94a3b8" style={{ marginBottom: 14 }} />
+          <h3 style={{ margin: '0 0 8px', fontSize: 17, fontWeight: 700, color: '#1e293b' }}>No Invoices Found</h3>
+          <p style={{ margin: 0, fontSize: 13, color: '#94a3b8', maxWidth: 380, marginInline: 'auto', lineHeight: 1.6 }}>
+            Invoices are automatically generated when an order is confirmed.
+            Try confirming an order or adjusting your filters.
+          </p>
+        </div>
       ) : (
-        <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                {['Invoice #', 'Client', 'Period', 'Orders', 'Amount', 'Status', 'Created', 'Actions'].map(h => (
-                  <th key={h} style={{ padding: '12px 20px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {paged.length === 0 ? (
-                <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40, color: '#94a3b8' }}>No invoices found</td></tr>
-              ) : paged.map(inv => {
-                const sc = STATUS_COLORS[inv.status] || STATUS_COLORS.draft;
-                return (
-                  <tr key={inv.id} style={{ borderBottom: '1px solid #f8fafc' }}>
-                    <td style={{ padding: '14px 20px', fontWeight: 600, fontSize: 15 }}>#{inv.invoice_number || inv.id}</td>
-                    <td style={{ padding: '14px 20px', fontSize: 14 }}>{inv.client_name || '—'}</td>
-                    <td style={{ padding: '14px 20px', fontSize: 13, color: '#64748b' }}>
-                      {inv.period_start ? `${inv.period_start} → ${inv.period_end}` : '—'}
-                    </td>
-                    <td style={{ padding: '14px 20px', fontSize: 14, fontWeight: 600 }}>{inv.orders_count || 0}</td>
-                    <td style={{ padding: '14px 20px', fontSize: 15, fontWeight: 700 }}>AED {parseFloat(inv.total_amount || 0).toFixed(2)}</td>
-                    <td style={{ padding: '14px 20px' }}>
-                      <select value={inv.status} onChange={e => handleStatus(inv.id, e.target.value)}
-                        style={{ padding: '4px 8px', borderRadius: 6, border: 'none', background: sc.bg, color: sc.color, fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>
-                        {Object.keys(STATUS_COLORS).map(s => <option key={s} value={s}>{s}</option>)}
-                      </select>
-                    </td>
-                    <td style={{ padding: '14px 20px', fontSize: 13, color: '#64748b' }}>{new Date(inv.created_at).toLocaleDateString()}</td>
-                    <td style={{ padding: '14px 20px' }}>
-                      <button onClick={() => downloadPDF(inv)}
-                        style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#fff', color: '#f97316', fontSize: 13, cursor: 'pointer', fontWeight: 600 }}>
-                        ↓ PDF
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {total > 1 && (
-            <div style={{ padding: '12px 20px', display: 'flex', justifyContent: 'center', gap: 8, borderTop: '1px solid #f1f5f9' }}>
-              {Array.from({ length: total }, (_, i) => i + 1).map(p => (
-                <button key={p} onClick={() => setPage(p)}
-                  style={{ width: 32, height: 32, borderRadius: 6, border: '1px solid #e2e8f0', background: p === page ? '#f97316' : '#fff', color: p === page ? '#fff' : '#475569', cursor: 'pointer', fontSize: 13, fontWeight: p === page ? 600 : 400 }}>
-                  {p}
-                </button>
+        <>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+            gap: 16
+          }}>
+            {paged.map(inv => <InvoiceCard key={inv.id} inv={inv} onView={viewDetails} onDownload={downloadPDF} onDelete={deleteInvoice} onStatusChange={handleStatusChange} />)}
+          </div>
+
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 24, flexWrap: 'wrap' }}>
+              <PgBtn disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>Prev</PgBtn>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                <PgBtn key={p} active={p === page} onClick={() => setPage(p)}>{p}</PgBtn>
               ))}
+              <PgBtn disabled={page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>Next</PgBtn>
             </div>
           )}
-        </div>
+        </>
       )}
 
-      {/* Generate Modal */}
-      {showGenerate && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: '#fff', borderRadius: 16, padding: 32, width: '100%', maxWidth: 460 }}>
-            <h3 style={{ margin: '0 0 20px', fontSize: 20, fontWeight: 700 }}>Generate Invoice</h3>
-            {error && <div style={{ background: '#fee2e2', color: '#dc2626', padding: '10px 16px', borderRadius: 8, marginBottom: 16, fontSize: 14 }}>{error}</div>}
-            <form onSubmit={handleGenerate}>
-              <div style={{ display: 'grid', gap: 16 }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>Client *</label>
-                  <select required value={genForm.client_id} onChange={e => setGenForm(f => ({ ...f, client_id: e.target.value }))}
-                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14 }}>
-                    <option value="">Select Client</option>
-                    {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>Period Start *</label>
-                    <input required type="date" value={genForm.period_start} onChange={e => setGenForm(f => ({ ...f, period_start: e.target.value }))}
-                      style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14, boxSizing: 'border-box' }} />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>Period End *</label>
-                    <input required type="date" value={genForm.period_end} onChange={e => setGenForm(f => ({ ...f, period_end: e.target.value }))}
-                      style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14, boxSizing: 'border-box' }} />
-                  </div>
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>Notes</label>
-                  <textarea value={genForm.notes} onChange={e => setGenForm(f => ({ ...f, notes: e.target.value }))} rows={2}
-                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14, boxSizing: 'border-box', resize: 'vertical' }} />
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: 12, marginTop: 24, justifyContent: 'flex-end' }}>
-                <button type="button" onClick={() => setShowGenerate(false)} style={{ padding: '10px 20px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontWeight: 500 }}>Cancel</button>
-                <button type="submit" disabled={saving} style={{ padding: '10px 24px', borderRadius: 8, border: 'none', background: '#f97316', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
-                  {saving ? 'Generating...' : 'Generate'}
-                </button>
-              </div>
-            </form>
+      {/* ── Detail Modal ── */}
+      {showDetails && (
+        <DetailModal
+          invoice={selectedInvoice}
+          loading={detailLoading}
+          onClose={() => { setShowDetails(false); setSelectedInvoice(null); }}
+          onDownload={downloadPDF}
+          onStatusChange={handleStatusChange}
+          fmtDate={fmtDate}
+          fmtMoney={fmtMoney}
+        />
+      )}
+    </div>
+  );
+}
+
+
+/* ═══════════════════════════ SUB-COMPONENTS ═══════════════════════════ */
+
+/* ── Filter Pill ── */
+function FilterPill({ active, onClick, color = '#f97316', children }) {
+  return (
+    <button onClick={onClick} style={{
+      height: 38,
+      padding: '0 14px',
+      borderRadius: 10,
+      border: active ? `1px solid ${color}` : '1px solid #e0e0e0',
+      background: active ? (color === '#f97316' ? '#fff7ed' : `${color}15`) : '#fff',
+      color: active ? color : '#64748b',
+      cursor: 'pointer',
+      fontSize: 13,
+      fontWeight: active ? 600 : 400,
+      transition: 'all 0.2s',
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 5,
+      whiteSpace: 'nowrap'
+    }}>
+      {children}
+    </button>
+  );
+}
+
+/* ── Pagination Button ── */
+function PgBtn({ active, disabled, onClick, children }) {
+  return (
+    <button onClick={onClick} disabled={disabled} style={{
+      minWidth: 34,
+      height: 34,
+      padding: '0 10px',
+      borderRadius: 8,
+      border: active ? '1px solid #f97316' : '1px solid #e2e8f0',
+      background: active ? '#fff7ed' : '#fff',
+      color: active ? '#f97316' : disabled ? '#cbd5e1' : '#64748b',
+      cursor: disabled ? 'default' : 'pointer',
+      fontSize: 13,
+      fontWeight: active ? 700 : 500,
+      transition: 'all 0.2s',
+      opacity: disabled ? 0.5 : 1
+    }}>
+      {children}
+    </button>
+  );
+}
+
+/* ── Invoice Card ── */
+function InvoiceCard({ inv, onView, onDownload, onDelete, onStatusChange }) {
+  const cfg = STATUS_CONFIG[inv.status] || STATUS_CONFIG.draft;
+  const StatusIcon = cfg.Icon;
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        background: '#fff',
+        borderRadius: 14,
+        overflow: 'hidden',
+        border: `1px solid ${hovered ? '#e0e0e0' : '#f1f5f9'}`,
+        boxShadow: hovered ? '0 8px 28px rgba(0,0,0,0.08)' : '0 1px 4px rgba(0,0,0,0.04)',
+        transform: hovered ? 'translateY(-3px)' : 'translateY(0)',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        position: 'relative',
+      }}
+    >
+      {/* Colored top bar */}
+      <div style={{ height: 3, background: cfg.color }} />
+
+      {/* Card Header */}
+      <div style={{
+        padding: '16px 20px 12px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            width: 38, height: 38,
+            borderRadius: 10,
+            background: cfg.bg,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <StatusIcon width={18} height={18} color={cfg.color} />
+          </div>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 800, color: '#1e293b', letterSpacing: '-0.3px' }}>{inv.invoice_number}</div>
+            <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500, marginTop: 1 }}>{inv.client_name || 'Walk-in'}</div>
           </div>
         </div>
-      )}
+        <span style={{
+          background: cfg.bg,
+          color: cfg.color,
+          padding: '4px 10px',
+          borderRadius: 8,
+          fontSize: 11,
+          fontWeight: 700,
+          textTransform: 'uppercase',
+          letterSpacing: '0.3px',
+        }}>
+          {cfg.label}
+        </span>
+      </div>
+
+      {/* Card Body */}
+      <div style={{ padding: '0 20px 16px' }}>
+        {/* Order badge */}
+        {inv.order_number && (
+          <div style={{ marginBottom: 12 }}>
+            <span style={{ background: '#f1f5f9', padding: '3px 10px', borderRadius: 6, fontWeight: 600, fontSize: 11, color: '#64748b' }}>
+              {inv.order_number}
+            </span>
+          </div>
+        )}
+
+        {/* Total Amount */}
+        <div style={{
+          background: 'linear-gradient(135deg, #1e293b, #334155)',
+          padding: '14px 16px',
+          borderRadius: 12,
+          marginBottom: 12,
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 3 }}>Total Amount</div>
+          <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>
+            {inv.currency || 'AED'} {parseFloat(inv.total_amount || 0).toFixed(2)}
+          </div>
+        </div>
+
+        {/* Details row */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14, fontSize: 12 }}>
+          <div>
+            <div style={{ color: '#94a3b8', fontWeight: 600, fontSize: 10, textTransform: 'uppercase', marginBottom: 2 }}>Created</div>
+            <div style={{ color: '#1e293b', fontWeight: 600 }}>
+              {inv.created_at ? new Date(inv.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '—'}
+            </div>
+          </div>
+          <div>
+            <div style={{ color: '#94a3b8', fontWeight: 600, fontSize: 10, textTransform: 'uppercase', marginBottom: 2 }}>Payment</div>
+            <div style={{ color: '#1e293b', fontWeight: 600, textTransform: 'uppercase' }}>{inv.payment_method || 'COD'}</div>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: 6 }}>
+          <ActionBtn onClick={() => onView(inv)} color="#3b82f6" flex={1}>
+            <Eye width={14} height={14} /> View
+          </ActionBtn>
+          <ActionBtn onClick={() => onDownload(inv)} color="#64748b" flex={1}>
+            <Download width={14} height={14} /> PDF
+          </ActionBtn>
+          {inv.status !== 'paid' && inv.status !== 'void' && inv.status !== 'cancelled' && (
+            <ActionBtn onClick={() => onStatusChange(inv.id, 'paid')} color="#16a34a" flex={0} title="Mark Paid">
+              <Check width={14} height={14} />
+            </ActionBtn>
+          )}
+          <ActionBtn onClick={() => onDelete(inv.id)} color="#ef4444" flex={0} title="Delete">
+            <Trash width={14} height={14} />
+          </ActionBtn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Action Button ── */
+function ActionBtn({ onClick, color, flex, children, title }) {
+  const [h, setH] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      onMouseEnter={() => setH(true)}
+      onMouseLeave={() => setH(false)}
+      style={{
+        flex: flex ?? 'unset',
+        padding: '8px 10px',
+        borderRadius: 8,
+        fontSize: 12,
+        fontWeight: 600,
+        cursor: 'pointer',
+        transition: 'all 0.2s',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 5,
+        background: h ? `${color}12` : 'transparent',
+        color: color,
+        border: `1px solid ${h ? color : '#e2e8f0'}`
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+/* ── Detail Modal ── */
+function DetailModal({ invoice, loading, onClose, onDownload, onStatusChange, fmtDate, fmtMoney }) {
+  if (!invoice && !loading) return null;
+  const cfg = invoice ? (STATUS_CONFIG[invoice.status] || STATUS_CONFIG.draft) : STATUS_CONFIG.draft;
+  const StatusIcon = cfg.Icon;
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.45)',
+        backdropFilter: 'blur(4px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000,
+        padding: 20,
+        animation: 'invFadeIn 0.2s ease'
+      }}
+    >
+      <style>{`@keyframes invFadeIn{from{opacity:0}to{opacity:1}}@keyframes invSlideUp{from{transform:translateY(24px);opacity:0}to{transform:translateY(0);opacity:1}}`}</style>
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: '#fff',
+          borderRadius: 18,
+          maxWidth: 620,
+          width: '100%',
+          maxHeight: '90vh',
+          overflow: 'auto',
+          boxShadow: '0 24px 80px rgba(0,0,0,0.2)',
+          animation: 'invSlideUp 0.3s ease'
+        }}
+      >
+        {loading ? (
+          <div style={{ padding: 80, textAlign: 'center', color: '#94a3b8' }}>
+            <div className="trk-spinner" style={{ margin: '0 auto 16px' }} />
+            <div>Loading invoice details...</div>
+          </div>
+        ) : invoice ? (
+          <>
+            {/* Modal Header — dark gradient like ShipmentTracking sections */}
+            <div style={{
+              background: 'linear-gradient(135deg, #1e293b, #334155)',
+              padding: '20px 24px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              borderRadius: '18px 18px 0 0',
+              color: '#fff'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{
+                  background: 'rgba(255,255,255,0.12)',
+                  borderRadius: 10,
+                  width: 42,
+                  height: 42,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  <StatusIcon width={20} height={20} color={cfg.color} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Invoice</div>
+                  <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, letterSpacing: '-0.5px' }}>{invoice.invoice_number}</h2>
+                </div>
+              </div>
+              <button onClick={onClose} style={{
+                background: 'rgba(255,255,255,0.1)',
+                border: '1px solid rgba(255,255,255,0.15)',
+                color: '#fff',
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <Xmark width={18} height={18} />
+              </button>
+            </div>
+
+            <div style={{ padding: '22px 24px' }}>
+              {/* Info Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
+                <MInfoBlock label="Client" value={invoice.client_name || 'Walk-in'} sub={invoice.client_email} />
+                <MInfoBlock label="Order" value={invoice.order_number || 'N/A'} sub={invoice.order_status ? `Status: ${invoice.order_status}` : null} />
+                <MInfoBlock label="Created" value={fmtDate(invoice.created_at)} />
+                <MInfoBlock label="Due Date" value={invoice.due_date ? fmtDate(invoice.due_date) : 'Not set'} />
+              </div>
+
+              {/* Big Amount */}
+              <div style={{
+                background: 'linear-gradient(135deg, #1e293b, #334155)',
+                padding: '20px',
+                borderRadius: 14,
+                marginBottom: 20,
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <div style={{ position: 'absolute', top: 10, right: 16, opacity: 0.1 }}>
+                  <DollarCircle width={48} height={48} color="#fff" />
+                </div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.6px' }}>Total Amount</div>
+                <div style={{ fontSize: 32, fontWeight: 800, color: '#fff', letterSpacing: '-1px' }}>
+                  {invoice.currency || 'AED'} {fmtMoney(invoice.total_amount)}
+                </div>
+                <div style={{ marginTop: 8, fontSize: 12, color: '#94a3b8', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                  <span>Subtotal: {invoice.currency || 'AED'} {fmtMoney(invoice.subtotal)}</span>
+                  {parseFloat(invoice.discount_amount || 0) > 0 && <span>Discount: -{invoice.currency || 'AED'} {fmtMoney(invoice.discount_amount)}</span>}
+                  {parseFloat(invoice.tax_amount || 0) > 0 && <span>Tax: {invoice.currency || 'AED'} {fmtMoney(invoice.tax_amount)}</span>}
+                </div>
+              </div>
+
+              {/* Line Items */}
+              {invoice.items && invoice.items.length > 0 && (
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8 }}>Line Items</div>
+                  <div style={{ border: '1px solid #f1f5f9', borderRadius: 10, overflow: 'hidden' }}>
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: '2fr 1fr 1fr 1fr',
+                      padding: '8px 14px',
+                      background: '#f8fafc',
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: '#94a3b8',
+                      textTransform: 'uppercase',
+                    }}>
+                      <span>Description</span>
+                      <span style={{ textAlign: 'right' }}>Qty</span>
+                      <span style={{ textAlign: 'right' }}>Price</span>
+                      <span style={{ textAlign: 'right' }}>Total</span>
+                    </div>
+                    {invoice.items.map((item, idx) => (
+                      <div key={idx} style={{
+                        display: 'grid',
+                        gridTemplateColumns: '2fr 1fr 1fr 1fr',
+                        padding: '10px 14px',
+                        borderTop: '1px solid #f1f5f9',
+                        fontSize: 13,
+                        color: '#1e293b'
+                      }}>
+                        <span style={{ fontWeight: 500 }}>{item.description}</span>
+                        <span style={{ textAlign: 'right', color: '#64748b' }}>{item.quantity}</span>
+                        <span style={{ textAlign: 'right', color: '#64748b' }}>{fmtMoney(item.unit_price)}</span>
+                        <span style={{ textAlign: 'right', fontWeight: 600 }}>{fmtMoney(item.total)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Status & Payment */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 20 }}>
+                <div style={{ background: '#f8fafc', padding: 14, borderRadius: 10, border: '1px solid #f1f5f9' }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: 6 }}>Status</div>
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    padding: '4px 12px',
+                    background: cfg.bg,
+                    color: cfg.color,
+                    borderRadius: 8,
+                    fontSize: 12,
+                    fontWeight: 700,
+                  }}>
+                    <StatusIcon width={14} height={14} /> {invoice.status?.replace('_', ' ')}
+                  </span>
+                </div>
+                <div style={{ background: '#f8fafc', padding: 14, borderRadius: 10, border: '1px solid #f1f5f9' }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: 6 }}>Payment</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: '#1e293b', textTransform: 'uppercase' }}>{invoice.payment_method || 'COD'}</div>
+                  {invoice.paid_at && <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 3 }}>Paid: {fmtDate(invoice.paid_at)}</div>}
+                </div>
+              </div>
+
+              {/* Notes */}
+              {invoice.notes && (
+                <div style={{ background: '#fef3c7', border: '1px solid #fde68a', padding: 14, borderRadius: 10, marginBottom: 20 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: '#d97706', textTransform: 'uppercase', marginBottom: 4 }}>Notes</div>
+                  <div style={{ fontSize: 13, color: '#1e293b', lineHeight: 1.5 }}>{invoice.notes}</div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => onDownload(invoice)}
+                  style={{
+                    flex: 1,
+                    minWidth: 140,
+                    padding: '12px 18px',
+                    borderRadius: 10,
+                    border: 'none',
+                    background: 'linear-gradient(135deg, #f97316 0%, #f2421b 100%)',
+                    color: '#fff',
+                    fontSize: 14,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    boxShadow: '0 2px 8px rgba(249,115,22,0.3)',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  <Download width={16} height={16} /> Download PDF
+                </button>
+                {invoice.status !== 'paid' && invoice.status !== 'void' && invoice.status !== 'cancelled' && (
+                  <button
+                    onClick={() => onStatusChange(invoice.id, 'paid')}
+                    style={{
+                      flex: 1,
+                      minWidth: 140,
+                      padding: '12px 18px',
+                      borderRadius: 10,
+                      border: '2px solid #16a34a',
+                      background: '#dcfce7',
+                      color: '#16a34a',
+                      fontSize: 14,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <CheckCircleSolid width={16} height={16} /> Mark as Paid
+                  </button>
+                )}
+              </div>
+            </div>
+          </>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+/* ── Modal Info Block ── */
+function MInfoBlock({ label, value, sub }) {
+  return (
+    <div>
+      <div style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 15, fontWeight: 700, color: '#1e293b' }}>{value}</div>
+      {sub && <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{sub}</div>}
     </div>
   );
 }

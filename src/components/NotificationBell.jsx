@@ -173,7 +173,7 @@ export default function NotificationBell() {
       {open && createPortal(
         <div ref={dropdownRef} style={{
           position: 'fixed', top: 70, right: 20,
-          width: 400, maxHeight: 'calc(100vh - 100px)', background: 'var(--bg-card)',
+          width: 400, maxHeight: 'calc(100vh - 100px)', background: '#fff',
           border: '1px solid var(--border)', borderRadius: 16,
           boxShadow: '0 20px 60px rgba(0,0,0,.18)', zIndex: 99999,
           display: 'flex', flexDirection: 'column', overflow: 'hidden',
@@ -184,7 +184,7 @@ export default function NotificationBell() {
           <div style={{
             padding: '16px 20px', borderBottom: '1px solid var(--border)',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            background: 'var(--bg-hover)',
+            background: '#fff',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <BellNotification width={18} height={18} style={{ color: '#f97316' }} />
@@ -306,7 +306,7 @@ export default function NotificationBell() {
           {/* Footer */}
           <div style={{
             padding: '12px 20px', borderTop: '1px solid var(--border)',
-            textAlign: 'center', background: 'var(--bg-hover)',
+            textAlign: 'center', background: '#fff',
           }}>
             <button onClick={() => { setOpen(false); navigate('/notifications'); }}
               style={{
