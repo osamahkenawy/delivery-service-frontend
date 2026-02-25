@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   StatsUpSquare, DeliveryTruck, Clock, Medal, StarSolid,
   Timer, Check, Xmark, StatUp, StatDown,
-  Refresh, MapPin
+  Refresh, Download
 } from 'iconoir-react';
 import api from '../lib/api';
 import './Performance.css';
@@ -14,8 +14,6 @@ const PERIOD_OPTIONS = [
   { value: 'quarter', label: 'This Quarter' },
   { value: 'custom', label: 'Custom Range' },
 ];
-
-const SLA_TARGET_HOURS = 24;
 
 function SLARing({ percent, color, size = 100, stroke = 8 }) {
   const r = (size - stroke) / 2;
@@ -49,8 +47,7 @@ function RatingStars({ rating }) {
 }
 
 export default function Performance() {
-  const [orders, setOrders]   = useState([]);
-  const [drivers, setDrivers] = useState([]);
+  const [data, setData]     = useState(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod]   = useState('month');
   const [dateFrom, setDateFrom] = useState('');
@@ -60,141 +57,23 @@ export default function Performance() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      // Fetch drivers (usually small dataset — one page is fine)
-      const drvRes = await api.get('/drivers?limit=500');
-      setDrivers(drvRes.drivers || drvRes || []);
-
-      // Fetch ALL orders by walking pages (pagination caps at 100/page)
-      const PAGE_SIZE = 100;
-      let allOrders = [];
-      let page = 1;
-      while (true) {
-        const res = await api.get(`/orders?limit=${PAGE_SIZE}&page=${page}`);
-        const batch = res.orders || (Array.isArray(res) ? res : []);
-        allOrders = allOrders.concat(batch);
-        if (batch.length < PAGE_SIZE) break;   // last page reached
-        page++;
-        if (page > 100) break;                 // safety cap: max 10 000 orders
-      }
-      setOrders(allOrders);
+      const params = new URLSearchParams({ period });
+      if (period === 'custom' && dateFrom) params.set('date_from', dateFrom);
+      if (period === 'custom' && dateTo) params.set('date_to', dateTo);
+      const res = await api.get(`/reports/performance?${params}`);
+      if (res.success) setData(res.data);
     } catch (e) {
       console.error('Performance load error', e);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [period, dateFrom, dateTo]);
 
   useEffect(() => { load(); }, [load]);
 
-  /* ── period filtering ── */
-  const filtered = useMemo(() => {
-    const now = new Date();
-    return (Array.isArray(orders) ? orders : []).filter(o => {
-      const created = new Date(o.created_at);
-      if (period === 'today') {
-        return created.toDateString() === now.toDateString();
-      }
-      if (period === 'week') {
-        const wstart = new Date(now); wstart.setDate(now.getDate() - now.getDay());
-        wstart.setHours(0,0,0,0);
-        return created >= wstart;
-      }
-      if (period === 'month') {
-        return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
-      }
-      if (period === 'quarter') {
-        const q = Math.floor(now.getMonth() / 3);
-        const qstart = new Date(now.getFullYear(), q * 3, 1);
-        return created >= qstart;
-      }
-      if (period === 'custom') {
-        if (dateFrom && created < new Date(dateFrom)) return false;
-        if (dateTo && created > new Date(dateTo + 'T23:59:59')) return false;
-      }
-      return true;
-    });
-  }, [orders, period, dateFrom, dateTo]);
-
-  /* ── KPI calculations ── */
-  const kpis = useMemo(() => {
-    const total = filtered.length;
-    const delivered = filtered.filter(o => o.status === 'delivered');
-    const failed = filtered.filter(o => o.status === 'failed' || o.status === 'returned');
-    const inTransit = filtered.filter(o => o.status === 'in_transit');
-    const pending = filtered.filter(o => o.status === 'pending' || o.status === 'assigned');
-
-    // On-time delivery: delivered within SLA_TARGET_HOURS of creation
-    let onTime = 0;
-    delivered.forEach(o => {
-      const created = new Date(o.created_at);
-      const deliveredAt = new Date(o.delivered_at || o.updated_at);
-      const hours = (deliveredAt - created) / (1000 * 60 * 60);
-      if (hours <= SLA_TARGET_HOURS) onTime++;
-    });
-    const onTimePct = delivered.length ? Math.round((onTime / delivered.length) * 100) : 0;
-
-    // Average delivery time
-    let totalHours = 0;
-    delivered.forEach(o => {
-      const created = new Date(o.created_at);
-      const deliveredAt = new Date(o.delivered_at || o.updated_at);
-      totalHours += (deliveredAt - created) / (1000 * 60 * 60);
-    });
-    const avgDeliveryHours = delivered.length ? (totalHours / delivered.length) : 0;
-
-    // First-attempt success rate: delivered / (delivered + failed)
-    const firstAttemptTotal = delivered.length + failed.length;
-    const firstAttemptPct = firstAttemptTotal ? Math.round((delivered.length / firstAttemptTotal) * 100) : 0;
-
-    // Delivery rate
-    const deliveryRate = total ? Math.round((delivered.length / total) * 100) : 0;
-
-    return {
-      total, delivered: delivered.length, failed: failed.length,
-      inTransit: inTransit.length, pending: pending.length,
-      onTimePct, avgDeliveryHours, firstAttemptPct, deliveryRate,
-    };
-  }, [filtered]);
-
-  /* ── driver performance ── */
-  const driverPerf = useMemo(() => {
-    const map = {};
-    filtered.forEach(o => {
-      if (!o.driver_id) return;
-      if (!map[o.driver_id]) {
-        map[o.driver_id] = {
-          driver_id: o.driver_id,
-          name: o.driver_name || `Driver #${o.driver_id}`,
-          phone: o.driver_phone || '',
-          total: 0, delivered: 0, failed: 0, returned: 0,
-          totalHours: 0, onTime: 0, cod_collected: 0,
-        };
-      }
-      const d = map[o.driver_id];
-      d.total++;
-      if (o.status === 'delivered') {
-        d.delivered++;
-        const created = new Date(o.created_at);
-        const deliveredAt = new Date(o.delivered_at || o.updated_at);
-        const hours = (deliveredAt - created) / (1000 * 60 * 60);
-        d.totalHours += hours;
-        if (hours <= SLA_TARGET_HOURS) d.onTime++;
-      }
-      if (o.status === 'failed') d.failed++;
-      if (o.status === 'returned') d.returned++;
-      if (o.payment_method === 'cod' && o.cod_collected) d.cod_collected += Number(o.cod_amount || 0);
-    });
-
-    return Object.values(map)
-      .map(d => ({
-        ...d,
-        successRate: d.total ? Math.round((d.delivered / d.total) * 100) : 0,
-        avgHours: d.delivered ? (d.totalHours / d.delivered) : 0,
-        onTimePct: d.delivered ? Math.round((d.onTime / d.delivered) * 100) : 0,
-        rating: 3 + (d.total ? Math.min((d.delivered / d.total) * 2, 2) : 0), // simulated rating
-      }))
-      .sort((a, b) => b.successRate - a.successRate || b.delivered - a.delivered);
-  }, [filtered]);
+  const kpis = data?.kpis || {};
+  const driverPerf = data?.drivers || [];
+  const slaTarget = kpis.slaTargetHours || 24;
 
   const gradeClass = (pct) => pct >= 85 ? 'excellent' : pct >= 60 ? 'good' : 'poor';
   const gradeLabel = (pct) => pct >= 85 ? 'Excellent' : pct >= 60 ? 'Good' : 'Needs Improvement';
@@ -204,6 +83,19 @@ export default function Performance() {
     if (h < 1) return `${Math.round(h * 60)}m`;
     if (h < 24) return `${h.toFixed(1)}h`;
     return `${(h/24).toFixed(1)}d`;
+  };
+
+  const exportCSV = () => {
+    if (!driverPerf.length) return;
+    const headers = 'Rank,Driver,Phone,Vehicle,Total,Delivered,Failed,Success Rate,On-Time %,Avg Time,Rating,Grade';
+    const rows = driverPerf.map((d, i) =>
+      `${i+1},"${d.name}","${d.phone || ''}","${d.vehicle_type || ''}",${d.total},${d.delivered},${d.failed},${d.successRate}%,${d.onTimePct}%,${formatHours(d.avgHours)},${d.rating},${d.grade}`
+    );
+    const blob = new Blob([headers + '\n' + rows.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `driver-performance-${period}.csv`; a.click();
+    URL.revokeObjectURL(url);
   };
 
   if (loading) return <div className="perf-page"><div className="perf-spinner" /></div>;
@@ -219,6 +111,9 @@ export default function Performance() {
           </p>
         </div>
         <div className="hero-actions">
+          <button onClick={exportCSV} className="hero-btn secondary" title="Export driver data">
+            <Download width={16} height={16} /> Export
+          </button>
           <button onClick={load} className="hero-btn secondary">
             <Refresh width={16} height={16} /> Refresh
           </button>
@@ -249,7 +144,7 @@ export default function Performance() {
               <StatsUpSquare width={22} height={22} />
             </div>
             <div className="perf-stat-body">
-              <span className="perf-stat-val">{kpis.total}</span>
+              <span className="perf-stat-val">{kpis.total || 0}</span>
               <span className="perf-stat-lbl">Total Shipments</span>
             </div>
           </div>
@@ -260,11 +155,11 @@ export default function Performance() {
               <Check width={22} height={22} />
             </div>
             <div className="perf-stat-body">
-              <span className="perf-stat-val">{kpis.deliveryRate}%</span>
+              <span className="perf-stat-val">{kpis.deliveryRate || 0}%</span>
               <span className="perf-stat-lbl">Delivery Rate</span>
-              <div className={`perf-stat-change ${kpis.deliveryRate >= 80 ? 'up' : 'down'}`}>
-                {kpis.deliveryRate >= 80 ? <StatUp width={12} height={12} /> : <StatDown width={12} height={12} />}
-                {kpis.delivered} delivered
+              <div className={`perf-stat-change ${(kpis.deliveryRate || 0) >= 80 ? 'up' : 'down'}`}>
+                {(kpis.deliveryRate || 0) >= 80 ? <StatUp width={12} height={12} /> : <StatDown width={12} height={12} />}
+                {kpis.delivered || 0} delivered
               </div>
             </div>
           </div>
@@ -275,7 +170,7 @@ export default function Performance() {
               <Timer width={22} height={22} />
             </div>
             <div className="perf-stat-body">
-              <span className="perf-stat-val">{formatHours(kpis.avgDeliveryHours)}</span>
+              <span className="perf-stat-val">{formatHours(kpis.avgDeliveryHours || 0)}</span>
               <span className="perf-stat-lbl">Avg Delivery Time</span>
             </div>
           </div>
@@ -286,8 +181,8 @@ export default function Performance() {
               <Clock width={22} height={22} />
             </div>
             <div className="perf-stat-body">
-              <span className="perf-stat-val">{kpis.onTimePct}%</span>
-              <span className="perf-stat-lbl">On-Time ({SLA_TARGET_HOURS}h SLA)</span>
+              <span className="perf-stat-val">{kpis.onTimePct || 0}%</span>
+              <span className="perf-stat-lbl">On-Time ({slaTarget}h SLA)</span>
             </div>
           </div>
         </div>
@@ -297,7 +192,7 @@ export default function Performance() {
               <Xmark width={22} height={22} />
             </div>
             <div className="perf-stat-body">
-              <span className="perf-stat-val">{kpis.failed}</span>
+              <span className="perf-stat-val">{(kpis.failed || 0) + (kpis.returned || 0)}</span>
               <span className="perf-stat-lbl">Failed / Returned</span>
             </div>
           </div>
@@ -322,34 +217,34 @@ export default function Performance() {
         <>
           <div className="perf-sla-grid">
             <div className="perf-sla-card">
-              <SLARing percent={kpis.onTimePct}
-                color={kpis.onTimePct >= 85 ? '#16a34a' : kpis.onTimePct >= 60 ? '#f97316' : '#ef4444'} />
+              <SLARing percent={kpis.onTimePct || 0}
+                color={(kpis.onTimePct||0) >= 85 ? '#16a34a' : (kpis.onTimePct||0) >= 60 ? '#f97316' : '#ef4444'} />
               <div className="perf-sla-label">On-Time Delivery</div>
-              <div className="perf-sla-sub">Target: {SLA_TARGET_HOURS}h — {gradeLabel(kpis.onTimePct)}</div>
+              <div className="perf-sla-sub">Target: {slaTarget}h — {gradeLabel(kpis.onTimePct || 0)}</div>
             </div>
             <div className="perf-sla-card">
-              <SLARing percent={kpis.firstAttemptPct}
-                color={kpis.firstAttemptPct >= 85 ? '#16a34a' : kpis.firstAttemptPct >= 60 ? '#f97316' : '#ef4444'} />
+              <SLARing percent={kpis.firstAttemptPct || 0}
+                color={(kpis.firstAttemptPct||0) >= 85 ? '#16a34a' : (kpis.firstAttemptPct||0) >= 60 ? '#f97316' : '#ef4444'} />
               <div className="perf-sla-label">First-Attempt Success</div>
-              <div className="perf-sla-sub">{kpis.delivered} of {kpis.delivered + kpis.failed} — {gradeLabel(kpis.firstAttemptPct)}</div>
+              <div className="perf-sla-sub">{kpis.delivered || 0} of {(kpis.delivered||0) + (kpis.failed||0)} — {gradeLabel(kpis.firstAttemptPct || 0)}</div>
             </div>
             <div className="perf-sla-card">
-              <SLARing percent={kpis.deliveryRate}
-                color={kpis.deliveryRate >= 85 ? '#16a34a' : kpis.deliveryRate >= 60 ? '#f97316' : '#ef4444'} />
+              <SLARing percent={kpis.deliveryRate || 0}
+                color={(kpis.deliveryRate||0) >= 85 ? '#16a34a' : (kpis.deliveryRate||0) >= 60 ? '#f97316' : '#ef4444'} />
               <div className="perf-sla-label">Overall Delivery Rate</div>
-              <div className="perf-sla-sub">{kpis.delivered} of {kpis.total} — {gradeLabel(kpis.deliveryRate)}</div>
+              <div className="perf-sla-sub">{kpis.delivered || 0} of {kpis.total || 0} — {gradeLabel(kpis.deliveryRate || 0)}</div>
             </div>
             <div className="perf-sla-card">
-              <SLARing percent={Math.min(100, Math.round((1 - kpis.avgDeliveryHours / (SLA_TARGET_HOURS * 2)) * 100))}
-                color={kpis.avgDeliveryHours <= SLA_TARGET_HOURS ? '#16a34a' : '#ef4444'} />
+              <SLARing percent={Math.min(100, Math.round((1 - (kpis.avgDeliveryHours||0) / (slaTarget * 2)) * 100))}
+                color={(kpis.avgDeliveryHours||0) <= slaTarget ? '#16a34a' : '#ef4444'} />
               <div className="perf-sla-label">Average Speed</div>
               <div className="perf-sla-sub">
-                {formatHours(kpis.avgDeliveryHours)} avg — {kpis.avgDeliveryHours <= SLA_TARGET_HOURS ? 'Within SLA' : 'Over SLA'}
+                {formatHours(kpis.avgDeliveryHours || 0)} avg — {(kpis.avgDeliveryHours||0) <= slaTarget ? 'Within SLA' : 'Over SLA'}
               </div>
             </div>
           </div>
 
-          {/* Distribution Chart Placeholders */}
+          {/* Distribution Chart */}
           <div className="perf-charts-grid">
             <div className="perf-chart-card">
               <div className="perf-chart-title">
@@ -360,12 +255,12 @@ export default function Performance() {
               <div className="perf-chart-body">
                 <div style={{ display: 'flex', gap: 20, alignItems: 'flex-end', height: '100%', paddingBottom: 20 }}>
                   {[
-                    { label: 'Delivered', count: kpis.delivered, color: '#16a34a' },
-                    { label: 'In Transit', count: kpis.inTransit, color: '#667eea' },
-                    { label: 'Pending', count: kpis.pending, color: '#d97706' },
-                    { label: 'Failed', count: kpis.failed, color: '#ef4444' },
+                    { label: 'Delivered', count: kpis.delivered || 0, color: '#16a34a' },
+                    { label: 'In Transit', count: kpis.in_transit || 0, color: '#667eea' },
+                    { label: 'Pending', count: kpis.pending || 0, color: '#d97706' },
+                    { label: 'Failed', count: kpis.failed || 0, color: '#ef4444' },
                   ].map(b => {
-                    const max = Math.max(kpis.delivered, kpis.inTransit, kpis.pending, kpis.failed, 1);
+                    const max = Math.max(kpis.delivered||0, kpis.in_transit||0, kpis.pending||0, kpis.failed||0, 1);
                     return (
                       <div key={b.label} style={{ textAlign: 'center', flex: 1 }}>
                         <div style={{
@@ -486,9 +381,9 @@ export default function Performance() {
                       </span>
                     </td>
                     <td style={{ fontWeight: 600 }}>{formatHours(d.avgHours)}</td>
-                    <td><RatingStars rating={d.rating} /></td>
+                    <td><RatingStars rating={d.rating || 0} /></td>
                     <td>
-                      <span className={`perf-badge ${gradeClass(d.successRate)}`}>
+                      <span className={`perf-badge ${d.grade || gradeClass(d.successRate)}`}>
                         {gradeLabel(d.successRate)}
                       </span>
                     </td>

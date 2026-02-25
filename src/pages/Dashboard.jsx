@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Chart as ChartJS,
@@ -8,7 +8,8 @@ import {
 import { Line, Doughnut, Bar } from 'react-chartjs-2';
 import {
   Package, DeliveryTruck, Check, WarningTriangle, DollarCircle,
-  Clock, MapPin, StatUp, ArrowRight, Plus, Activity
+  Clock, MapPin, StatUp, StatDown, ArrowRight, Plus, Activity,
+  Timer, Wallet, Refresh, CreditCard, Settings
 } from 'iconoir-react';
 import { AuthContext } from '../App';
 import api from '../lib/api';
@@ -17,22 +18,50 @@ import './Dashboard.css';
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement,
   BarElement, ArcElement, Title, Tooltip, Legend, Filler);
 
+const AUTO_REFRESH_MS = 30000; // 30 seconds
+
+const WIDGET_DEFS = [
+  { key: 'metrics',      label: 'KPI Metric Cards' },
+  { key: 'cod',          label: 'COD Collection Status' },
+  { key: 'charts',       label: 'Order Volume & Status Charts' },
+  { key: 'hourly',       label: "Today's Activity by Hour" },
+  { key: 'drivers_util', label: 'Driver Utilization' },
+  { key: 'zones',        label: 'Top Zones' },
+  { key: 'drivers',      label: 'Top Drivers' },
+  { key: 'recent',       label: 'Recent Orders' },
+];
+const DEFAULT_VISIBLE = () => WIDGET_DEFS.reduce((acc, w) => ({ ...acc, [w.key]: true }), {});
+const STORAGE_KEY = 'dashboard_widgets';
+const loadWidgets = () => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || DEFAULT_VISIBLE(); } catch { return DEFAULT_VISIBLE(); } };
+
 export default function Dashboard() {
   const [stats, setStats] = useState({});
   const [chart, setChart] = useState([]);
   const [topZones, setTopZones] = useState([]);
   const [topDrivers, setTopDrivers] = useState([]);
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [driverUtil, setDriverUtil] = useState([]);
+  const [driverWorkload, setDriverWorkload] = useState([]);
+  const [ordersByHour, setOrdersByHour] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [lastRefreshed, setLastRefreshed] = useState(null);
+  const [widgetVis, setWidgetVis] = useState(loadWidgets);
+  const [showWidgetPanel, setShowWidgetPanel] = useState(false);
   const { user } = useContext(AuthContext);
+  const refreshTimer = useRef(null);
 
-  useEffect(() => {
-    fetchStats();
-    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
-    return () => clearInterval(timer);
-  }, []);
+  const toggleWidget = (key) => {
+    setWidgetVis(prev => {
+      const next = { ...prev, [key]: !prev[key] };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
+  };
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const res = await api.get('/stats');
       if (res.success) {
@@ -40,13 +69,32 @@ export default function Dashboard() {
         setChart(res.data?.daily_chart || []);
         setTopZones(res.data?.top_zones || []);
         setTopDrivers(res.data?.top_drivers || []);
+        setRecentOrders(res.data?.recent_orders || []);
+        setDriverUtil(res.data?.driver_utilization || []);
+        setDriverWorkload(res.data?.driver_workload || []);
+        setOrdersByHour(res.data?.orders_by_hour || []);
+        setLastRefreshed(new Date());
       }
     } catch (e) {
       console.error('Stats error:', e);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchStats();
+    const clockTimer = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(clockTimer);
+  }, [fetchStats]);
+
+  // Auto-refresh (#44)
+  useEffect(() => {
+    if (autoRefresh) {
+      refreshTimer.current = setInterval(() => fetchStats(true), AUTO_REFRESH_MS);
+    }
+    return () => { if (refreshTimer.current) clearInterval(refreshTimer.current); };
+  }, [autoRefresh, fetchStats]);
 
   const getGreeting = () => {
     const h = currentTime.getHours();
@@ -59,23 +107,50 @@ export default function Dashboard() {
   const formatTime = () => currentTime.toLocaleTimeString('en-AE', { hour: '2-digit', minute: '2-digit', hour12: true });
   const formatDate = () => currentTime.toLocaleDateString('en-AE', { weekday: 'long', month: 'long', day: 'numeric' });
   const fmtAED = (v) => `AED ${parseFloat(v || 0).toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const fmtMins = (m) => {
+    if (!m || m <= 0) return '—';
+    if (m < 60) return `${m}m`;
+    const h = Math.floor(m / 60);
+    const r = m % 60;
+    return r > 0 ? `${h}h ${r}m` : `${h}h`;
+  };
 
-  const maxOrders = Math.max(...chart.map(d => d.orders || 0), 1);
+  const DeltaBadge = ({ delta }) => {
+    if (delta === undefined || delta === null) return null;
+    const isUp = delta >= 0;
+    return (
+      <span className={`delta-badge ${isUp ? 'up' : 'down'}`}>
+        {isUp ? <StatUp width={11} height={11} /> : <StatDown width={11} height={11} />}
+        {Math.abs(delta)}% vs yesterday
+      </span>
+    );
+  };
 
   const lineData = {
     labels: chart.map(d => new Date(d.date).toLocaleDateString('en', { weekday: 'short' })),
-    datasets: [{
-      label: 'Orders',
-      data: chart.map(d => d.orders || 0),
-      borderColor: '#244066',
-      backgroundColor: 'rgba(36,64,102,0.1)',
-      fill: true, tension: 0.4, pointRadius: 4,
-      pointBackgroundColor: '#244066',
-    }]
+    datasets: [
+      {
+        label: 'Orders',
+        data: chart.map(d => d.orders || 0),
+        borderColor: '#244066',
+        backgroundColor: 'rgba(36,64,102,0.08)',
+        fill: true, tension: 0.4, pointRadius: 4,
+        pointBackgroundColor: '#244066',
+      },
+      {
+        label: 'Delivered',
+        data: chart.map(d => d.delivered || 0),
+        borderColor: '#22c55e',
+        backgroundColor: 'rgba(34,197,94,0.08)',
+        fill: true, tension: 0.4, pointRadius: 3,
+        pointBackgroundColor: '#22c55e',
+        borderDash: [5, 3],
+      },
+    ]
   };
   const lineOptions = {
     responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { display: false }, tooltip: { backgroundColor: '#244066', cornerRadius: 8, padding: 12 } },
+    plugins: { legend: { display: true, position: 'top', labels: { usePointStyle: true, padding: 16, font: { size: 11 } } }, tooltip: { backgroundColor: '#244066', cornerRadius: 8, padding: 12 } },
     scales: {
       y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
       x: { grid: { display: false } }
@@ -93,6 +168,15 @@ export default function Dashboard() {
   const doughnutOptions = {
     responsive: true, maintainAspectRatio: false, cutout: '70%',
     plugins: { legend: { position: 'right', labels: { usePointStyle: true, padding: 12 } } }
+  };
+
+  const statusLabel = (s) => {
+    const map = { pending: 'Pending', confirmed: 'Confirmed', assigned: 'Assigned', picked_up: 'Picked Up', in_transit: 'In Transit', delivered: 'Delivered', failed: 'Failed', returned: 'Returned', cancelled: 'Cancelled' };
+    return map[s] || s;
+  };
+  const statusColor = (s) => {
+    const map = { delivered: '#22c55e', failed: '#ef4444', returned: '#f97316', in_transit: '#3b82f6', assigned: '#8b5cf6', pending: '#d97706', picked_up: '#0ea5e9' };
+    return map[s] || '#64748b';
   };
 
   if (loading) {
@@ -127,15 +211,47 @@ export default function Dashboard() {
           <p className="welcome-subtitle">Here&apos;s your delivery operations overview</p>
         </div>
         <div className="header-actions">
+          <button
+            className={`btn-auto-refresh ${autoRefresh ? 'active' : ''}`}
+            onClick={() => setAutoRefresh(prev => !prev)}
+            title={autoRefresh ? 'Auto-refresh ON (30s)' : 'Auto-refresh OFF'}
+          >
+            <Refresh width={15} height={15} className={autoRefresh ? 'spin-slow' : ''} />
+            {autoRefresh ? 'Live' : 'Paused'}
+          </button>
+          {lastRefreshed && (
+            <span className="last-refreshed">
+              Updated {lastRefreshed.toLocaleTimeString('en-AE', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+            </span>
+          )}
           <Link to="/orders" className="btn-primary">
             <Plus width={18} height={18} />
             New Order
           </Link>
+          <div style={{ position: 'relative' }}>
+            <button className="btn-auto-refresh" onClick={() => setShowWidgetPanel(v => !v)} title="Customize widgets">
+              <Settings width={15} height={15} /> Widgets
+            </button>
+            {showWidgetPanel && (
+              <div className="widget-panel">
+                <div className="widget-panel-header">
+                  <strong>Toggle Widgets</strong>
+                  <button className="widget-panel-close" onClick={() => setShowWidgetPanel(false)}>&times;</button>
+                </div>
+                {WIDGET_DEFS.map(w => (
+                  <label key={w.key} className="widget-panel-item">
+                    <input type="checkbox" checked={!!widgetVis[w.key]} onChange={() => toggleWidget(w.key)} />
+                    <span>{w.label}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Key Metrics Row */}
-      <div className="metrics-row">
+      {/* Key Metrics Row — 6 cards now (#42 monthly revenue, #48 avg delivery time) */}
+      {widgetVis.metrics && <div className="metrics-row">
         <div className="metric-card primary">
           <div className="metric-icon" style={{ background: 'rgba(242,66,27,0.1)', color: '#f2421b' }}>
             <Package width={24} height={24} />
@@ -144,6 +260,7 @@ export default function Dashboard() {
             <span className="metric-value">{stats.orders_today || 0}</span>
             <span className="metric-label">Orders Today</span>
           </div>
+          <DeltaBadge delta={stats.delta_orders} />
           <div className="metric-trend positive">
             <StatUp width={14} height={14} />
             <span>Active: {stats.active_orders || 0}</span>
@@ -158,6 +275,7 @@ export default function Dashboard() {
             <span className="metric-value">{stats.delivered_today || 0}</span>
             <span className="metric-label">Delivered Today</span>
           </div>
+          <DeltaBadge delta={stats.delta_delivered} />
           <div className="metric-trend positive">
             <StatUp width={14} height={14} />
             <span>Rate: {stats.success_rate || 0}%</span>
@@ -169,7 +287,7 @@ export default function Dashboard() {
             <DeliveryTruck width={24} height={24} />
           </div>
           <div className="metric-content">
-            <span className="metric-value">{stats.available_drivers || 0}</span>
+            <span className="metric-value">{stats.available_drivers || 0}<span style={{ fontSize: 13, fontWeight: 500, color: '#94a3b8' }}>/{stats.total_drivers || 0}</span></span>
             <span className="metric-label">Available Drivers</span>
           </div>
           <div className="metric-trend">
@@ -178,28 +296,133 @@ export default function Dashboard() {
           </div>
         </div>
 
+        <div className="metric-card info">
+          <div className="metric-icon" style={{ background: 'rgba(102,126,234,0.1)', color: '#667eea' }}>
+            <Timer width={24} height={24} />
+          </div>
+          <div className="metric-content">
+            <span className="metric-value">{fmtMins(stats.avg_delivery_minutes)}</span>
+            <span className="metric-label">Avg Delivery Time</span>
+          </div>
+          <div className="metric-trend">
+            <Clock width={14} height={14} />
+            <span>Today&apos;s avg</span>
+          </div>
+        </div>
+
         <div className="metric-card secondary">
           <div className="metric-icon" style={{ background: 'rgba(124,58,237,0.1)', color: '#7c3aed' }}>
             <DollarCircle width={24} height={24} />
           </div>
           <div className="metric-content">
-            <span className="metric-value" style={{ fontSize: 18 }}>{fmtAED(stats.revenue_today)}</span>
+            <span className="metric-value" style={{ fontSize: 17 }}>{fmtAED(stats.revenue_today)}</span>
             <span className="metric-label">Revenue Today</span>
+          </div>
+          <DeltaBadge delta={stats.delta_revenue} />
+        </div>
+
+        <div className="metric-card accent">
+          <div className="metric-icon" style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981' }}>
+            <Wallet width={24} height={24} />
+          </div>
+          <div className="metric-content">
+            <span className="metric-value" style={{ fontSize: 17 }}>{fmtAED(stats.revenue_month)}</span>
+            <span className="metric-label">Revenue This Month</span>
           </div>
           <div className="metric-trend">
             <StatUp width={14} height={14} />
             <span>Failed: {stats.failed_today || 0}</span>
           </div>
         </div>
-      </div>
+      </div>}
+
+      {/* COD Widget (#47) */}
+      {widgetVis.cod && <div className="cod-widget-row">
+        <div className="cod-widget">
+          <div className="cod-widget-header">
+            <CreditCard width={18} height={18} />
+            <h3>COD Collection Status</h3>
+            <Link to="/cod-reconciliation" className="view-all">Reconcile <ArrowRight width={14} height={14} /></Link>
+          </div>
+          <div className="cod-widget-body">
+            <div className="cod-stat">
+              <span className="cod-stat-val outstanding">{fmtAED(stats.cod_outstanding)}</span>
+              <span className="cod-stat-lbl">Outstanding ({stats.cod_outstanding_count || 0})</span>
+            </div>
+            <div className="cod-divider" />
+            <div className="cod-stat">
+              <span className="cod-stat-val settled">{fmtAED(stats.cod_settled_today)}</span>
+              <span className="cod-stat-lbl">Settled Today ({stats.cod_settled_today_count || 0})</span>
+            </div>
+            <div className="cod-divider" />
+            <div className="cod-stat">
+              <span className="cod-stat-val month">{fmtAED(stats.cod_month_total)}</span>
+              <span className="cod-stat-lbl">COD This Month</span>
+            </div>
+          </div>
+        </div>
+      </div>}
+
+      {/* Driver Utilization Widget (#52) */}
+      {widgetVis.drivers_util && <div className="driver-util-row">
+        <div className="util-card">
+          <div className="util-header">
+            <DeliveryTruck width={18} height={18} />
+            <h3>Driver Utilization</h3>
+          </div>
+          <div className="util-body">
+            {(() => {
+              const statusMap = {};
+              driverUtil.forEach(d => { statusMap[d.status] = d.count; });
+              const total = Object.values(statusMap).reduce((a,b) => a + b, 0) || 1;
+              const items = [
+                { label: 'Available', count: statusMap['available'] || 0, color: '#22c55e' },
+                { label: 'Busy', count: statusMap['busy'] || statusMap['on_delivery'] || 0, color: '#f97316' },
+                { label: 'Offline', count: statusMap['offline'] || statusMap['inactive'] || 0, color: '#94a3b8' },
+              ];
+              return items.map(item => (
+                <div key={item.label} className="util-bar-row">
+                  <span className="util-bar-label">{item.label}</span>
+                  <div className="util-bar-track">
+                    <div className="util-bar-fill" style={{ width: `${(item.count / total) * 100}%`, background: item.color }} />
+                  </div>
+                  <span className="util-bar-count" style={{ color: item.color }}>{item.count}</span>
+                </div>
+              ));
+            })()}
+          </div>
+        </div>
+        <div className="util-card">
+          <div className="util-header">
+            <Activity width={18} height={18} />
+            <h3>Today&apos;s Workload</h3>
+          </div>
+          <div className="util-body">
+            {driverWorkload.length === 0 ? (
+              <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13, padding: 16 }}>No data yet</p>
+            ) : driverWorkload.slice(0, 6).map(d => (
+              <div key={d.id} className="util-bar-row">
+                <span className="util-bar-label">{d.full_name?.split(' ')[0]}</span>
+                <div className="util-bar-track">
+                  <div className="util-bar-fill" style={{
+                    width: `${Math.min(100, (d.orders_today / Math.max(...driverWorkload.map(w => w.orders_today), 1)) * 100)}%`,
+                    background: d.driver_status === 'available' ? '#22c55e' : '#f97316'
+                  }} />
+                </div>
+                <span className="util-bar-count">{d.orders_today}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>}
 
       {/* Charts Row */}
-      <div className="charts-row">
+      {widgetVis.charts && <div className="charts-row">
         <div className="chart-card sales-chart">
           <div className="chart-header">
             <div>
               <h3>Orders — Last 7 Days</h3>
-              <p>Daily order volume trend</p>
+              <p>Daily order volume &amp; delivery trend</p>
             </div>
           </div>
           <div className="chart-body">
@@ -221,10 +444,64 @@ export default function Dashboard() {
             <span className="total-value">{stats.orders_today || 0}</span>
           </div>
         </div>
-      </div>
+      </div>}
 
-      {/* Top Zones & Drivers */}
-      <div className="recent-data-row">
+      {/* Orders by Hour (#56) */}
+      {widgetVis.hourly && ordersByHour.some(h => h.orders > 0) && (
+        <div className="chart-card" style={{ marginBottom: 24 }}>
+          <div className="chart-header">
+            <div>
+              <h3><Activity width={20} height={20} /> Today's Activity by Hour</h3>
+              <p>Order distribution across the day</p>
+            </div>
+          </div>
+          <div className="chart-body">
+            <Bar
+              data={{
+                labels: ordersByHour.map(h => h.label),
+                datasets: [
+                  {
+                    label: 'Orders',
+                    data: ordersByHour.map(h => h.orders),
+                    backgroundColor: 'rgba(36, 64, 102, 0.75)',
+                    borderRadius: 4,
+                    borderSkipped: false,
+                  },
+                  {
+                    label: 'Delivered',
+                    data: ordersByHour.map(h => h.delivered),
+                    backgroundColor: 'rgba(34, 197, 94, 0.75)',
+                    borderRadius: 4,
+                    borderSkipped: false,
+                  },
+                ],
+              }}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8 } },
+                  tooltip: {
+                    callbacks: {
+                      title: (ctx) => `${ctx[0].label}`,
+                    },
+                  },
+                },
+                scales: {
+                  x: { grid: { display: false } },
+                  y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                },
+              }}
+              height={220}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Top Zones, Top Drivers, Recent Orders */}
+      {(widgetVis.zones || widgetVis.drivers || widgetVis.recent) && (
+      <div className="recent-data-row triple">
+        {widgetVis.zones && (
         <div className="recent-card">
           <div className="card-header">
             <h3><MapPin width={20} height={20} /> Top Zones</h3>
@@ -248,7 +525,7 @@ export default function Dashboard() {
                       <span>{zone.emirate}</span>
                     </div>
                     <span className="status-badge" style={{ background: '#fff7ed', color: '#f97316' }}>
-                      {zone.orders_count} orders
+                      {zone.orders_count || zone.orders} orders
                     </span>
                   </div>
                 ))}
@@ -256,7 +533,9 @@ export default function Dashboard() {
             )}
           </div>
         </div>
+        )}
 
+        {widgetVis.drivers && (
         <div className="recent-card">
           <div className="card-header">
             <h3><DeliveryTruck width={20} height={20} /> Top Drivers</h3>
@@ -282,7 +561,7 @@ export default function Dashboard() {
                     <span className={`status-badge ${driver.status === 'available' ? 'active' : ''}`}
                       style={{ background: driver.status === 'available' ? '#f0fdf4' : '#f1f5f9',
                                color:  driver.status === 'available' ? '#16a34a' : '#64748b' }}>
-                      {driver.total_deliveries || 0} delivs
+                      {driver.total_deliveries || driver.deliveries || 0} delivs
                     </span>
                   </div>
                 ))}
@@ -290,7 +569,44 @@ export default function Dashboard() {
             )}
           </div>
         </div>
+        )}
+
+        {/* Recent Orders Feed (#53) */}
+        {widgetVis.recent && (
+        <div className="recent-card">
+          <div className="card-header">
+            <h3><Package width={20} height={20} /> Recent Orders</h3>
+            <Link to="/orders" className="view-all">View all <ArrowRight width={16} height={16} /></Link>
+          </div>
+          <div className="card-body">
+            {recentOrders.length === 0 ? (
+              <div className="empty-state-mini">
+                <Package width={32} height={32} />
+                <p>No recent orders</p>
+              </div>
+            ) : (
+              <div className="recent-list">
+                {recentOrders.slice(0, 5).map((order) => (
+                  <div key={order.id} className="recent-item">
+                    <div className="recent-avatar" style={{ background: statusColor(order.status), fontSize: 10 }}>
+                      {order.order_number?.slice(-3) || '#'}
+                    </div>
+                    <div className="recent-info">
+                      <strong>{order.recipient_name}</strong>
+                      <span>{order.driver_name || 'Unassigned'} &bull; {new Date(order.created_at).toLocaleTimeString('en-AE', { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
+                    </div>
+                    <span className="status-badge" style={{ background: `${statusColor(order.status)}18`, color: statusColor(order.status) }}>
+                      {statusLabel(order.status)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        )}
       </div>
+      )}
 
       {/* Quick Actions */}
       <div className="quick-actions-section">
