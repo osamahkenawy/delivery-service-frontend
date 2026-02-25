@@ -6,6 +6,7 @@ import {
   Prohibition, GraphUp, Timer, RefreshDouble
 } from 'iconoir-react';
 import api from '../lib/api';
+import { useTranslation } from 'react-i18next';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
@@ -22,6 +23,7 @@ const STATUS_CONFIG = {
 
 /* ═══════════════════════════ MAIN COMPONENT ═══════════════════════════ */
 export default function Invoices() {
+  const { t } = useTranslation();
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
@@ -138,7 +140,7 @@ export default function Invoices() {
             <Page width={26} height={26} />
           </div>
           <div>
-            <h1 className="module-hero-title">Invoices</h1>
+            <h1 className="module-hero-title">{t("invoices.title")}</h1>
             <p className="module-hero-sub">Auto-generated from confirmed orders · Real-time payment tracking</p>
           </div>
         </div>
@@ -198,7 +200,7 @@ export default function Invoices() {
           <Search width={16} height={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
           <input
             type="text"
-            placeholder="Search by invoice #, client, order..."
+            placeholder={t("invoices.search_placeholder")}
             value={searchTerm}
             onChange={e => { setSearchTerm(e.target.value); setPage(1); }}
             style={{
@@ -234,7 +236,7 @@ export default function Invoices() {
       {loading ? (
         <div style={{ textAlign: 'center', padding: 80 }}>
           <div className="trk-spinner" style={{ margin: '0 auto 16px' }} />
-          <div style={{ fontSize: 14, color: '#94a3b8', fontWeight: 500 }}>Loading invoices...</div>
+          <div style={{ fontSize: 14, color: '#94a3b8', fontWeight: 500 }}>{t("invoices.loading")}</div>
         </div>
       ) : paged.length === 0 ? (
         <div style={{
@@ -245,7 +247,7 @@ export default function Invoices() {
           border: '2px dashed #e2e8f0'
         }}>
           <Page width={44} height={44} color="#94a3b8" style={{ marginBottom: 14 }} />
-          <h3 style={{ margin: '0 0 8px', fontSize: 17, fontWeight: 700, color: '#1e293b' }}>No Invoices Found</h3>
+          <h3 style={{ margin: '0 0 8px', fontSize: 17, fontWeight: 700, color: '#1e293b' }}>{t("invoices.no_invoices")}</h3>
           <p style={{ margin: 0, fontSize: 13, color: '#94a3b8', maxWidth: 380, marginInline: 'auto', lineHeight: 1.6 }}>
             Invoices are automatically generated when an order is confirmed.
             Try confirming an order or adjusting your filters.
@@ -267,7 +269,7 @@ export default function Invoices() {
               {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
                 <PgBtn key={p} active={p === page} onClick={() => setPage(p)}>{p}</PgBtn>
               ))}
-              <PgBtn disabled={page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>Next</PgBtn>
+              <PgBtn disabled={page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>{t("common.next")}</PgBtn>
             </div>
           )}
         </>
@@ -418,7 +420,7 @@ function InvoiceCard({ inv, onView, onDownload, onDelete, onStatusChange }) {
           marginBottom: 12,
           textAlign: 'center',
         }}>
-          <div style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 3 }}>Total Amount</div>
+          <div style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 3 }}>{t("invoices.total_amount")}</div>
           <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>
             {inv.currency || 'AED'} {parseFloat(inv.total_amount || 0).toFixed(2)}
           </div>
@@ -530,7 +532,7 @@ function DetailModal({ invoice, loading, onClose, onDownload, onStatusChange, fm
         {loading ? (
           <div style={{ padding: 80, textAlign: 'center', color: '#94a3b8' }}>
             <div className="trk-spinner" style={{ margin: '0 auto 16px' }} />
-            <div>Loading invoice details...</div>
+            <div>{t("invoices.loading_details")}</div>
           </div>
         ) : invoice ? (
           <>
@@ -598,7 +600,7 @@ function DetailModal({ invoice, loading, onClose, onDownload, onStatusChange, fm
                 <div style={{ position: 'absolute', top: 10, right: 16, opacity: 0.1 }}>
                   <DollarCircle width={48} height={48} color="#fff" />
                 </div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.6px' }}>Total Amount</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.6px' }}>{t("invoices.total_amount")}</div>
                 <div style={{ fontSize: 32, fontWeight: 800, color: '#fff', letterSpacing: '-1px' }}>
                   {invoice.currency || 'AED'} {fmtMoney(invoice.total_amount)}
                 </div>

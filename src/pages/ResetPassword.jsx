@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, EyeClosed, WarningTriangle, CheckCircle, Key } from 'iconoir-react';
 import './LoginPage.css';
+import { useTranslation } from 'react-i18next';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 export default function ResetPassword() {
+  const { t } = useTranslation();
   const [searchParams]          = useSearchParams();
   const token                   = searchParams.get('token');
   const navigate                = useNavigate();
@@ -85,7 +87,7 @@ export default function ResetPassword() {
               <div className="lp-sent-icon">
                 <CheckCircle width={32} height={32} />
               </div>
-              <h1 style={{ marginBottom: 8 }}>Password Updated!</h1>
+              <h1 style={{ marginBottom: 8 }}>{t("resetPassword.updated_title")}</h1>
               <p className="lp-subtitle" style={{ marginBottom: 24 }}>
                 Your password has been changed successfully. You can now sign in with your new password.
               </p>
@@ -103,8 +105,8 @@ export default function ResetPassword() {
               <div className="lp-fp-icon">
                 <Key width={26} height={26} />
               </div>
-              <h1 style={{ marginBottom: 8 }}>Set New Password</h1>
-              <p className="lp-subtitle">Choose a strong password for your account.</p>
+              <h1 style={{ marginBottom: 8 }}>{t("resetPassword.title")}</h1>
+              <p className="lp-subtitle">{t("resetPassword.subtitle")}</p>
 
               <form onSubmit={handleSubmit} className="login-form" style={{ marginTop: 24 }}>
                 {error && (
@@ -115,13 +117,13 @@ export default function ResetPassword() {
 
                 {/* New password */}
                 <div className="lp-field">
-                  <label>New Password</label>
+                  <label>{t("resetPassword.new_password")}</label>
                   <div className="lp-pw-wrap">
                     <input
                       type={showPw ? 'text' : 'password'}
                       value={password}
                       onChange={e => setPassword(e.target.value)}
-                      placeholder="At least 6 characters"
+                      placeholder={t("resetPassword.new_password_placeholder")}
                       autoComplete="new-password"
                       required
                       disabled={!token}
@@ -143,13 +145,13 @@ export default function ResetPassword() {
 
                 {/* Confirm password */}
                 <div className="lp-field">
-                  <label>Confirm Password</label>
+                  <label>{t("resetPassword.confirm_password")}</label>
                   <div className="lp-pw-wrap">
                     <input
                       type={showConfirm ? 'text' : 'password'}
                       value={confirm}
                       onChange={e => setConfirm(e.target.value)}
-                      placeholder="Repeat your password"
+                      placeholder={t("resetPassword.confirm_password_placeholder")}
                       autoComplete="new-password"
                       required
                       disabled={!token}
@@ -160,7 +162,7 @@ export default function ResetPassword() {
                     </button>
                   </div>
                   {confirm && confirm !== password && (
-                    <p style={{ margin: '4px 0 0', fontSize: 11, color: '#ef4444', fontWeight: 600 }}>Passwords don't match</p>
+                    <p style={{ margin: '4px 0 0', fontSize: 11, color: '#ef4444', fontWeight: 600 }}>{t("resetPassword.mismatch")}</p>
                   )}
                 </div>
 

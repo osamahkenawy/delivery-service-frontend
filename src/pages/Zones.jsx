@@ -12,6 +12,7 @@ import { MARKER_ICONS } from '../components/LocationPicker';
 import api from '../lib/api';
 import 'leaflet/dist/leaflet.css';
 import './CRMPages.css';
+import { useTranslation } from 'react-i18next';
 
 const EMIRATES = ['Dubai','Abu Dhabi','Sharjah','Ajman','Ras Al Khaimah','Fujairah','Umm Al Quwain'];
 const ZONE_COLORS = ['#3b82f6','#f97316','#22c55e','#8b5cf6','#ec4899','#14b8a6','#f43f5e','#eab308'];
@@ -113,7 +114,7 @@ function LocationSearch({ onSelect, initialQuery }) {
         <input type="text" value={query}
           onChange={e => { setQuery(e.target.value); doSearch(e.target.value); }}
           onFocus={() => results.length > 0 && setOpen(true)}
-          placeholder="Search location, area, landmark..."
+          placeholder={t("zones.location_placeholder")}
         />
         {loading && <span className="loc-search-spin" />}
         {query && !loading && (
@@ -150,6 +151,7 @@ function LocationSearch({ onSelect, initialQuery }) {
 
 /* ══════════════════════════════════════════════════════════════ */
 export default function Zones() {
+  const { t } = useTranslation();
   const [zones, setZones]             = useState([]);
   const [loading, setLoading]         = useState(true);
   const [showForm, setShowForm]       = useState(false);
@@ -350,7 +352,7 @@ export default function Zones() {
             <p>Define zone boundaries and pricing on the map</p>
           </div>
           <div className="zf-header-actions">
-            <button type="button" className="btn-outline-action" onClick={closeForm}>Discard</button>
+            <button type="button" className="btn-outline-action" onClick={closeForm}>{t("zones.discard")}</button>
             <button className="btn-primary-action" onClick={handleSubmit} disabled={saving || !canSubmit}
               title={!canSubmit ? 'Enter a name and click the map to set a location' : ''}>
               {saving ? 'Saving...' : selected ? 'Save Changes' : 'Create Zone'}
@@ -417,7 +419,7 @@ export default function Zones() {
 
             {/* Radius bar under map */}
             <div className="zf-radius-bar">
-              <label>Radius</label>
+              <label>{t("zones.radius")}</label>
               <input type="range" min="500" max="50000" step="500"
                 value={pf(form.radius) || 5000}
                 onChange={e => setForm(f => ({ ...f, radius: parseInt(e.target.value) }))}
@@ -433,7 +435,7 @@ export default function Zones() {
               <div className="zf-card-label">Zone Name *</div>
               <input required type="text" value={form.name} className="zf-input-lg"
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                placeholder="e.g. Downtown Dubai" />
+                placeholder={t("zones.zone_name_placeholder")} />
               <div className="zf-color-row">
                 {ZONE_COLORS.map(c => (
                   <button key={c} type="button" onClick={() => setForm(f => ({ ...f, color: c }))}
@@ -449,7 +451,7 @@ export default function Zones() {
                 <div className="zf-field">
                   <div className="zf-card-label">City</div>
                   <input type="text" value={form.city}
-                    onChange={e => setForm(f => ({ ...f, city: e.target.value }))} placeholder="Auto-detected" />
+                    onChange={e => setForm(f => ({ ...f, city: e.target.value }))} placeholder={t("zones.auto_detected")} />
                 </div>
                 <div className="zf-field">
                   <div className="zf-card-label">Emirate *</div>
@@ -462,7 +464,7 @@ export default function Zones() {
                 <div className="zf-coords">
                   <MapPin width={13} height={13} />
                   <span>{formCenterLat.toFixed(5)}, {formCenterLng.toFixed(5)}</span>
-                  <button type="button" onClick={() => setForm(f => ({ ...f, center_lat:null, center_lng:null }))}>Clear</button>
+                  <button type="button" onClick={() => setForm(f => ({ ...f, center_lat:null, center_lng:null }))}>{t("common.clear")}</button>
                 </div>
               ) : (
                 <div className="zf-coords" style={{ background:'#fef3c7', borderColor:'#fbbf24' }}>
@@ -491,12 +493,12 @@ export default function Zones() {
               </div>
               <div className="zf-row">
                 <div className="zf-field">
-                  <div className="zf-card-label">Max Weight (kg)</div>
+                  <div className="zf-card-label">{t("zones.max_weight")}</div>
                   <input type="number" min="0" step="0.1" value={form.max_weight_kg}
                     onChange={e => setForm(f => ({ ...f, max_weight_kg: e.target.value }))} placeholder="50" />
                 </div>
                 <div className="zf-field">
-                  <div className="zf-card-label">Est. Minutes</div>
+                  <div className="zf-card-label">{t("zones.est_minutes")}</div>
                   <input type="number" min="0" value={form.estimated_minutes}
                     onChange={e => setForm(f => ({ ...f, estimated_minutes: e.target.value }))} placeholder="45" />
                 </div>
@@ -515,7 +517,7 @@ export default function Zones() {
                 </span>
               </div>
               <textarea rows={2} value={form.notes} className="zf-notes"
-                onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Notes (optional)" />
+                onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder={t("zones.notes_placeholder")} />
             </div>
           </div>
         </div>
@@ -543,7 +545,7 @@ export default function Zones() {
       <div className="zl-filters">
         <div className="search-box" style={{ maxWidth:220 }}>
           <Search width={14} height={14} className="search-icon" />
-          <input type="text" placeholder="Search zones..." value={searchQuery}
+          <input type="text" placeholder={t("zones.search_placeholder")} value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)} className="search-input" />
         </div>
         <div className="zl-chips">
@@ -571,7 +573,7 @@ export default function Zones() {
             {filtered.length === 0 ? (
               <div className="zl-empty">
                 <MapPin width={36} height={36} />
-                <p>No zones found</p>
+                <p>{t("zones.no_zones")}</p>
                 <button className="btn-primary-action" onClick={openNew}><Plus width={15} height={15} /> Add Zone</button>
               </div>
             ) : filtered.map((zone, i) => {
@@ -688,7 +690,7 @@ export default function Zones() {
                 );
               })}
 
-              {myLocation && <Marker position={myLocation} icon={myLocIcon}><Popup><strong>Your Location</strong></Popup></Marker>}
+              {myLocation && <Marker position={myLocation} icon={myLocIcon}><Popup><strong>{t("zones.your_location")}</strong></Popup></Marker>}
             </MapContainer>
           </div>
         </div>

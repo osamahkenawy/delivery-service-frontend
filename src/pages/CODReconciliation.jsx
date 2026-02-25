@@ -6,6 +6,7 @@ import {
 } from 'iconoir-react';
 import { api } from '../lib/api';
 import './CODReconciliation.css';
+import { useTranslation } from 'react-i18next';
 
 function formatCurrency(amount) {
   return `AED ${parseFloat(amount || 0).toFixed(2)}`;
@@ -20,6 +21,7 @@ function formatDateTime(d) {
 }
 
 export default function CODReconciliation() {
+  const { t } = useTranslation();
   const [orders, setOrders] = useState([]);
   const [drivers, setDrivers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -152,7 +154,7 @@ export default function CODReconciliation() {
         <div className="module-hero-left">
           <div className="module-hero-icon"><CreditCard size={26} /></div>
           <div>
-            <h1 className="module-hero-title">COD Reconciliation</h1>
+            <h1 className="module-hero-title">{t("cod.title")}</h1>
             <p className="module-hero-sub">Track cash collections, driver settlements, and COD payments</p>
           </div>
         </div>
@@ -202,7 +204,7 @@ export default function CODReconciliation() {
                  value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         <select className="cod-filter-select" value={driverFilter} onChange={e => setDriverFilter(e.target.value)}>
-          <option value="">All Drivers</option>
+          <option value="">{t("cod.all_drivers")}</option>
           {drivers.map(d => <option key={d.id} value={d.id}>{d.full_name}</option>)}
         </select>
         <input type="date" className="cod-date-input" value={dateFrom}

@@ -8,6 +8,7 @@ import {
 import api from '../lib/api';
 import Toast, { useToast } from '../components/Toast';
 import './DriverPortal.css';
+import { useTranslation } from 'react-i18next';
 
 /* ── Status meta ── */
 const STATUS_META = {
@@ -65,6 +66,7 @@ function ProgressSteps({ current }) {
 
 /* ── Dashboard ── */
 export default function DriverDashboard() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [data, setData]         = useState(null);
   const [loading, setLoading]   = useState(true);
@@ -312,7 +314,7 @@ export default function DriverDashboard() {
         <div className="dp-no-profile-icon">
           <WarningTriangle width={40} height={40} color="#dc2626" />
         </div>
-        <h2>No Driver Profile</h2>
+        <h2>{t("driverDashboard.no_profile")}</h2>
         <p>Your account is not linked to a driver profile. Please contact your admin to link your account.</p>
         <Toast toasts={toasts} />
       </div>
@@ -368,7 +370,7 @@ export default function DriverDashboard() {
         </div>
 
         {/* Quick Stats Row Inside Hero — Today */}
-        <div className="dp-today-label">Today's Performance</div>
+        <div className="dp-today-label">{t("driverDashboard.today_performance")}</div>
         <div className="dp-today-grid">
           {[
             { label: 'Active',    value: stats.active || 0,   icon: <Package width={18} height={18} color="#f97316" />, bg: 'rgba(249,115,22,0.12)' },
@@ -389,7 +391,7 @@ export default function DriverDashboard() {
       {allTimeStats.total_orders > 0 && (
         <div className="dp-alltime">
           <div className="dp-alltime-header">
-            <h3 className="dp-alltime-title">Overall Performance</h3>
+            <h3 className="dp-alltime-title">{t("driverDashboard.overall_performance")}</h3>
             <span className={`dp-rate-badge ${deliveryRate >= 90 ? 'excellent' : deliveryRate >= 70 ? 'good' : 'poor'}`}>
               {deliveryRate}% Success
             </span>
@@ -410,7 +412,7 @@ export default function DriverDashboard() {
           {/* Progress bar */}
           <div className="dp-rate-bar-wrap">
             <div className="dp-rate-bar-label">
-              <span>Delivery Success Rate</span>
+              <span>{t("driverDashboard.delivery_success_rate")}</span>
               <span>{deliveryRate}%</span>
             </div>
             <div className="dp-rate-bar">
@@ -456,7 +458,7 @@ export default function DriverDashboard() {
       {loading ? (
         <div className="dp-loading">
           <div className="dp-spinner" />
-          <p className="dp-loading-text">Loading your orders...</p>
+          <p className="dp-loading-text">{t("driverDashboard.loading_orders")}</p>
         </div>
       ) : orders.length === 0 ? (
         <div className="dp-empty">
@@ -564,7 +566,7 @@ export default function DriverDashboard() {
                     {/* Tracking Token */}
                     <div className="dp-tracking-row">
                       <div>
-                        <div className="dp-tracking-label">Tracking Token</div>
+                        <div className="dp-tracking-label">{t("driverDashboard.tracking_token")}</div>
                         <div className="dp-tracking-value">{order.tracking_token}</div>
                       </div>
                       <button onClick={() => copyToken(order.tracking_token)} className="dp-copy-link">

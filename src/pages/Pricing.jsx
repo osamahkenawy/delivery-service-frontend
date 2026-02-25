@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import api from '../lib/api';
+import { useTranslation } from 'react-i18next';
 
 export default function Pricing() {
+  const { t } = useTranslation();
   const [rules, setRules] = useState([]);
   const [zones, setZones] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -57,7 +59,7 @@ export default function Pricing() {
     <div className="page-container">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>Pricing Rules</h2>
+          <h2 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>{t("pricing.title")}</h2>
           <p style={{ margin: 0, color: '#64748b', fontSize: 14 }}>{rules.length} rules configured</p>
         </div>
         <button onClick={() => { resetForm(); setSelected(null); setShowForm(true); }}
@@ -70,7 +72,7 @@ export default function Pricing() {
         {/* Rules table */}
         <div>
           {loading ? (
-            <div style={{ textAlign: 'center', padding: 40, color: '#94a3b8' }}>Loading...</div>
+            <div style={{ textAlign: 'center', padding: 40, color: '#94a3b8' }}>{t("common.loading")}</div>
           ) : (
             <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -83,7 +85,7 @@ export default function Pricing() {
                 </thead>
                 <tbody>
                   {rules.length === 0 ? (
-                    <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40, color: '#94a3b8' }}>No pricing rules</td></tr>
+                    <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40, color: '#94a3b8' }}>{t("pricing.no_rules")}</td></tr>
                   ) : rules.map(rule => (
                     <tr key={rule.id} style={{ borderBottom: '1px solid #f8fafc' }}>
                       <td style={{ padding: '12px 16px', fontSize: 14, fontWeight: 500 }}>{rule.zone_name || `Zone ${rule.zone_id}`}</td>
@@ -103,7 +105,7 @@ export default function Pricing() {
                       </td>
                       <td style={{ padding: '12px 16px' }}>
                         <div style={{ display: 'flex', gap: 6 }}>
-                          <button onClick={() => openEdit(rule)} style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontSize: 12 }}>Edit</button>
+                          <button onClick={() => openEdit(rule)} style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontSize: 12 }}>{t("common.edit")}</button>
                           <button onClick={() => handleDelete(rule.id)} style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid #fecaca', background: '#fff', color: '#dc2626', cursor: 'pointer', fontSize: 12 }}>Del</button>
                         </div>
                       </td>
@@ -141,7 +143,7 @@ export default function Pricing() {
             </div>
             <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
               <input type="checkbox" id="is_cod" checked={calcForm.is_cod} onChange={e => setCalcForm(f => ({ ...f, is_cod: e.target.checked }))} style={{ width: 16, height: 16 }} />
-              <label htmlFor="is_cod" style={{ fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>Cash on Delivery</label>
+              <label htmlFor="is_cod" style={{ fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>{t("pricing.cash_on_delivery")}</label>
             </div>
             {calcForm.is_cod && (
               <div style={{ marginBottom: 12 }}>
@@ -157,7 +159,7 @@ export default function Pricing() {
           </form>
           {calcResult && (
             <div style={{ marginTop: 16, background: '#fff7ed', borderRadius: 10, padding: 16, border: '1px solid #fed7aa' }}>
-              <div style={{ fontSize: 13, color: '#64748b', marginBottom: 4 }}>Estimated Price</div>
+              <div style={{ fontSize: 13, color: '#64748b', marginBottom: 4 }}>{t("pricing.estimated_price")}</div>
               <div style={{ fontSize: 28, fontWeight: 800, color: '#f97316' }}>AED {parseFloat(calcResult.total_fee || 0).toFixed(2)}</div>
               {calcResult.breakdown && (
                 <div style={{ marginTop: 8, fontSize: 13, color: '#64748b' }}>
@@ -191,7 +193,7 @@ export default function Pricing() {
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>Order Type</label>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>{t("pricing.order_type")}</label>
                   <select value={form.order_type} onChange={e => setForm(f => ({ ...f, order_type: e.target.value }))}
                     style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14 }}>
                     {ORDER_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
@@ -214,12 +216,12 @@ export default function Pricing() {
                 ))}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <input type="checkbox" id="r_is_active" checked={form.is_active} onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))} style={{ width: 16, height: 16 }} />
-                  <label htmlFor="r_is_active" style={{ fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>Active</label>
+                  <label htmlFor="r_is_active" style={{ fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>{t("common.active")}</label>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 12, marginTop: 24, justifyContent: 'flex-end' }}>
                 <button type="button" onClick={() => { setShowForm(false); setSelected(null); }}
-                  style={{ padding: '10px 20px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontWeight: 500 }}>Cancel</button>
+                  style={{ padding: '10px 20px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontWeight: 500 }}>{t("common.cancel")}</button>
                 <button type="submit" disabled={saving}
                   style={{ padding: '10px 24px', borderRadius: 8, border: 'none', background: '#f97316', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
                   {saving ? 'Saving...' : selected ? 'Update' : 'Create'}

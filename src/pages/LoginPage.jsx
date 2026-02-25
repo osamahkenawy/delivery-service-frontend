@@ -1,5 +1,6 @@
 import { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Eye, EyeClosed, WarningTriangle, Mail, ArrowLeft, CheckCircle } from 'iconoir-react';
 import { AuthContext } from '../App';
 import './LoginPage.css';
@@ -7,6 +8,8 @@ import './LoginPage.css';
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 export default function LoginPage() {
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
   /* ── Login state ── */
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -33,7 +36,7 @@ export default function LoginPage() {
       if (result.success) {
         navigate(result.role === 'driver' ? '/driver/orders' : '/dashboard');
       } else {
-        setError(result.message || 'Invalid credentials. Please try again.');
+        setError(result.message || t('auth.invalid_credentials'));
       }
     } catch {
       setError('An error occurred. Please try again.');

@@ -6,6 +6,7 @@ import {
 import api from '../lib/api';
 import MapView from '../components/MapView';
 import './CRMPages.css';
+import { useTranslation } from 'react-i18next';
 
 const STATUS_STYLE = {
   pending:    { background: '#fef3c7', color: '#d97706' },
@@ -16,6 +17,7 @@ const STATUS_STYLE = {
 };
 
 export default function Dispatch() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [board, setBoard]                 = useState({ unassigned: [], active_deliveries: [], available_drivers: [] });
   const [loading, setLoading]             = useState(true);
@@ -413,7 +415,7 @@ export default function Dispatch() {
               <span className="col-count amber">{board.unassigned?.length || 0}</span>
             </div>
             {board.unassigned?.length === 0
-              ? <div className="empty-col">No pending orders</div>
+              ? <div className="empty-col">{t("dispatch.no_pending")}</div>
               : board.unassigned.map(o => <OrderCard key={o.id} order={o} showUnassign={false} />)
             }
           </div>
@@ -435,7 +437,7 @@ export default function Dispatch() {
           <div className="dispatch-col">
             <div className="dispatch-col-header">
               <div className="col-dot" style={{ background: '#22c55e' }} />
-              <h3>Available Drivers</h3>
+              <h3>{t("dispatch.available_drivers")}</h3>
               <span className="col-count green">{board.available_drivers?.length || 0}</span>
             </div>
             {board.available_drivers?.length === 0

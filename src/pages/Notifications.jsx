@@ -6,6 +6,7 @@ import {
 } from 'iconoir-react';
 import api from '../lib/api';
 import './Notifications.css';
+import { useTranslation } from 'react-i18next';
 
 /* ── Channel config with icons ────────────────────────────────── */
 const CH = {
@@ -23,6 +24,7 @@ const SB = {
 };
 
 export default function Notifications() {
+  const { t } = useTranslation();
   /* ── state ─────────────────────────────────────────────────── */
   const [tab, setTab] = useState('all');
   const [loading, setLoading] = useState(true);
@@ -190,7 +192,7 @@ export default function Notifications() {
       {loading ? (
         <div className="notif-loading">
           <div className="notif-spinner" />
-          <span>Loading notifications...</span>
+          <span>{t("notifications.loading")}</span>
         </div>
       ) : tab === 'templates' ? (
         /* ── Templates Grid ──────────────────────────────── */
@@ -231,7 +233,7 @@ export default function Notifications() {
               <Search width={14} height={14} className="notif-search-icon" />
               <input
                 type="text"
-                placeholder="Search notifications..."
+                placeholder={t("notifications.search_placeholder")}
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               />
@@ -254,8 +256,8 @@ export default function Notifications() {
             <table className="notif-table">
               <thead>
                 <tr>
-                  <th>Channel</th>
-                  <th>Recipient</th>
+                  <th>{t("notifications.channel")}</th>
+                  <th>{t("notifications.recipient")}</th>
                   <th>Message</th>
                   <th>Order</th>
                   <th>Status</th>
@@ -270,7 +272,7 @@ export default function Notifications() {
                         <div className="notif-empty-icon">
                           <Bell width={36} height={36} />
                         </div>
-                        <h3>No notifications yet</h3>
+                        <h3>{t("notifications.no_notifications")}</h3>
                         <p>
                           {tab === 'sms' ? 'No SMS logs found.' : tab === 'email' ? 'No email logs found.' : 'Notifications will appear here when sent.'}
                         </p>
@@ -342,7 +344,7 @@ export default function Notifications() {
             <h3 className="notif-modal-title">
               <SendDiagonal width={20} height={20} /> Send Notification
             </h3>
-            <p className="notif-modal-subtitle">Send via one or multiple channels</p>
+            <p className="notif-modal-subtitle">{t("notifications.subtitle")}</p>
 
             {error && (
               <div className="notif-alert error">
@@ -358,7 +360,7 @@ export default function Notifications() {
             <form onSubmit={handleSend}>
               {/* Channels */}
               <div className="notif-form-group">
-                <label className="notif-form-label">Channels</label>
+                <label className="notif-form-label">{t("notifications.channels")}</label>
                 <div className="notif-channel-toggles">
                   {Object.entries(CH).map(([key, val]) => (
                     <button key={key} type="button" onClick={() => toggleChannel(key)}
@@ -377,7 +379,7 @@ export default function Notifications() {
               <div className="notif-form-grid">
                 {sendForm.channels.includes('sms') && (
                   <div>
-                    <label className="notif-form-label">Phone (SMS)</label>
+                    <label className="notif-form-label">{t("notifications.phone_sms")}</label>
                     <input type="tel" placeholder="+971501234567" value={sendForm.phone}
                       onChange={e => setSendForm(f => ({ ...f, phone: e.target.value }))} className="notif-form-input" />
                   </div>
@@ -391,8 +393,8 @@ export default function Notifications() {
                 )}
                 {sendForm.channels.includes('email') && (
                   <div>
-                    <label className="notif-form-label">Subject</label>
-                    <input value={sendForm.subject} placeholder="Notification subject"
+                    <label className="notif-form-label">{t("notifications.subject")}</label>
+                    <input value={sendForm.subject} placeholder={t("notifications.subject_placeholder")}
                       onChange={e => setSendForm(f => ({ ...f, subject: e.target.value }))} className="notif-form-input" />
                   </div>
                 )}
@@ -412,7 +414,7 @@ export default function Notifications() {
 
               <div className="notif-form-group" style={{ marginTop: 14 }}>
                 <label className="notif-form-label">Message *</label>
-                <textarea required value={sendForm.message} rows={4} placeholder="Type your notification message..."
+                <textarea required value={sendForm.message} rows={4} placeholder={t("notifications.message_placeholder")}
                   onChange={e => setSendForm(f => ({ ...f, message: e.target.value }))}
                   className="notif-form-textarea" />
                 <div className="notif-char-count">
@@ -424,7 +426,7 @@ export default function Notifications() {
               </div>
 
               <div className="notif-form-footer">
-                <button type="button" onClick={() => setShowSend(false)} className="notif-btn outline">Cancel</button>
+                <button type="button" onClick={() => setShowSend(false)} className="notif-btn outline">{t("common.cancel")}</button>
                 <button type="submit" disabled={saving} className="notif-btn primary" style={{ opacity: saving ? .6 : 1 }}>
                   {saving ? 'Sending...' : 'Send Notification'}
                 </button>
@@ -469,7 +471,7 @@ export default function Notifications() {
                 <input value={smsForm.order_id} onChange={e => setSmsForm(f => ({ ...f, order_id: e.target.value }))} className="notif-form-input" />
               </div>
               <div className="notif-form-footer">
-                <button type="button" onClick={() => { setShowSmsTest(false); setResult(null); }} className="notif-btn outline">Close</button>
+                <button type="button" onClick={() => { setShowSmsTest(false); setResult(null); }} className="notif-btn outline">{t("common.close")}</button>
                 <button type="submit" disabled={saving} className="notif-btn primary" style={{ opacity: saving ? .6 : 1 }}>
                   {saving ? 'Sending...' : 'Send SMS'}
                 </button>
@@ -502,7 +504,7 @@ export default function Notifications() {
                   onChange={e => setEmailForm(f => ({ ...f, to: e.target.value }))} className="notif-form-input" />
               </div>
               <div className="notif-form-group">
-                <label className="notif-form-label">Subject</label>
+                <label className="notif-form-label">{t("notifications.subject")}</label>
                 <input value={emailForm.subject} placeholder="Test Email from Trasealla"
                   onChange={e => setEmailForm(f => ({ ...f, subject: e.target.value }))} className="notif-form-input" />
               </div>
@@ -516,7 +518,7 @@ export default function Notifications() {
                 <input value={emailForm.order_id} onChange={e => setEmailForm(f => ({ ...f, order_id: e.target.value }))} className="notif-form-input" />
               </div>
               <div className="notif-form-footer">
-                <button type="button" onClick={() => { setShowEmailTest(false); setResult(null); }} className="notif-btn outline">Close</button>
+                <button type="button" onClick={() => { setShowEmailTest(false); setResult(null); }} className="notif-btn outline">{t("common.close")}</button>
                 <button type="submit" disabled={saving} className="notif-btn primary" style={{ opacity: saving ? .6 : 1 }}>
                   {saving ? 'Sending...' : 'Send Email'}
                 </button>

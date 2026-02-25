@@ -3,6 +3,7 @@ import JsBarcode from 'jsbarcode';
 import QRCode from 'qrcode';
 import api from '../lib/api';
 import './CRMPages.css';
+import { useTranslation } from 'react-i18next';
 
 /* ── Generate a CODE128 barcode into an <svg> element ────────── */
 function renderBarcode(svgEl, value) {
@@ -56,7 +57,7 @@ function BarcodeCard({ order }) {
         </div>
         <div className="bc-qr-wrap">
           <canvas ref={canvasRef} />
-          <div className="bc-qr-label">Scan to track</div>
+          <div className="bc-qr-label">{t("barcode.scan_to_track")}</div>
         </div>
       </div>
       <div className="bc-footer">
@@ -72,6 +73,7 @@ const TRACK_BASE = typeof window !== 'undefined'
   : '/track/';
 
 export default function Barcode() {
+  const { t } = useTranslation();
   const [orders,  setOrders]  = useState([]);
   const [loading, setLoading] = useState(true);
   const [search,  setSearch]  = useState('');
@@ -129,7 +131,7 @@ export default function Barcode() {
       <div className="page-container bc-screen">
         <div className="page-header-row">
           <div>
-            <h2 className="page-heading">Barcode & Labels</h2>
+            <h2 className="page-heading">{t("barcode.title")}</h2>
             <p className="page-subheading">
               {filtered.length} orders · {selected.size > 0 ? `${selected.size} selected` : 'select to print'}
             </p>
@@ -157,17 +159,17 @@ export default function Barcode() {
           />
           <select className="od-select" value={status} onChange={e => setStatus(e.target.value)}
             style={{ width: 'auto', minWidth: 150 }}>
-            <option value="">All statuses</option>
+            <option value="">{t("barcode.all_statuses")}</option>
             {STATUSES.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
           </select>
         </div>
 
         {loading ? (
-          <div className="od-loading">Loading orders...</div>
+          <div className="od-loading">{t("barcode.loading")}</div>
         ) : filtered.length === 0 ? (
           <div className="od-empty-tab">
             <span style={{ fontSize: '2rem' }}>📦</span>
-            <p>No orders found</p>
+            <p>{t("barcode.no_orders")}</p>
           </div>
         ) : (
           <div className="bc-grid">

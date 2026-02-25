@@ -9,6 +9,7 @@ import { AuthContext } from '../App';
 import api from '../lib/api';
 import MapView from '../components/MapView';
 import './CRMPages.css';
+import { useTranslation } from 'react-i18next';
 
 /* ─── Constants ─────────────────────────────────────────────── */
 const STATUS_META = {
@@ -100,6 +101,7 @@ const miniStatus = {
    MAIN COMPONENT
    ═══════════════════════════════════════════════════════════════ */
 export default function Drivers() {
+  const { t } = useTranslation();
   const { user } = useContext(AuthContext);
   const [drivers,    setDrivers]    = useState([]);
   const [loading,    setLoading]    = useState(true);
@@ -294,7 +296,7 @@ export default function Drivers() {
       <div className="filter-bar">
         <div className="search-box">
           <Search width={15} height={15} className="search-icon" />
-          <input type="text" placeholder="Search name, phone, plate..."
+          <input type="text" placeholder={t("drivers.search_placeholder")}
             value={filters.search}
             onChange={e => setFilters(f => ({ ...f, search: e.target.value }))}
             className="search-input" />
@@ -307,7 +309,7 @@ export default function Drivers() {
         <select className="filter-select"
           value={filters.vehicle_type}
           onChange={e => setFilters(f => ({ ...f, vehicle_type: e.target.value }))}>
-          <option value="">All Vehicles</option>
+          <option value="">{t("drivers.all_vehicles")}</option>
           {Object.entries(VEHICLE_META).map(([k, v]) => (
             <option key={k} value={k}>{v.emoji} {v.label}</option>
           ))}
@@ -324,7 +326,7 @@ export default function Drivers() {
       {loading ? <SkeletonGrid /> : visibleDrivers.length === 0 ? (
         <div className="ord-empty">
           <div className="ord-empty-icon"><User width={48} height={48} /></div>
-          <h3>No drivers found</h3>
+          <h3>{t("drivers.no_drivers")}</h3>
           <p>{hasFilters ? 'Try adjusting your search or filters' : 'Add your first driver to get started'}</p>
           {!hasFilters && (
             <button className="btn-primary-action" onClick={openNew}>
@@ -422,7 +424,7 @@ export default function Drivers() {
                     {driver.joined_at ? (
                       <><Calendar width={11} height={11} /> Joined {fmtDate(driver.joined_at)}</>
                     ) : (
-                      <span style={{ color: '#94a3b8' }}>No join date</span>
+                      <span style={{ color: '#94a3b8' }}>{t("drivers.no_join_date")}</span>
                     )}
                   </div>
                   <div style={{ display: 'flex', gap: 6 }}>
@@ -548,7 +550,7 @@ export default function Drivers() {
                       )}
                       {viewDriver.national_id && (
                         <div className="ord-view-row">
-                          <span className="ord-view-label">National ID</span>
+                          <span className="ord-view-label">{t("drivers.national_id")}</span>
                           <span className="ord-view-value">{viewDriver.national_id}</span>
                         </div>
                       )}
@@ -605,7 +607,7 @@ export default function Drivers() {
                       {viewDriver.zone_name && (
                         <div className="ord-view-card" style={{ marginBottom: 8 }}>
                           <div className="ord-view-row">
-                            <span className="ord-view-label">Assigned Zone</span>
+                            <span className="ord-view-label">{t("drivers.assigned_zone")}</span>
                             <span className="ord-view-value bold">{viewDriver.zone_name}</span>
                           </div>
                         </div>
@@ -666,7 +668,7 @@ export default function Drivers() {
                   {!viewDetail?.recent_orders?.length ? (
                     <div style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
                       <Package width={36} height={36} style={{ marginBottom: 8 }} />
-                      <p>No orders yet</p>
+                      <p>{t("drivers.no_orders_yet")}</p>
                     </div>
                   ) : (
                     <div className="drv-orders-list">
@@ -701,7 +703,7 @@ export default function Drivers() {
                 {viewDriver.is_active === 0 ? <><Check width={14} height={14} /> Activate</> : <><Prohibition width={14} height={14} /> Deactivate</>}
               </button>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button className="btn-outline-action" onClick={() => setViewDriver(null)}>Close</button>
+                <button className="btn-outline-action" onClick={() => setViewDriver(null)}>{t("common.close")}</button>
                 <button className="btn-primary-action"
                   onClick={() => { setViewDriver(null); openEdit(viewDriver); }}>
                   <EditPencil width={14} height={14} /> Edit Driver
@@ -740,7 +742,7 @@ export default function Drivers() {
                     <label>Full Name *</label>
                     <input required type="text" value={form.full_name}
                       onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))}
-                      placeholder="Driver full name" />
+                      placeholder={t("drivers.name_placeholder")} />
                   </div>
                   <div className="form-field">
                     <label>Phone *</label>
@@ -755,13 +757,13 @@ export default function Drivers() {
                       placeholder="driver@example.com" />
                   </div>
                   <div className="form-field">
-                    <label>National ID</label>
+                    <label>{t("drivers.national_id")}</label>
                     <input type="text" value={form.national_id}
                       onChange={e => setForm(f => ({ ...f, national_id: e.target.value }))}
-                      placeholder="National ID number" />
+                      placeholder={t("drivers.national_id_placeholder")} />
                   </div>
                   <div className="form-field">
-                    <label>Joined Date</label>
+                    <label>{t("drivers.joined_date")}</label>
                     <input type="date" value={form.joined_at}
                       onChange={e => setForm(f => ({ ...f, joined_at: e.target.value }))} />
                   </div>
@@ -778,7 +780,7 @@ export default function Drivers() {
                       <label>Password</label>
                       <input type="password" value={form.password}
                         onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                        placeholder="Leave empty for auto-generated" />
+                        placeholder={t("drivers.password_placeholder")} />
                     </div>
                   )}
                 </div>
@@ -789,7 +791,7 @@ export default function Drivers() {
                 </div>
                 <div className="form-grid-2">
                   <div className="form-field">
-                    <label>Vehicle Type</label>
+                    <label>{t("drivers.vehicle_type")}</label>
                     <select value={form.vehicle_type} onChange={e => setForm(f => ({ ...f, vehicle_type: e.target.value }))}>
                       {Object.entries(VEHICLE_META).map(([k, v]) => (
                         <option key={k} value={k}>{v.emoji} {v.label}</option>
@@ -815,15 +817,15 @@ export default function Drivers() {
                       placeholder="e.g. Red" />
                   </div>
                   <div className="form-field">
-                    <label>License Number</label>
+                    <label>{t("drivers.license_number")}</label>
                     <input type="text" value={form.license_number}
                       onChange={e => setForm(f => ({ ...f, license_number: e.target.value }))}
-                      placeholder="Driving license number" />
+                      placeholder={t("drivers.license_placeholder")} />
                   </div>
                   <div className="form-field">
-                    <label>Assigned Zone</label>
+                    <label>{t("drivers.assigned_zone")}</label>
                     <select value={form.zone_id} onChange={e => setForm(f => ({ ...f, zone_id: e.target.value }))}>
-                      <option value="">No zone assigned</option>
+                      <option value="">{t("drivers.no_zone_assigned")}</option>
                       {zones.map(z => (
                         <option key={z.id} value={z.id}>{z.name} — {z.emirate}</option>
                       ))}
@@ -833,13 +835,13 @@ export default function Drivers() {
                     <label>Notes</label>
                     <textarea rows={3} value={form.notes}
                       onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-                      placeholder="Additional notes about this driver..." />
+                      placeholder={t("drivers.notes_placeholder")} />
                   </div>
                 </div>
               </div>
 
               <div className="modal-footer">
-                <button type="button" className="btn-outline-action" onClick={closeForm}>Cancel</button>
+                <button type="button" className="btn-outline-action" onClick={closeForm}>{t("common.cancel")}</button>
                 <button type="submit" className="btn-primary-action" disabled={saving}>
                   {saving ? 'Saving...' : selected ? 'Update Driver' : 'Add Driver'}
                 </button>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../lib/api';
 import './CRMPages.css';
+import { useTranslation } from 'react-i18next';
 
 const TX_BADGE = {
   topup:         { bg: '#dcfce7', color: '#16a34a',  label: 'Top-up' },
@@ -14,6 +15,7 @@ const TX_BADGE = {
 const fmtAED = v => `AED ${parseFloat(v || 0).toFixed(2)}`;
 
 export default function Wallet() {
+  const { t } = useTranslation();
   const [wallet,       setWallet]       = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [codOrders,    setCodOrders]    = useState([]);
@@ -83,18 +85,18 @@ export default function Wallet() {
     <div className="page-container">
       <div className="page-header-row" style={{ marginBottom: 24 }}>
         <div>
-          <h2 className="page-heading">Wallet & COD</h2>
-          <p className="page-subheading">Balance, cash on delivery, and transaction history</p>
+          <h2 className="page-heading">{t("wallet.title")}</h2>
+          <p className="page-subheading">{t("wallet.subtitle")}</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn-outline-action" onClick={() => setShowSettle(true)}>Settle COD</button>
+          <button className="btn-outline-action" onClick={() => setShowSettle(true)}>{t("wallet.settle_cod")}</button>
           <button style={{ padding: '8px 20px', borderRadius: 8, border: 'none', background: '#f97316', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '.875rem' }}
             onClick={() => setShowTopup(true)}>+ Top Up</button>
         </div>
       </div>
 
       {loading ? (
-        <div className="od-loading">Loading wallet...</div>
+        <div className="od-loading">{t("wallet.loading")}</div>
       ) : (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px,1fr))', gap: 14, marginBottom: 24 }}>
@@ -137,7 +139,7 @@ export default function Wallet() {
                 </thead>
                 <tbody>
                   {paged.length === 0 ? (
-                    <tr><td colSpan={7} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>No transactions yet</td></tr>
+                    <tr><td colSpan={7} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>{t("wallet.no_transactions")}</td></tr>
                   ) : paged.map(tx => {
                     const badge = TX_BADGE[tx.type] || { bg: '#f1f5f9', color: '#64748b', label: tx.type };
                     const isCredit = ['topup','credit','cod_settled'].includes(tx.type);
@@ -213,7 +215,7 @@ export default function Wallet() {
           {activeTab === 'cod-done' && (
             <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
               {collectedCOD.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)', fontSize: '.875rem' }}>No collected COD orders yet</div>
+                <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)', fontSize: '.875rem' }}>{t("wallet.no_cod_orders")}</div>
               ) : (
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '.875rem' }}>
                   <thead>
@@ -246,7 +248,7 @@ export default function Wallet() {
       {showTopup && (
         <div style={modalStyle}>
           <div style={boxStyle}>
-            <h3 style={{ margin: '0 0 20px', fontSize: '1.1rem', fontWeight: 700 }}>Top Up Wallet</h3>
+            <h3 style={{ margin: '0 0 20px', fontSize: '1.1rem', fontWeight: 700 }}>{t("wallet.top_up")}</h3>
             <form onSubmit={handleTopup}>
               {[
                 { key: 'amount',      label: 'Amount (AED) *', type: 'number', min: 1, step: '0.01', required: true },
@@ -261,7 +263,7 @@ export default function Wallet() {
                 </div>
               ))}
               <div style={{ display: 'flex', gap: 10, marginTop: 20, justifyContent: 'flex-end' }}>
-                <button type="button" onClick={() => setShowTopup(false)} className="btn-outline-action">Cancel</button>
+                <button type="button" onClick={() => setShowTopup(false)} className="btn-outline-action">{t("common.cancel")}</button>
                 <button type="submit" disabled={saving} style={{ padding: '9px 22px', borderRadius: 8, border: 'none', background: '#f97316', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>
                   {saving ? 'Processing...' : 'Add Funds'}
                 </button>
@@ -274,7 +276,7 @@ export default function Wallet() {
       {showSettle && (
         <div style={modalStyle}>
           <div style={boxStyle}>
-            <h3 style={{ margin: '0 0 8px', fontSize: '1.1rem', fontWeight: 700 }}>Settle COD → Balance</h3>
+            <h3 style={{ margin: '0 0 8px', fontSize: '1.1rem', fontWeight: 700 }}>{t("wallet.settle_cod_balance")}</h3>
             <p style={{ margin: '0 0 20px', fontSize: '.8rem', color: 'var(--text-muted)' }}>
               COD Pending: <strong>{fmtAED(wallet?.cod_pending)}</strong>
             </p>
@@ -292,7 +294,7 @@ export default function Wallet() {
                 </div>
               ))}
               <div style={{ display: 'flex', gap: 10, marginTop: 20, justifyContent: 'flex-end' }}>
-                <button type="button" onClick={() => setShowSettle(false)} className="btn-outline-action">Cancel</button>
+                <button type="button" onClick={() => setShowSettle(false)} className="btn-outline-action">{t("common.cancel")}</button>
                 <button type="submit" disabled={saving} style={{ padding: '9px 22px', borderRadius: 8, border: 'none', background: '#f97316', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>
                   {saving ? 'Processing...' : 'Settle'}
                 </button>
@@ -305,7 +307,7 @@ export default function Wallet() {
       {collectOrder && (
         <div style={modalStyle}>
           <div style={{ ...boxStyle, maxWidth: 380 }}>
-            <h3 style={{ margin: '0 0 8px', fontSize: '1.1rem', fontWeight: 700 }}>Mark COD Collected</h3>
+            <h3 style={{ margin: '0 0 8px', fontSize: '1.1rem', fontWeight: 700 }}>{t("wallet.mark_collected")}</h3>
             <p style={{ margin: '0 0 20px', fontSize: '.85rem', color: 'var(--text-muted)' }}>
               <strong>{collectOrder.order_number}</strong> — {collectOrder.recipient_name}
             </p>
@@ -316,7 +318,7 @@ export default function Wallet() {
                 style={{ ...fieldStyle, fontSize: '1rem', fontWeight: 700 }} />
             </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-              <button onClick={() => setCollectOrder(null)} className="btn-outline-action">Cancel</button>
+              <button onClick={() => setCollectOrder(null)} className="btn-outline-action">{t("common.cancel")}</button>
               <button onClick={handleCollectCOD} disabled={saving || !collectAmt}
                 style={{ padding: '9px 22px', borderRadius: 8, border: 'none', background: '#1d4ed8', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>
                 {saving ? 'Saving...' : 'Confirm'}

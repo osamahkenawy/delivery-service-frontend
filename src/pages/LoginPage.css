@@ -240,7 +240,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #0f172a url('/assets/images/login_background.jpg') center center / cover no-repeat;
+  background: #0f172a url('/assets/images/login_bg_trasealla.jpg') center center / cover no-repeat;
 }
 
 .login-background-image {

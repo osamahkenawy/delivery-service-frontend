@@ -39,55 +39,55 @@ const iconMap = {
 /* ── Admin navigation ── */
 const adminNavSections = [
   {
-    titleKey: 'Main',
+    titleKey: 'main',
     items: [
-      { path: '/dashboard',     labelKey: 'Dashboard',     iconKey: 'dashboard' },
+      { path: '/dashboard',     labelKey: 'dashboard',     iconKey: 'dashboard' },
     ]
   },
   {
-    titleKey: 'Operations',
+    titleKey: 'operations',
     items: [
-      { path: '/orders',        labelKey: 'Orders',        iconKey: 'orders' },
-      { path: '/drivers',       labelKey: 'Drivers',       iconKey: 'drivers' },
-      { path: '/dispatch',      labelKey: 'Dispatch',      iconKey: 'dispatch' },
-      { path: '/live-map',      labelKey: 'Live Map',      iconKey: 'live-map' },
-      { path: '/barcode',        labelKey: 'Barcodes',      iconKey: 'barcode' },
-      { path: '/driver/scan',    labelKey: 'Scan Shipment',  iconKey: 'driver-scan' },
-      { path: '/driver/orders',  labelKey: 'My Deliveries',  iconKey: 'my-deliveries' },
-      { path: '/clients',       labelKey: 'Clients',       iconKey: 'clients' },
-      { path: '/shipment-tracking', labelKey: 'Shipment Tracking', iconKey: 'shipment-tracking' },
-      { path: '/bulk-import',    labelKey: 'Bulk Import',   iconKey: 'bulk-import' },
-      { path: '/returns',        labelKey: 'Returns',       iconKey: 'returns' },
+      { path: '/orders',        labelKey: 'orders',        iconKey: 'orders' },
+      { path: '/drivers',       labelKey: 'drivers',       iconKey: 'drivers' },
+      { path: '/dispatch',      labelKey: 'dispatch',      iconKey: 'dispatch' },
+      { path: '/live-map',      labelKey: 'livemap',      iconKey: 'live-map' },
+      { path: '/barcode',       labelKey: 'barcode',      iconKey: 'barcode' },
+      { path: '/driver/scan',   labelKey: 'scan_shipment',  iconKey: 'driver-scan' },
+      { path: '/driver/orders', labelKey: 'my_deliveries',  iconKey: 'my-deliveries' },
+      { path: '/clients',       labelKey: 'clients',       iconKey: 'clients' },
+      { path: '/shipment-tracking', labelKey: 'tracking', iconKey: 'shipment-tracking' },
+      { path: '/bulk-import',   labelKey: 'bulk_import',   iconKey: 'bulk-import' },
+      { path: '/returns',       labelKey: 'returns',       iconKey: 'returns' },
     ]
   },
   {
-    titleKey: 'Config',
+    titleKey: 'config',
     items: [
-      { path: '/zones',         labelKey: 'Zones',         iconKey: 'zones' },
-      { path: '/pricing',       labelKey: 'Pricing',       iconKey: 'pricing' },
+      { path: '/zones',         labelKey: 'zones',         iconKey: 'zones' },
+      { path: '/pricing',       labelKey: 'pricing',       iconKey: 'pricing' },
     ]
   },
   {
-    titleKey: 'Finance',
+    titleKey: 'finance',
     items: [
-      { path: '/wallet',        labelKey: 'Wallet',        iconKey: 'wallet' },
-      { path: '/invoices',      labelKey: 'Invoices',      iconKey: 'invoices' },
-      { path: '/cod',           labelKey: 'COD Reconciliation', iconKey: 'cod' },
+      { path: '/wallet',        labelKey: 'wallet',        iconKey: 'wallet' },
+      { path: '/invoices',      labelKey: 'invoices',      iconKey: 'invoices' },
+      { path: '/cod',           labelKey: 'cod_reconciliation', iconKey: 'cod' },
     ]
   },
   {
-    titleKey: 'Analytics',
+    titleKey: 'analytics',
     items: [
-      { path: '/reports',       labelKey: 'Reports',       iconKey: 'reports' },
-      { path: '/performance',   labelKey: 'Performance',   iconKey: 'performance' },
+      { path: '/reports',       labelKey: 'reports',       iconKey: 'reports' },
+      { path: '/performance',   labelKey: 'performance',   iconKey: 'performance' },
     ]
   },
   {
-    titleKey: 'System',
+    titleKey: 'system',
     items: [
-      { path: '/notifications', labelKey: 'Notifications', iconKey: 'notifications' },
-      { path: '/settings',      labelKey: 'Settings',      iconKey: 'settings' },
-      { path: '/api-keys',      labelKey: 'API Keys',      iconKey: 'api-keys' },
+      { path: '/notifications', labelKey: 'notifications', iconKey: 'notifications' },
+      { path: '/settings',      labelKey: 'settings',      iconKey: 'settings' },
+      { path: '/api-keys',      labelKey: 'integrations',      iconKey: 'api-keys' },
     ]
   },
 ];
@@ -95,15 +95,15 @@ const adminNavSections = [
 /* ── Driver navigation (minimal) ── */
 const driverNavSections = [
   {
-    titleKey: 'Main',
+    titleKey: 'main',
     items: [
-      { path: '/driver/orders', labelKey: 'My Deliveries',  iconKey: 'my-deliveries' },
+      { path: '/driver/orders', labelKey: 'my_deliveries',  iconKey: 'my-deliveries' },
     ]
   },
   {
-    titleKey: 'Tools',
+    titleKey: 'tools',
     items: [
-      { path: '/driver/scan',   labelKey: 'Scan Shipment',  iconKey: 'driver-scan' },
+      { path: '/driver/scan',   labelKey: 'scan_shipment',  iconKey: 'driver-scan' },
     ]
   },
 ];
@@ -151,7 +151,10 @@ export default function Layout({ children }) {
 
   const getPageTitle = () => {
     const item = allNavItems.find(item => location.pathname.startsWith(item.path));
-    return item ? item.labelKey : 'Trasealla Delivery';
+    if (item) {
+      return t(`common.${item.labelKey}`);
+    }
+    return 'Trasealla Delivery';
   };
 
   const renderIcon = (iconKey) => {
@@ -188,7 +191,7 @@ export default function Layout({ children }) {
           {(user?.role === 'driver' ? driverNavSections : adminNavSections).map((section) => (
             <div key={section.titleKey} className="nav-section">
               <div className="sidebar-nav-label">
-                {section.titleKey}
+                {t(`common.${section.titleKey}`)}
               </div>
               {section.items.map((item) => (
                 <div key={item.path} className="sidebar-nav-item">
@@ -198,7 +201,7 @@ export default function Layout({ children }) {
                     onClick={() => isMobile && setSidebarOpen(false)}
                   >
                     {renderIcon(item.iconKey)}
-                    <span>{item.labelKey}</span>
+                    <span>{t(`common.${item.labelKey}`)}</span>
                   </Link>
                 </div>
               ))}

@@ -1,5 +1,6 @@
 import { useState, useEffect, useContext, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Chart as ChartJS,
   CategoryScale, LinearScale, PointElement, LineElement,
@@ -21,20 +22,21 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement,
 const AUTO_REFRESH_MS = 30000; // 30 seconds
 
 const WIDGET_DEFS = [
-  { key: 'metrics',      label: 'KPI Metric Cards' },
-  { key: 'cod',          label: 'COD Collection Status' },
-  { key: 'charts',       label: 'Order Volume & Status Charts' },
-  { key: 'hourly',       label: "Today's Activity by Hour" },
-  { key: 'drivers_util', label: 'Driver Utilization' },
-  { key: 'zones',        label: 'Top Zones' },
-  { key: 'drivers',      label: 'Top Drivers' },
-  { key: 'recent',       label: 'Recent Orders' },
+  { key: 'metrics',      label: 'widgets.metrics' },
+  { key: 'cod',          label: 'widgets.cod' },
+  { key: 'charts',       label: 'widgets.charts' },
+  { key: 'hourly',       label: 'widgets.hourly' },
+  { key: 'drivers_util', label: 'widgets.drivers_util' },
+  { key: 'zones',        label: 'widgets.zones' },
+  { key: 'drivers',      label: 'widgets.drivers' },
+  { key: 'recent',       label: 'widgets.recent' },
 ];
 const DEFAULT_VISIBLE = () => WIDGET_DEFS.reduce((acc, w) => ({ ...acc, [w.key]: true }), {});
 const STORAGE_KEY = 'dashboard_widgets';
 const loadWidgets = () => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || DEFAULT_VISIBLE(); } catch { return DEFAULT_VISIBLE(); } };
 
 export default function Dashboard() {
+  const { t, i18n } = useTranslation();
   const [stats, setStats] = useState({});
   const [chart, setChart] = useState([]);
   const [topZones, setTopZones] = useState([]);
@@ -98,14 +100,14 @@ export default function Dashboard() {
 
   const getGreeting = () => {
     const h = currentTime.getHours();
-    if (h >= 5 && h < 12) return 'Good morning';
-    if (h >= 12 && h < 17) return 'Good afternoon';
-    if (h >= 17 && h < 21) return 'Good evening';
-    return 'Good night';
+    if (h >= 5 && h < 12) return t('dashboard.good_morning');
+    if (h >= 12 && h < 17) return t('dashboard.good_afternoon');
+    if (h >= 17 && h < 21) return t('dashboard.good_evening');
+    return t('dashboard.good_night');
   };
 
-  const formatTime = () => currentTime.toLocaleTimeString('en-AE', { hour: '2-digit', minute: '2-digit', hour12: true });
-  const formatDate = () => currentTime.toLocaleDateString('en-AE', { weekday: 'long', month: 'long', day: 'numeric' });
+  const formatTime = () => currentTime.toLocaleTimeString(i18n.language === 'ar' ? 'ar-AE' : 'en-AE', { hour: '2-digit', minute: '2-digit', hour12: true });
+  const formatDate = () => currentTime.toLocaleDateString(i18n.language === 'ar' ? 'ar-AE' : 'en-AE', { weekday: 'long', month: 'long', day: 'numeric' });
   const fmtAED = (v) => `AED ${parseFloat(v || 0).toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const fmtMins = (m) => {
     if (!m || m <= 0) return '—';
@@ -208,16 +210,16 @@ export default function Dashboard() {
             <span>{formatDate()}</span>
           </div>
           <h1>{getGreeting()}, {user?.full_name || user?.username}</h1>
-          <p className="welcome-subtitle">Here&apos;s your delivery operations overview</p>
+          <p className="welcome-subtitle">{t('dashboard.subtitle')}</p>
         </div>
         <div className="header-actions">
           <button
             className={`btn-auto-refresh ${autoRefresh ? 'active' : ''}`}
             onClick={() => setAutoRefresh(prev => !prev)}
-            title={autoRefresh ? 'Auto-refresh ON (30s)' : 'Auto-refresh OFF'}
+            title={autoRefresh ? t('dashboard.auto_refresh_on') : t('dashboard.auto_refresh_off')}
           >
             <Refresh width={15} height={15} className={autoRefresh ? 'spin-slow' : ''} />
-            {autoRefresh ? 'Live' : 'Paused'}
+            {autoRefresh ? t('dashboard.live_label') : t('dashboard.paused_label')}
           </button>
           {lastRefreshed && (
             <span className="last-refreshed">
@@ -226,16 +228,16 @@ export default function Dashboard() {
           )}
           <Link to="/orders" className="btn-primary">
             <Plus width={18} height={18} />
-            New Order
+            {t('dashboard.new_order')}
           </Link>
           <div style={{ position: 'relative' }}>
-            <button className="btn-auto-refresh" onClick={() => setShowWidgetPanel(v => !v)} title="Customize widgets">
+            <button className="btn-auto-refresh" onClick={() => setShowWidgetPanel(v => !v)} title={t('dashboard.customize_widgets')}>
               <Settings width={15} height={15} /> Widgets
             </button>
             {showWidgetPanel && (
               <div className="widget-panel">
                 <div className="widget-panel-header">
-                  <strong>Toggle Widgets</strong>
+                  <strong>{t('dashboard.toggle_widgets')}</strong>
                   <button className="widget-panel-close" onClick={() => setShowWidgetPanel(false)}>&times;</button>
                 </div>
                 {WIDGET_DEFS.map(w => (
@@ -258,12 +260,12 @@ export default function Dashboard() {
           </div>
           <div className="metric-content">
             <span className="metric-value">{stats.orders_today || 0}</span>
-            <span className="metric-label">Orders Today</span>
+            <span className="metric-label">{t('dashboard.kpiCards.orders_today')}</span>
           </div>
           <DeltaBadge delta={stats.delta_orders} />
           <div className="metric-trend positive">
             <StatUp width={14} height={14} />
-            <span>Active: {stats.active_orders || 0}</span>
+            <span>{t('dashboard.active_label')}: {stats.active_orders || 0}</span>
           </div>
         </div>
 
@@ -273,12 +275,12 @@ export default function Dashboard() {
           </div>
           <div className="metric-content">
             <span className="metric-value">{stats.delivered_today || 0}</span>
-            <span className="metric-label">Delivered Today</span>
+            <span className="metric-label">{t('dashboard.kpiCards.completed_orders')}</span>
           </div>
           <DeltaBadge delta={stats.delta_delivered} />
           <div className="metric-trend positive">
             <StatUp width={14} height={14} />
-            <span>Rate: {stats.success_rate || 0}%</span>
+            <span>{t('dashboard.rate_label')}: {stats.success_rate || 0}%</span>
           </div>
         </div>
 
@@ -288,11 +290,11 @@ export default function Dashboard() {
           </div>
           <div className="metric-content">
             <span className="metric-value">{stats.available_drivers || 0}<span style={{ fontSize: 13, fontWeight: 500, color: '#94a3b8' }}>/{stats.total_drivers || 0}</span></span>
-            <span className="metric-label">Available Drivers</span>
+            <span className="metric-label">{t('dashboard.kpiCards.active_drivers')}</span>
           </div>
           <div className="metric-trend">
             <Activity width={14} height={14} />
-            <span>Pending: {stats.pending_orders || 0}</span>
+            <span>{t('dashboard.pending_label')}: {stats.pending_orders || 0}</span>
           </div>
         </div>
 
@@ -302,11 +304,11 @@ export default function Dashboard() {
           </div>
           <div className="metric-content">
             <span className="metric-value">{fmtMins(stats.avg_delivery_minutes)}</span>
-            <span className="metric-label">Avg Delivery Time</span>
+            <span className="metric-label">{t('dashboard.kpiCards.delivery_time')}</span>
           </div>
           <div className="metric-trend">
             <Clock width={14} height={14} />
-            <span>Today&apos;s avg</span>
+            <span>{t('dashboard.todays_avg')}</span>
           </div>
         </div>
 
@@ -316,7 +318,7 @@ export default function Dashboard() {
           </div>
           <div className="metric-content">
             <span className="metric-value" style={{ fontSize: 17 }}>{fmtAED(stats.revenue_today)}</span>
-            <span className="metric-label">Revenue Today</span>
+            <span className="metric-label">{t('dashboard.kpiCards.revenue_today')}</span>
           </div>
           <DeltaBadge delta={stats.delta_revenue} />
         </div>
@@ -327,11 +329,11 @@ export default function Dashboard() {
           </div>
           <div className="metric-content">
             <span className="metric-value" style={{ fontSize: 17 }}>{fmtAED(stats.revenue_month)}</span>
-            <span className="metric-label">Revenue This Month</span>
+            <span className="metric-label">{t('dashboard.kpiCards.revenue_month')}</span>
           </div>
           <div className="metric-trend">
             <StatUp width={14} height={14} />
-            <span>Failed: {stats.failed_today || 0}</span>
+            <span>{t('dashboard.failed_count')}: {stats.failed_today || 0}</span>
           </div>
         </div>
       </div>}
@@ -341,23 +343,23 @@ export default function Dashboard() {
         <div className="cod-widget">
           <div className="cod-widget-header">
             <CreditCard width={18} height={18} />
-            <h3>COD Collection Status</h3>
-            <Link to="/cod-reconciliation" className="view-all">Reconcile <ArrowRight width={14} height={14} /></Link>
+            <h3>{t('dashboard.widgets.cod')}</h3>
+            <Link to="/cod-reconciliation" className="view-all">{t('dashboard.reconcile')} <ArrowRight width={14} height={14} /></Link>
           </div>
           <div className="cod-widget-body">
             <div className="cod-stat">
               <span className="cod-stat-val outstanding">{fmtAED(stats.cod_outstanding)}</span>
-              <span className="cod-stat-lbl">Outstanding ({stats.cod_outstanding_count || 0})</span>
+              <span className="cod-stat-lbl">{t('dashboard.cod_outstanding')} ({stats.cod_outstanding_count || 0})</span>
             </div>
             <div className="cod-divider" />
             <div className="cod-stat">
               <span className="cod-stat-val settled">{fmtAED(stats.cod_settled_today)}</span>
-              <span className="cod-stat-lbl">Settled Today ({stats.cod_settled_today_count || 0})</span>
+              <span className="cod-stat-lbl">{t('dashboard.cod_settled_today')} ({stats.cod_settled_today_count || 0})</span>
             </div>
             <div className="cod-divider" />
             <div className="cod-stat">
               <span className="cod-stat-val month">{fmtAED(stats.cod_month_total)}</span>
-              <span className="cod-stat-lbl">COD This Month</span>
+              <span className="cod-stat-lbl">{t('dashboard.cod_this_month')}</span>
             </div>
           </div>
         </div>
@@ -368,7 +370,7 @@ export default function Dashboard() {
         <div className="util-card">
           <div className="util-header">
             <DeliveryTruck width={18} height={18} />
-            <h3>Driver Utilization</h3>
+            <h3>{t('dashboard.driver_utilization')}</h3>
           </div>
           <div className="util-body">
             {(() => {
@@ -376,9 +378,9 @@ export default function Dashboard() {
               driverUtil.forEach(d => { statusMap[d.status] = d.count; });
               const total = Object.values(statusMap).reduce((a,b) => a + b, 0) || 1;
               const items = [
-                { label: 'Available', count: statusMap['available'] || 0, color: '#22c55e' },
-                { label: 'Busy', count: statusMap['busy'] || statusMap['on_delivery'] || 0, color: '#f97316' },
-                { label: 'Offline', count: statusMap['offline'] || statusMap['inactive'] || 0, color: '#94a3b8' },
+                { label: t('dashboard.available'), count: statusMap['available'] || 0, color: '#22c55e' },
+                { label: t('dashboard.busy'), count: statusMap['busy'] || statusMap['on_delivery'] || 0, color: '#f97316' },
+                { label: t('dashboard.offline'), count: statusMap['offline'] || statusMap['inactive'] || 0, color: '#94a3b8' },
               ];
               return items.map(item => (
                 <div key={item.label} className="util-bar-row">
@@ -395,11 +397,11 @@ export default function Dashboard() {
         <div className="util-card">
           <div className="util-header">
             <Activity width={18} height={18} />
-            <h3>Today&apos;s Workload</h3>
+            <h3>{t('dashboard.todays_workload')}</h3>
           </div>
           <div className="util-body">
             {driverWorkload.length === 0 ? (
-              <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13, padding: 16 }}>No data yet</p>
+              <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13, padding: 16 }}>{t('dashboard.no_data_yet')}</p>
             ) : driverWorkload.slice(0, 6).map(d => (
               <div key={d.id} className="util-bar-row">
                 <span className="util-bar-label">{d.full_name?.split(' ')[0]}</span>
@@ -421,8 +423,8 @@ export default function Dashboard() {
         <div className="chart-card sales-chart">
           <div className="chart-header">
             <div>
-              <h3>Orders — Last 7 Days</h3>
-              <p>Daily order volume &amp; delivery trend</p>
+              <h3>{t('dashboard.orders_last_7_days')}</h3>
+              <p>{t('dashboard.daily_volume_trend')}</p>
             </div>
           </div>
           <div className="chart-body">
@@ -433,14 +435,14 @@ export default function Dashboard() {
         <div className="chart-card pipeline-chart">
           <div className="chart-header">
             <div>
-              <h3>Order Status Breakdown</h3>
+              <h3>{t('dashboard.order_status_breakdown')}</h3>
             </div>
           </div>
           <div className="chart-body">
             <Doughnut data={statusData} options={doughnutOptions} />
           </div>
           <div className="pipeline-total">
-            <span className="total-label">Total Today</span>
+            <span className="total-label">{t('dashboard.total_today')}</span>
             <span className="total-value">{stats.orders_today || 0}</span>
           </div>
         </div>
@@ -451,8 +453,8 @@ export default function Dashboard() {
         <div className="chart-card" style={{ marginBottom: 24 }}>
           <div className="chart-header">
             <div>
-              <h3><Activity width={20} height={20} /> Today's Activity by Hour</h3>
-              <p>Order distribution across the day</p>
+              <h3><Activity width={20} height={20} /> {t('dashboard.todays_activity')}</h3>
+              <p>{t('dashboard.order_distribution')}</p>
             </div>
           </div>
           <div className="chart-body">
@@ -504,14 +506,14 @@ export default function Dashboard() {
         {widgetVis.zones && (
         <div className="recent-card">
           <div className="card-header">
-            <h3><MapPin width={20} height={20} /> Top Zones</h3>
-            <Link to="/zones" className="view-all">View all <ArrowRight width={16} height={16} /></Link>
+            <h3><MapPin width={20} height={20} /> {t('dashboard.top_zones')}</h3>
+            <Link to="/zones" className="view-all">{t('dashboard.view_all')} <ArrowRight width={16} height={16} /></Link>
           </div>
           <div className="card-body">
             {topZones.length === 0 ? (
               <div className="empty-state-mini">
                 <MapPin width={32} height={32} />
-                <p>No zone data yet</p>
+                <p>{t('dashboard.no_zone_data')}</p>
               </div>
             ) : (
               <div className="recent-list">
@@ -538,14 +540,14 @@ export default function Dashboard() {
         {widgetVis.drivers && (
         <div className="recent-card">
           <div className="card-header">
-            <h3><DeliveryTruck width={20} height={20} /> Top Drivers</h3>
-            <Link to="/drivers" className="view-all">View all <ArrowRight width={16} height={16} /></Link>
+            <h3><DeliveryTruck width={20} height={20} /> {t('dashboard.top_drivers')}</h3>
+            <Link to="/drivers" className="view-all">{t('dashboard.view_all')} <ArrowRight width={16} height={16} /></Link>
           </div>
           <div className="card-body">
             {topDrivers.length === 0 ? (
               <div className="empty-state-mini">
                 <DeliveryTruck width={32} height={32} />
-                <p>No driver data yet</p>
+                <p>{t('dashboard.no_driver_data')}</p>
               </div>
             ) : (
               <div className="recent-list">
@@ -575,14 +577,14 @@ export default function Dashboard() {
         {widgetVis.recent && (
         <div className="recent-card">
           <div className="card-header">
-            <h3><Package width={20} height={20} /> Recent Orders</h3>
-            <Link to="/orders" className="view-all">View all <ArrowRight width={16} height={16} /></Link>
+            <h3><Package width={20} height={20} /> {t('dashboard.recent_orders')}</h3>
+            <Link to="/orders" className="view-all">{t('dashboard.view_all')} <ArrowRight width={16} height={16} /></Link>
           </div>
           <div className="card-body">
             {recentOrders.length === 0 ? (
               <div className="empty-state-mini">
                 <Package width={32} height={32} />
-                <p>No recent orders</p>
+                <p>{t('dashboard.no_recent_orders')}</p>
               </div>
             ) : (
               <div className="recent-list">
@@ -593,7 +595,7 @@ export default function Dashboard() {
                     </div>
                     <div className="recent-info">
                       <strong>{order.recipient_name}</strong>
-                      <span>{order.driver_name || 'Unassigned'} &bull; {new Date(order.created_at).toLocaleTimeString('en-AE', { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
+                      <span>{order.driver_name || t('dashboard.unassigned')} &bull; {new Date(order.created_at).toLocaleTimeString('en-AE', { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
                     </div>
                     <span className="status-badge" style={{ background: `${statusColor(order.status)}18`, color: statusColor(order.status) }}>
                       {statusLabel(order.status)}
@@ -610,43 +612,43 @@ export default function Dashboard() {
 
       {/* Quick Actions */}
       <div className="quick-actions-section">
-        <h3>Quick Actions</h3>
+        <h3>{t('dashboard.quick_actions')}</h3>
         <div className="quick-actions-grid">
           <Link to="/orders" className="quick-action-card">
             <div className="quick-action-icon"><Package width={24} height={24} /></div>
-            <span>New Order</span>
+            <span>{t('dashboard.new_order')}</span>
           </Link>
           <Link to="/drivers" className="quick-action-card">
             <div className="quick-action-icon"><DeliveryTruck width={24} height={24} /></div>
-            <span>Add Driver</span>
+            <span>{t('dashboard.add_driver')}</span>
           </Link>
           <Link to="/dispatch" className="quick-action-card">
             <div className="quick-action-icon"><MapPin width={24} height={24} /></div>
-            <span>Dispatch</span>
+            <span>{t('dashboard.dispatch')}</span>
           </Link>
           <Link to="/shipment-tracking" className="quick-action-card">
             <div className="quick-action-icon" style={{ background: '#e0f2fe' }}><MapPin width={24} height={24} color="#0369a1" /></div>
-            <span>Track Shipments</span>
+            <span>{t('dashboard.track_shipments')}</span>
           </Link>
           <Link to="/live-map" className="quick-action-card">
             <div className="quick-action-icon" style={{ background: '#fce7f3' }}><MapPin width={24} height={24} color="#be185d" /></div>
-            <span>Live Map</span>
+            <span>{t('dashboard.live_map')}</span>
           </Link>
           <Link to="/clients" className="quick-action-card">
             <div className="quick-action-icon"><Activity width={24} height={24} /></div>
-            <span>Clients</span>
+            <span>{t('dashboard.clients')}</span>
           </Link>
           <Link to="/bulk-import" className="quick-action-card">
             <div className="quick-action-icon" style={{ background: '#ede9fe' }}><Package width={24} height={24} color="#7c3aed" /></div>
-            <span>Bulk Import</span>
+            <span>{t('dashboard.bulk_import')}</span>
           </Link>
           <Link to="/wallet" className="quick-action-card">
             <div className="quick-action-icon"><DollarCircle width={24} height={24} /></div>
-            <span>Wallet</span>
+            <span>{t('dashboard.wallet')}</span>
           </Link>
           <Link to="/reports" className="quick-action-card">
             <div className="quick-action-icon"><StatUp width={24} height={24} /></div>
-            <span>Reports</span>
+            <span>{t('dashboard.reports')}</span>
           </Link>
         </div>
       </div>

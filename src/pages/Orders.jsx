@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Package, Plus, Search, EditPencil, Trash, Eye, DeliveryTruck,
   Check, Xmark, NavArrowRight, NavArrowLeft, Filter, Copy,
@@ -46,9 +47,9 @@ const LABEL  = { display:'block', fontSize:12, fontWeight:700, color:'#374151', 
 const LIMIT  = 10;
 
 const STEPS = [
-  { num:1, title:'Client & Sender',  desc:'Select client or enter sender details' },
-  { num:2, title:'Recipient & Delivery', desc:'Delivery address, zone & type' },
-  { num:3, title:'Package & Payment', desc:'Category, weight, fees & notes' },
+  { num:1, titleKey:'orders.form.step1_title',  descKey:'orders.form.step1_desc' },
+  { num:2, titleKey:'orders.form.step2_title', descKey:'orders.form.step2_desc' },
+  { num:3, titleKey:'orders.form.step3_title', descKey:'orders.form.step3_desc' },
 ];
 
 const EMPTY_FORM = {
@@ -65,8 +66,8 @@ const EMPTY_FORM = {
 /* ══════════════════════════════════════════════════════════════
    HELPERS
    ══════════════════════════════════════════════════════════════ */
-const fmtDate = d => d ? new Date(d).toLocaleDateString('en-AE',{day:'2-digit',month:'short',year:'numeric'}) : '\u2014';
-const fmtTime = d => d ? new Date(d).toLocaleTimeString('en-AE',{hour:'2-digit',minute:'2-digit'}) : '';
+const fmtDate = (d, language = 'en') => d ? new Date(d).toLocaleDateString(language === 'ar' ? 'ar-AE' : 'en-AE',{day:'2-digit',month:'short',year:'numeric'}) : '\u2014';
+const fmtTime = (d, language = 'en') => d ? new Date(d).toLocaleTimeString(language === 'ar' ? 'ar-AE' : 'en-AE',{hour:'2-digit',minute:'2-digit'}) : '';
 const fmtAED  = v => { const n = parseFloat(v); return !isNaN(n) && n > 0 ? `AED ${n.toFixed(2)}` : '\u2014'; };
 const fmtType = t => t ? t.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()) : '\u2014';
 
@@ -182,28 +183,36 @@ function OrderNumCell({ orderNumber, trackingToken, onCopyToken, copied }) {
   );
 }
 
-function StepBar({ current }) {
+function StepBar({ current, t }) {
+  const isMobile = window.innerWidth <= 768;
+  const stepSize = isMobile ? 28 : 32;
+  const fontSize = isMobile ? 12 : 14;
+  const titleFontSize = isMobile ? 11 : 12;
+  const descFontSize = isMobile ? 9 : 10;
+  
   return (
-    <div style={{ display:'flex', padding:'18px 28px 0', position:'relative' }}>
+    <div style={{ display:'flex', padding: isMobile ? '14px 20px 0' : '18px 28px 0', position:'relative' }}>
       {STEPS.map((s, i) => {
         const done = current > s.num;
         const active = current === s.num;
         return (
           <div key={s.num} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', position:'relative', zIndex:1 }}>
             {i < STEPS.length - 1 && (
-              <div style={{ position:'absolute', top:16, left:'50%', width:'100%', height:3,
+              <div style={{ position:'absolute', top:stepSize/2 - 1.5, left:'50%', width:'100%', height:3,
                 background: done ? '#f97316' : '#e2e8f0', borderRadius:2, zIndex:0 }} />
             )}
-            <div style={{ width:32, height:32, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center',
-              fontWeight:700, fontSize:14, zIndex:1,
+            <div style={{ width:stepSize, height:stepSize, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center',
+              fontWeight:700, fontSize:fontSize, zIndex:1,
               background: done ? '#f97316' : active ? '#fff' : '#f1f5f9',
               color: done ? '#fff' : active ? '#f97316' : '#94a3b8',
               border: active ? '2px solid #f97316' : done ? '2px solid #f97316' : '2px solid #e2e8f0' }}>
-              {done ? <Check width={16} height={16} /> : s.num}
+              {done ? <Check width={isMobile ? 14 : 16} height={isMobile ? 14 : 16} /> : s.num}
             </div>
-            <div style={{ marginTop:8, textAlign:'center' }}>
-              <div style={{ fontSize:12, fontWeight:700, color: active||done ? '#1e293b' : '#94a3b8' }}>{s.title}</div>
-              <div style={{ fontSize:10, color:'#94a3b8', marginTop:1 }}>{s.desc}</div>
+            <div style={{ marginTop: isMobile ? 6 : 8, textAlign:'center' }}>
+              <div style={{ fontSize:titleFontSize, fontWeight:700, color: active||done ? '#1e293b' : '#94a3b8' }}>
+                {t(s.titleKey)}
+              </div>
+              {!isMobile && <div style={{ fontSize:descFontSize, color:'#94a3b8', marginTop:1 }}>{t(s.descKey)}</div>}
             </div>
           </div>
         );
@@ -280,23 +289,32 @@ function FlyTo({ center }) {
 function LocationPickerMap({ lat, lng, onPick }) {
   const center = (lat && lng) ? [parseFloat(lat), parseFloat(lng)] : [25.2048, 55.2708]; // Dubai default
   const hasPin = lat && lng;
+  const isMobile = window.innerWidth <= 768;
+  const mapHeight = isMobile ? 180 : 240;
+  
   return (
     <div style={{ gridColumn:'1/-1' }}>
       <label style={LABEL}>
         <MapPin width={12} height={12} style={{ marginRight:4, verticalAlign:'middle' }} />
-        Pin Delivery Location <span style={{ fontWeight:400, textTransform:'none', fontSize:11, color:'#94a3b8' }}> — click the map to place pin</span>
+        Pin Delivery Location <span style={{ fontWeight:400, textTransform:'none', fontSize:11, color:'#94a3b8' }}>
+          {isMobile ? ' — tap to place pin' : ' — click the map to place pin'}
+        </span>
       </label>
-      <div style={{ borderRadius:12, overflow:'hidden', border:'1.5px solid #e2e8f0', height:240, position:'relative' }}>
+      <div style={{ borderRadius: isMobile ? 8 : 12, overflow:'hidden', border:'1.5px solid #e2e8f0', 
+        height: mapHeight, position:'relative' }}>
         <MapContainer center={center} zoom={hasPin ? 15 : 11} style={{ height:'100%', width:'100%' }}
-          scrollWheelZoom={true} doubleClickZoom={false} attributionControl={false}>
+          scrollWheelZoom={!isMobile} doubleClickZoom={false} attributionControl={false}
+          dragging={!isMobile} touchZoom={isMobile}>
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
           <ClickHandler onClick={(latlng) => onPick(latlng.lat, latlng.lng)} />
           {hasPin && <FlyTo center={center} />}
           {hasPin && <Marker position={center} />}
         </MapContainer>
         {hasPin && (
-          <div style={{ position:'absolute', bottom:8, left:8, background:'rgba(0,0,0,.7)', color:'#fff',
-            borderRadius:6, padding:'4px 10px', fontSize:11, fontWeight:600, zIndex:999, backdropFilter:'blur(4px)' }}>
+          <div style={{ position:'absolute', bottom: isMobile ? 4 : 8, left: isMobile ? 4 : 8, 
+            background:'rgba(0,0,0,.7)', color:'#fff',
+            borderRadius:6, padding: isMobile ? '2px 6px' : '4px 10px', 
+            fontSize: isMobile ? 10 : 11, fontWeight:600, zIndex:999, backdropFilter:'blur(4px)' }}>
             {parseFloat(lat).toFixed(5)}, {parseFloat(lng).toFixed(5)}
           </div>
         )}
@@ -309,6 +327,7 @@ function LocationPickerMap({ lat, lng, onPick }) {
    MAIN COMPONENT
    ══════════════════════════════════════════════════════════════ */
 export default function Orders() {
+  const { t, i18n } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   /* state */
@@ -1196,32 +1215,46 @@ export default function Orders() {
          ══════════════════════════════════════════════════════ */}
       {showForm && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:1000,
-          display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
-          <div style={{ background:'#fff', borderRadius:20, width:'100%', maxWidth:640,
-            maxHeight:'92vh', display:'flex', flexDirection:'column', overflow:'hidden', boxShadow:'0 24px 70px rgba(0,0,0,0.2)' }}>
+          display:'flex', alignItems:'flex-start', justifyContent:'center', padding:'10px', 
+          paddingTop: window.innerWidth <= 768 ? '20px' : '40px',
+          overflowY:'auto', 
+          WebkitOverflowScrolling: 'touch' }}>
+          <div style={{ background:'#fff', borderRadius:window.innerWidth <= 768 ? 12 : 20, 
+            width:'100%', 
+            maxWidth: window.innerWidth <= 768 ? '100%' : 640,
+            maxHeight: window.innerWidth <= 768 ? 'calc(100vh - 40px)' : '90vh',
+            minHeight: window.innerWidth <= 768 ? 'auto' : '600px',
+            display:'flex', flexDirection:'column', overflow:'hidden', 
+            boxShadow:'0 24px 70px rgba(0,0,0,0.2)',
+            margin: window.innerWidth <= 768 ? '0' : 'auto' }}>
 
             {/* Modal Header */}
-            <div style={{ padding:'22px 28px 0', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+            <div style={{ padding: window.innerWidth <= 768 ? '16px 20px 0' : '22px 28px 0', 
+              display:'flex', justifyContent:'space-between', alignItems:'center' }}>
               <div>
-                <h3 style={{ margin:0, fontSize:20, fontWeight:800, color:'#1e293b' }}>
-                  {selected ? `Edit Order \u2014 ${selected.order_number}` : 'New Order'}
+                <h3 style={{ margin:0, fontSize: window.innerWidth <= 768 ? 18 : 20, fontWeight:800, color:'#1e293b' }}>
+                  {selected ? `${t('orders.edit_order')} \u2014 ${selected.order_number}` : t('orders.new_order')}
                 </h3>
-                <p style={{ margin:'3px 0 0', color:'#94a3b8', fontSize:13 }}>
-                  Step {step} of {STEPS.length} \u2014 {STEPS[step-1].desc}
+                <p style={{ margin:'3px 0 0', color:'#94a3b8', fontSize: window.innerWidth <= 768 ? 12 : 13 }}>
+                  {t('common.step')} {step} {t('common.of')} {STEPS.length} \u2014 {t(STEPS[step-1].descKey)}
                 </p>
               </div>
               <button type="button" onClick={closeForm}
                 style={{ background:'#f1f5f9', border:'none', cursor:'pointer', color:'#64748b',
-                  width:34, height:34, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                <Xmark width={16} height={16} />
+                  width: window.innerWidth <= 768 ? 32 : 34, 
+                  height: window.innerWidth <= 768 ? 32 : 34, 
+                  borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                <Xmark width={window.innerWidth <= 768 ? 14 : 16} height={window.innerWidth <= 768 ? 14 : 16} />
               </button>
             </div>
 
-            <StepBar current={step} />
+            <StepBar current={step} t={t} />
             <div style={{ margin:'20px 0 0', height:1, background:'#f1f5f9' }} />
 
             <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', flex:1, overflow:'hidden' }}>
-              <div style={{ overflowY:'auto', flex:1, padding:'22px 28px 0' }}>
+              <div style={{ overflowY:'auto', flex:1, 
+                padding: window.innerWidth <= 768 ? '16px 20px 0' : '22px 28px 0',
+                WebkitOverflowScrolling: 'touch' }}>
                 {formError && (
                   <div style={{ background:'#fee2e2', color:'#dc2626', padding:'10px 14px',
                     borderRadius:8, marginBottom:16, fontSize:14, display:'flex', alignItems:'center', gap:8 }}>
@@ -1231,7 +1264,9 @@ export default function Orders() {
 
                 {/* Step 1: Client & Sender */}
                 {step === 1 && (
-                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+                  <div style={{ display:'grid', 
+                    gridTemplateColumns: window.innerWidth <= 768 ? '1fr' : '1fr 1fr', 
+                    gap: window.innerWidth <= 768 ? 12 : 16 }}>
                     <div style={{ gridColumn:'1/-1' }}>
                       <label style={LABEL}>Select Client</label>
                       <select value={form.client_id} onChange={e=>set('client_id',e.target.value)} style={INPUT}>
@@ -1303,7 +1338,9 @@ export default function Orders() {
                   const selectedClient = form.client_id ? clients.find(cl => String(cl.id) === String(form.client_id)) : null;
                   const hasClientLocation = selectedClient && (selectedClient.address_line1 || selectedClient.area || selectedClient.latitude);
                   return (
-                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+                    <div style={{ display:'grid', 
+                      gridTemplateColumns: window.innerWidth <= 768 ? '1fr' : '1fr 1fr', 
+                      gap: window.innerWidth <= 768 ? 12 : 16 }}>
                       {/* Client location auto-fill notice */}
                       {hasClientLocation && (
                         <div style={{ gridColumn:'1/-1', padding:'10px 14px', background:'#eff6ff', borderRadius:10, border:'1px solid #dbeafe', fontSize:12, display:'flex', alignItems:'center', gap:8 }}>                          <MapPin width={15} height={15} color="#3b82f6" />
@@ -1393,7 +1430,9 @@ export default function Orders() {
 
                 {/* Step 3: Package & Payment */}
                 {step === 3 && (
-                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+                  <div style={{ display:'grid', 
+                    gridTemplateColumns: window.innerWidth <= 768 ? '1fr' : '1fr 1fr', 
+                    gap: window.innerWidth <= 768 ? 12 : 16 }}>
                     <div>
                       <label style={LABEL}>Category</label>
                       <select value={form.category} onChange={e=>set('category',e.target.value)} style={INPUT}>
@@ -1451,32 +1490,44 @@ export default function Orders() {
               </div>
 
               {/* Footer nav — sticky */}
-              <div style={{ padding:'16px 28px 20px', display:'flex', justifyContent:'space-between', alignItems:'center',
-                borderTop:'1px solid #f1f5f9', background:'#fff', flexShrink:0 }}>
+              <div style={{ padding: window.innerWidth <= 768 ? '12px 20px 16px' : '16px 28px 20px', 
+                display:'flex', justifyContent:'space-between', alignItems:'center',
+                borderTop:'1px solid #f1f5f9', background:'#fff', flexShrink:0,
+                gap: window.innerWidth <= 768 ? '8px' : '0' }}>
                 <button type="button"
                   onClick={step > 1 ? (e) => prevStep(e) : closeForm}
-                  style={{ padding:'10px 22px', borderRadius:10, border:'1px solid #e2e8f0',
-                    background:'#fff', cursor:'pointer', fontWeight:600, fontSize:14,
-                    display:'flex', alignItems:'center', gap:7, color:'#475569' }}>
+                  style={{ padding: window.innerWidth <= 768 ? '8px 16px' : '10px 22px', 
+                    borderRadius:10, border:'1px solid #e2e8f0',
+                    background:'#fff', cursor:'pointer', fontWeight:600, 
+                    fontSize: window.innerWidth <= 768 ? 13 : 14,
+                    display:'flex', alignItems:'center', gap: window.innerWidth <= 768 ? 6 : 7, 
+                    color:'#475569', flex: window.innerWidth <= 768 ? '1' : 'none' }}>
                   <NavArrowLeft width={15} height={15} />
                   {step > 1 ? 'Back' : 'Cancel'}
                 </button>
 
                 {step < STEPS.length ? (
                   <button type="button" onClick={(e) => nextStep(e)}
-                    style={{ padding:'10px 28px', borderRadius:10, border:'none',
+                    style={{ padding: window.innerWidth <= 768 ? '8px 20px' : '10px 28px', 
+                      borderRadius:10, border:'none',
                       background:'linear-gradient(135deg,#f97316,#ea580c)', color:'#fff',
-                      cursor:'pointer', fontWeight:700, fontSize:14, display:'flex', alignItems:'center', gap:7,
-                      boxShadow:'0 4px 14px rgba(249,115,22,0.35)' }}>
+                      cursor:'pointer', fontWeight:700, fontSize: window.innerWidth <= 768 ? 13 : 14, 
+                      display:'flex', alignItems:'center', gap: window.innerWidth <= 768 ? 6 : 7,
+                      boxShadow:'0 4px 14px rgba(249,115,22,0.35)',
+                      flex: window.innerWidth <= 768 ? '2' : 'none' }}>
                     Next <NavArrowRight width={15} height={15} />
                   </button>
                 ) : (
                   <button type="submit" disabled={saving}
-                    style={{ padding:'10px 28px', borderRadius:10, border:'none',
+                    style={{ padding: window.innerWidth <= 768 ? '8px 20px' : '10px 28px', 
+                      borderRadius:10, border:'none',
                       background:'linear-gradient(135deg,#16a34a,#15803d)', color:'#fff',
-                      cursor:saving?'not-allowed':'pointer', fontWeight:700, fontSize:14,
-                      opacity:saving?0.7:1, display:'flex', alignItems:'center', gap:7,
-                      boxShadow:'0 4px 14px rgba(22,163,74,0.35)' }}>
+                      cursor:saving?'not-allowed':'pointer', fontWeight:700, 
+                      fontSize: window.innerWidth <= 768 ? 13 : 14,
+                      opacity:saving?0.7:1, display:'flex', alignItems:'center', 
+                      gap: window.innerWidth <= 768 ? 6 : 7,
+                      boxShadow:'0 4px 14px rgba(22,163,74,0.35)',
+                      flex: window.innerWidth <= 768 ? '2' : 'none' }}>
                     <CheckCircle width={15} height={15} />
                     {saving ? 'Saving\u2026' : selected ? 'Update Order' : 'Create Order'}
                   </button>

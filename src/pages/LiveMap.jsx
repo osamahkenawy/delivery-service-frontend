@@ -10,6 +10,7 @@ import {
   Expand, Compress, Refresh, Search, User, Gps, Check, Prohibition
 } from 'iconoir-react';
 import './CRMPages.css';
+import { useTranslation } from 'react-i18next';
 
 /* ── Fix leaflet marker icon paths (Vite) ────────────────────── */
 delete L.Icon.Default.prototype._getIconUrl;
@@ -118,7 +119,7 @@ function RouteInfoModal({ info, onClose }) {
               <NavArrowRight width={20} color="#fff" />
             </div>
             <div>
-              <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em' }}>Route Summary</div>
+              <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em' }}>{t("liveMap.route_summary")}</div>
               <div style={{ color: '#fff', fontWeight: 700, fontSize: 15 }}>{info.driverName}</div>
             </div>
           </div>
@@ -168,11 +169,11 @@ function RouteInfoModal({ info, onClose }) {
             </div>
             <div style={{ flex: 1, marginLeft: 12, display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
-                <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.05em' }}>Driver Position</div>
+                <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.05em' }}>{t("liveMap.driver_position")}</div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b', marginTop: 1 }}>{info.driverName}</div>
               </div>
               <div>
-                <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.05em' }}>Delivery To</div>
+                <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.05em' }}>{t("liveMap.delivery_to")}</div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b', marginTop: 1 }}>{info.recipientName || 'Unknown Recipient'}</div>
                 {info.recipientAddress && <div style={{ fontSize: 11, color: '#64748b', marginTop: 1 }}>{info.recipientAddress}</div>}
               </div>
@@ -245,6 +246,7 @@ function timeAgo(dateStr) {
 
 /* ══════════════════════════════════════════════════════════════ */
 export default function LiveMap() {
+  const { t } = useTranslation();
   const { tenant } = useContext(AuthContext);
   const [drivers, setDrivers]        = useState({});
   const [filter, setFilter]          = useState('all');
@@ -390,7 +392,7 @@ export default function LiveMap() {
           </div>
           <div className="ord-stat-info">
             <div className="ord-stat-value">{totalActive}</div>
-            <div className="ord-stat-label">Total Drivers</div>
+            <div className="ord-stat-label">{t("liveMap.total_drivers")}</div>
           </div>
         </div>
         {[
@@ -416,7 +418,7 @@ export default function LiveMap() {
       {/* ── Header ───────────────────────────────────────────── */}
       <div className="lm-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <h2 className="page-heading" style={{ margin: 0 }}>Live Map</h2>
+          <h2 className="page-heading" style={{ margin: 0 }}>{t("liveMap.title")}</h2>
           <span style={{
             display: 'flex', alignItems: 'center', gap: 6, fontSize: '.75rem',
             padding: '4px 10px', borderRadius: 99, fontWeight: 600,
@@ -574,7 +576,7 @@ export default function LiveMap() {
                           <Package width={16} color="#fff" />
                         </div>
                         <div>
-                          <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em' }}>Delivery Destination</div>
+                          <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em' }}>{t("liveMap.delivery_destination")}</div>
                           <div style={{ color: '#fff', fontWeight: 700, fontSize: 14 }}>{d.recipient_name || '—'}</div>
                         </div>
                       </div>
@@ -752,7 +754,7 @@ export default function LiveMap() {
               background: 'var(--bg-hover)', borderRadius: 8, border: '1px solid var(--border)',
             }}>
               <Search width={14} color="var(--text-muted)" />
-              <input type="text" placeholder="Search drivers..." value={searchTerm}
+              <input type="text" placeholder={t("liveMap.search_placeholder")} value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: '.8rem', color: 'var(--text-primary)', fontFamily: 'inherit' }} />
             </div>
@@ -766,7 +768,7 @@ export default function LiveMap() {
 
           <div style={{ flex: 1, overflowY: 'auto' }}>
             {filtered.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)', fontSize: '.84rem' }}>No drivers found</div>
+              <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)', fontSize: '.84rem' }}>{t("liveMap.no_drivers")}</div>
             ) : filtered.map(d => {
               const isSelected = d.id === selectedDriver;
               const dist = (d.delivery_lat && d.delivery_lng && d.last_lat && d.last_lng)
@@ -821,7 +823,7 @@ export default function LiveMap() {
                     {d.speed != null && d.speed > 0 && (
                       <div style={{ fontSize: '.62rem', color: '#6b7280', marginTop: 2 }}>{parseFloat(d.speed).toFixed(0)} km/h</div>
                     )}
-                    {!d.last_lat && <div style={{ fontSize: '.62rem', color: '#94a3b8', marginTop: 2 }}>No GPS</div>}
+                    {!d.last_lat && <div style={{ fontSize: '.62rem', color: '#94a3b8', marginTop: 2 }}>{t("liveMap.no_gps")}</div>}
                   </div>
                 </div>
               );

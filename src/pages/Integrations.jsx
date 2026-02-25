@@ -5,6 +5,7 @@ import {
 } from 'iconoir-react';
 import api from '../lib/api';
 import './Integrations.css';
+import { useTranslation } from 'react-i18next';
 
 const fmtDate = d => d ? new Date(d).toLocaleDateString('en-AE', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 const fmtTime = d => d ? new Date(d).toLocaleString('en-AE', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
@@ -59,7 +60,7 @@ function APIKeysTab() {
     <div>
       <div className="intg-section-header">
         <div>
-          <h3 className="intg-section-title">API Keys</h3>
+          <h3 className="intg-section-title">{t("integrations.api_keys")}</h3>
           <p className="intg-section-sub">Authenticate external systems — Shopify, WooCommerce, ERPs</p>
         </div>
         <button className="btn-primary" onClick={() => setShowCreate(true)}>
@@ -82,8 +83,8 @@ function APIKeysTab() {
        : keys.length === 0 ? (
         <div className="empty-state">
           <Key width={40} height={40} className="empty-state-icon" />
-          <div className="empty-state-title">No API keys yet</div>
-          <div className="empty-state-sub">Generate a key to connect third-party apps</div>
+          <div className="empty-state-title">{t("integrations.no_keys")}</div>
+          <div className="empty-state-sub">{t("integrations.api_keys_desc")}</div>
         </div>
       ) : (
         <div className="data-card">
@@ -117,17 +118,17 @@ function APIKeysTab() {
       {showCreate && (
         <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setShowCreate(false)}>
           <div className="modal-box">
-            <div className="modal-header"><h3>Generate API Key</h3><button className="modal-close" onClick={()=>setShowCreate(false)}>✕</button></div>
+            <div className="modal-header"><h3>{t("integrations.generate_key")}</h3><button className="modal-close" onClick={()=>setShowCreate(false)}>✕</button></div>
             <form onSubmit={handleCreate}>
               <div className="form-group"><label>Key Name *</label><input required value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="e.g. WooCommerce" className="form-input" /></div>
               <div className="form-group"><label>Permissions</label>
                 <select value={form.permissions} onChange={e=>setForm(f=>({...f,permissions:e.target.value}))} className="form-select">
-                  <option value="read">Read Only</option><option value="write">Read and Write</option><option value="full">Full Access</option>
+                  <option value="read">{t("integrations.read_only")}</option><option value="write">{t("integrations.read_write")}</option><option value="full">{t("integrations.full_access")}</option>
                 </select>
               </div>
               <div className="form-group"><label>Expires At (optional)</label><input type="date" value={form.expires_at} onChange={e=>setForm(f=>({...f,expires_at:e.target.value}))} className="form-input" /></div>
               <div className="modal-footer">
-                <button type="button" className="btn-ghost" onClick={()=>setShowCreate(false)}>Cancel</button>
+                <button type="button" className="btn-ghost" onClick={()=>setShowCreate(false)}>{t("common.cancel")}</button>
                 <button type="submit" className="btn-primary" disabled={saving}>{saving?'Generating…':'Generate Key'}</button>
               </div>
             </form>
@@ -200,7 +201,7 @@ function WebhooksTab() {
        : webhooks.length === 0 ? (
         <div className="empty-state">
           <Network width={42} height={42} className="empty-state-icon" />
-          <div className="empty-state-title">No webhook endpoints</div>
+          <div className="empty-state-title">{t("integrations.no_webhooks")}</div>
           <div className="empty-state-sub">Add an endpoint to receive real-time delivery events</div>
           <button className="btn-primary" style={{marginTop:16}} onClick={openCreate}><Plus width={14} height={14} /> Add First Endpoint</button>
         </div>
@@ -223,7 +224,7 @@ function WebhooksTab() {
               </div>
               <div className="intg-webhook-events">
                 {(wh.events||[]).map(ev=><span key={ev} className="intg-event-chip">{ev}</span>)}
-                {(!wh.events||!wh.events.length)&&<span className="td-secondary" style={{fontSize:12}}>No events subscribed</span>}
+                {(!wh.events||!wh.events.length)&&<span className="td-secondary" style={{fontSize:12}}>{t("integrations.no_events")}</span>}
               </div>
               {wh.last_fired_at && <div className="intg-webhook-last">Last fired: {fmtTime(wh.last_fired_at)}</div>}
               {testResult[wh.id] && (
@@ -237,7 +238,7 @@ function WebhooksTab() {
                 <button className="btn-ghost-sm" onClick={()=>testPing(wh.id)} disabled={testing===wh.id}>
                   <RefreshDouble width={13} height={13} /> {testing===wh.id?'Testing…':'Test Ping'}
                 </button>
-                <button className="btn-ghost-sm" onClick={()=>openEdit(wh)}>Edit</button>
+                <button className="btn-ghost-sm" onClick={()=>openEdit(wh)}>{t("common.edit")}</button>
                 <button className="btn-ghost-sm" onClick={()=>toggle(wh.id)}>{wh.is_active?'Pause':'Activate'}</button>
                 <button className="btn-danger-sm" onClick={()=>del(wh.id)}><Trash width={13} height={13} /></button>
               </div>
@@ -268,7 +269,7 @@ function WebhooksTab() {
                 </div>
               </div>
               <div className="form-group">
-                <label>Subscribe to Events</label>
+                <label>{t("integrations.subscribe_events")}</label>
                 <div className="intg-event-groups">
                   {Object.entries(EVENT_GROUPS).map(([group, evts]) => (
                     <div key={group} className="intg-event-group">
@@ -290,7 +291,7 @@ function WebhooksTab() {
                 <div className="form-hint"><Lock width={12} height={12} /> Requests signed with <code>X-Trasealla-Signature</code> HMAC-SHA256.</div>
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn-ghost" onClick={()=>setShowModal(false)}>Cancel</button>
+                <button type="button" className="btn-ghost" onClick={()=>setShowModal(false)}>{t("common.cancel")}</button>
                 <button type="submit" className="btn-primary" disabled={saving}>{saving?'Saving…':editId?'Update':'Create Webhook'}</button>
               </div>
             </form>
@@ -335,7 +336,7 @@ function DeliveryLogTab() {
         <div className="filter-row">
           <select value={fStatus} onChange={e=>{setFStatus(e.target.value);setPage(1);}} className="form-select-sm">
             <option value="">All Status</option>
-            <option value="sent">Sent</option>
+            <option value="sent">{t("integrations.sent")}</option>
             <option value="failed">Failed</option>
           </select>
           <input value={fEvent} onChange={e=>{setFEvent(e.target.value);setPage(1);}} placeholder="Filter event…" className="form-input-sm" />
@@ -377,7 +378,7 @@ function DeliveryLogTab() {
             <div className="pagination-bar">
               <button className="btn-ghost-sm" disabled={page===1} onClick={()=>setPage(p=>p-1)}>Prev</button>
               <span className="td-secondary">Page {page} of {Math.ceil(total/50)}</span>
-              <button className="btn-ghost-sm" disabled={rows.length<50} onClick={()=>setPage(p=>p+1)}>Next</button>
+              <button className="btn-ghost-sm" disabled={rows.length<50} onClick={()=>setPage(p=>p+1)}>{t("common.next")}</button>
             </div>
           )}
         </div>
@@ -393,13 +394,14 @@ const TABS = [
 ];
 
 export default function Integrations() {
+  const { t } = useTranslation();
   const [tab, setTab] = useState('api-keys');
   return (
     <div className="page-container">
       <div className="page-header-row">
         <div>
-          <h2 className="page-heading">Integrations</h2>
-          <p className="page-subheading">API keys, webhooks and third-party connectivity</p>
+          <h2 className="page-heading">{t("integrations.title")}</h2>
+          <p className="page-subheading">{t("integrations.subtitle")}</p>
         </div>
       </div>
       <div className="intg-tab-bar">

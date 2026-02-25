@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import jsQR from 'jsqr';
 import api from '../lib/api';
 import './CRMPages.css';
+import { useTranslation } from 'react-i18next';
 
 /* ── Status transition rules ─────────────────────────────────────── */
 const VALID_NEXT = {
@@ -105,7 +106,7 @@ function OrderCard({ order, onStatusUpdate, onScan, loading }) {
       <div style={{ padding: '18px 20px' }}>
         {/* Recipient */}
         <div style={{ background: 'var(--bg-hover)', borderRadius: 10, padding: '14px 16px', marginBottom: 14 }}>
-          <div style={{ fontSize: '.75rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', marginBottom: 8 }}>Recipient</div>
+          <div style={{ fontSize: '.75rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', marginBottom: 8 }}>{t("driverScan.recipient")}</div>
           <div style={{ fontWeight: 700, fontSize: '1rem' }}>{order.recipient_name}</div>
           {order.recipient_phone && (
             <a href={`tel:${order.recipient_phone}`} style={{ color: '#f97316', fontWeight: 600, fontSize: '.9rem', textDecoration: 'none', display: 'block', marginTop: 4 }}>
@@ -143,7 +144,7 @@ function OrderCard({ order, onStatusUpdate, onScan, loading }) {
 
         {/* Note */}
         <div style={{ marginBottom: 14 }}>
-          <textarea rows={2} placeholder="Optional note (e.g. left at reception, no answer)..." value={statusNote}
+          <textarea rows={2} placeholder={t("driverScan.note_placeholder")} value={statusNote}
             onChange={e => setStatusNote(e.target.value)}
             style={{ width: '100%', padding: '8px 12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-hover)', color: 'var(--text-primary)', fontSize: '.875rem', resize: 'none', boxSizing: 'border-box' }} />
         </div>
@@ -211,6 +212,7 @@ function OrderCard({ order, onStatusUpdate, onScan, loading }) {
 
 /* ─────────────────── Main Driver Scan Page ───────────────────────── */
 export default function DriverScan() {
+  const { t } = useTranslation();
   const videoRef   = useRef(null);
   const canvasRef  = useRef(null);
   const streamRef  = useRef(null);
@@ -343,10 +345,10 @@ export default function DriverScan() {
       <div className="page-header-row" style={{ marginBottom: 20 }}>
         <div>
           <h2 className="page-heading">📷 Driver Scan</h2>
-          <p className="page-subheading">Scan shipment QR code or enter tracking number</p>
+          <p className="page-subheading">{t("driverScan.scan_hint")}</p>
         </div>
         {order && (
-          <button onClick={reset} className="btn-outline-action">Scan Another</button>
+          <button onClick={reset} className="btn-outline-action">{t("driverScan.scan_another")}</button>
         )}
       </div>
 
@@ -373,7 +375,7 @@ export default function DriverScan() {
             {!scanning && (
               <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, color: '#94a3b8' }}>
                 <div style={{ fontSize: '4rem' }}>📷</div>
-                <div style={{ fontSize: '.9rem' }}>Camera off</div>
+                <div style={{ fontSize: '.9rem' }}>{t("driverScan.camera_off")}</div>
               </div>
             )}
 
@@ -412,7 +414,7 @@ export default function DriverScan() {
             </div>
             <form onSubmit={handleManualSearch} style={{ display: 'flex', gap: 10 }}>
               <input type="text" value={manualToken} onChange={e => setManualToken(e.target.value)}
-                placeholder="Tracking token or order number..."
+                placeholder={t("driverScan.token_placeholder")}
                 style={{ flex: 1, padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-hover)', color: 'var(--text-primary)', fontSize: '.9rem' }} />
               <button type="submit" disabled={loadingOrder}
                 style={{ padding: '10px 20px', borderRadius: 10, border: 'none', background: '#f97316', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>
@@ -430,7 +432,7 @@ export default function DriverScan() {
           {loadingOrder && (
             <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
               <div style={{ fontSize: '2rem', marginBottom: 8 }}>🔍</div>
-              <div>Looking up shipment...</div>
+              <div>{t("driverScan.looking_up")}</div>
             </div>
           )}
         </>

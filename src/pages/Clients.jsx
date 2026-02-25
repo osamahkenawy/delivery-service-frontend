@@ -8,6 +8,7 @@ import {
 } from 'iconoir-react';
 import api from '../lib/api';
 import Toast, { useToast } from '../components/Toast';
+import { useTranslation } from 'react-i18next';
 
 const TYPE_META = {
   ecommerce:  { bg: '#dbeafe', color: '#1d4ed8', label: 'E-Commerce'  },
@@ -172,7 +173,7 @@ function AddressSearch({ onSelect }) {
           value={q}
           onChange={e => search(e.target.value)}
           onFocus={() => results.length > 0 && setOpen(true)}
-          placeholder="Search address, landmark, area…"
+          placeholder={t("clients.search_address_placeholder")}
           style={{ width:'100%', padding:'10px 36px 10px 13px', borderRadius:9, border:'1px solid #e2e8f0', fontSize:14, boxSizing:'border-box', outline:'none' }}
         />
         <div style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', color:'#94a3b8', pointerEvents:'none' }}>
@@ -261,6 +262,7 @@ function LocationPickerMap({ lat, lng, onPick }) {
 
 /* ── Main component ── */
 export default function Clients() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [clients,       setClients]       = useState([]);
   const [loading,       setLoading]       = useState(true);
@@ -475,23 +477,23 @@ export default function Clients() {
         <div style={{ position:'relative', flex:1, minWidth:220 }}>
           <Search width={15} height={15} color="#9ca3af"
             style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }} />
-          <input placeholder="Search name, phone, email, company…"
+          <input placeholder={t("clients.search_placeholder")}
             value={search} onChange={e=>{ setSearch(e.target.value); setPage(1); }}
             style={{ ...INPUT, paddingLeft:33 }} />
         </div>
         <select value={typeFilter} onChange={e=>{ setTypeFilter(e.target.value); setPage(1); }}
           style={{ ...INPUT, width:148 }}>
-          <option value="">All Types</option>
+          <option value="">{t("common.all_types")}</option>
           {Object.entries(TYPE_META).map(([t,m]) => <option key={t} value={t}>{m.label}</option>)}
         </select>
         <select value={emirateFilter} onChange={e=>{ setEmirateFilter(e.target.value); setPage(1); }}
           style={{ ...INPUT, width:150 }}>
-          <option value="">All Emirates</option>
+          <option value="">{t("clients.all_emirates")}</option>
           {EMIRATES.map(em => <option key={em} value={em}>{em}</option>)}
         </select>
         <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}
           style={{ ...INPUT, width:128 }}>
-          <option value="">All Status</option>
+          <option value="">{t("common.all_status")}</option>
           <option value="active">Active</option>
           <option value="inactive">Inactive</option>
         </select>
@@ -527,7 +529,7 @@ export default function Clients() {
         </div>
 
         {loading ? (
-          <div style={{ textAlign:'center', padding:70, color:'#94a3b8', fontSize:16 }}>Loading clients…</div>
+          <div style={{ textAlign:'center', padding:70, color:'#94a3b8', fontSize:16 }}>{t("clients.loading")}</div>
         ) : clients.length === 0 ? (
           <div style={{ textAlign:'center', padding:70 }}>
             <Group width={56} height={56} color="#e2e8f0" style={{ marginBottom:14 }} />
@@ -538,7 +540,7 @@ export default function Clients() {
               {hasFilters ? 'Try adjusting your search or filters' : 'Add your first client to get started'}
             </div>
             {hasFilters
-              ? <button onClick={clearFilters} style={{ padding:'10px 24px', borderRadius:10, border:'1px solid #e2e8f0', background:'#fff', cursor:'pointer', fontWeight:600 }}>Clear Filters</button>
+              ? <button onClick={clearFilters} style={{ padding:'10px 24px', borderRadius:10, border:'1px solid #e2e8f0', background:'#fff', cursor:'pointer', fontWeight:600 }}>{t("common.clear_filters")}</button>
               : <button onClick={openCreate}   style={{ padding:'11px 28px', borderRadius:10, border:'none', background:'#f97316', color:'#fff', cursor:'pointer', fontWeight:700, fontSize:15 }}>+ Add First Client</button>
             }
           </div>
@@ -758,7 +760,7 @@ export default function Clients() {
 
             <div style={{ padding:22, flex:1 }}>
               {drawerLoading ? (
-                <div style={{ textAlign:'center', padding:50, color:'#94a3b8' }}>Loading details…</div>
+                <div style={{ textAlign:'center', padding:50, color:'#94a3b8' }}>{t("clients.loading_details")}</div>
               ) : (
                 <>
                   <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:20 }}>
@@ -903,7 +905,7 @@ export default function Clients() {
                         style={INPUT} placeholder="+971 50 123 4567" />
                     </div>
                     <div>
-                      <label style={LABEL}>Alternate Phone</label>
+                      <label style={LABEL}>{t("clients.alternate_phone")}</label>
                       <input value={form.phone_alt} onChange={e=>set('phone_alt',e.target.value)}
                         style={INPUT} placeholder="Optional" />
                     </div>
@@ -919,32 +921,32 @@ export default function Clients() {
                 {step === 2 && (
                   <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
                     <div>
-                      <label style={LABEL}>Client Type</label>
+                      <label style={LABEL}>{t("clients.client_type")}</label>
                       <select value={form.type} onChange={e=>set('type',e.target.value)} style={INPUT}>
                         {Object.entries(TYPE_META).map(([t,m]) => <option key={t} value={t}>{m.label}</option>)}
                       </select>
                     </div>
                     <div>
-                      <label style={LABEL}>Business Category</label>
+                      <label style={LABEL}>{t("clients.business_category")}</label>
                       <select value={form.client_category} onChange={e=>set('client_category',e.target.value)} style={INPUT}>
                         {CATEGORIES.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase()+c.slice(1)}</option>)}
                       </select>
                     </div>
                     {form.type !== 'individual' && (
                       <div style={{ gridColumn:'1/-1' }}>
-                        <label style={LABEL}>Company Name</label>
+                        <label style={LABEL}>{t("clients.company_name")}</label>
                         <input value={form.company_name} onChange={e=>set('company_name',e.target.value)}
                           style={INPUT} placeholder="Acme LLC" />
                       </div>
                     )}
                     <div style={{ gridColumn:'1/-1' }}>
-                      <label style={LABEL}>Emirate</label>
+                      <label style={LABEL}>{t("clients.emirate")}</label>
                       <select value={form.emirate} onChange={e=>set('emirate',e.target.value)} style={INPUT}>
                         {EMIRATES.map(em => <option key={em} value={em}>{em}</option>)}
                       </select>
                     </div>
                     <div style={{ gridColumn:'1/-1' }}>
-                      <label style={LABEL}>Delivery Zone</label>
+                      <label style={LABEL}>{t("clients.delivery_zone")}</label>
                       <select value={form.zone_id} onChange={e=>set('zone_id',e.target.value)} style={INPUT}>
                         <option value="">— Select a zone (optional) —</option>
                         {zones
@@ -1044,7 +1046,7 @@ export default function Clients() {
 
                       {/* Area & City - Auto-fetch from Zone */}
                       <div>
-                        <label style={LABEL}>Area / Community</label>
+                        <label style={LABEL}>{t("clients.area")}</label>
                         <input value={form.area} onChange={e=>set('area',e.target.value)}
                           style={INPUT} placeholder={zoneData?.name ? `e.g. ${zoneData.name}` : "Downtown, JVC, Business Bay…"}
                           disabled={!!zoneData} />
@@ -1077,10 +1079,10 @@ export default function Clients() {
 
                       {/* Internal Notes */}
                       <div style={{ gridColumn:'1/-1' }}>
-                        <label style={LABEL}>Internal Notes</label>
+                        <label style={LABEL}>{t("clients.internal_notes")}</label>
                         <textarea rows={3} value={form.notes} onChange={e=>set('notes',e.target.value)}
                           style={{ ...INPUT, resize:'vertical' }}
-                          placeholder="Any internal notes or special instructions…" />
+                          placeholder={t("clients.notes_placeholder")} />
                       </div>
                     </div>
                   );
@@ -1141,7 +1143,7 @@ export default function Clients() {
             <div style={{ display:'flex', gap:10 }}>
               <button onClick={()=>setDeleteConfirm(null)}
                 style={{ flex:1, padding:12, borderRadius:10, border:'1px solid #e2e8f0',
-                  background:'#fff', cursor:'pointer', fontWeight:600, fontSize:14 }}>Cancel</button>
+                  background:'#fff', cursor:'pointer', fontWeight:600, fontSize:14 }}>{t("common.cancel")}</button>
               <button onClick={handleDelete}
                 style={{ flex:1, padding:12, borderRadius:10, border:'none',
                   background:'#dc2626', color:'#fff', cursor:'pointer', fontWeight:700, fontSize:14 }}>

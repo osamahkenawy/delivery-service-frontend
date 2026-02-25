@@ -6,6 +6,7 @@ import {
 } from 'iconoir-react';
 import api from '../lib/api';
 import './Performance.css';
+import { useTranslation } from 'react-i18next';
 
 const PERIOD_OPTIONS = [
   { value: 'today', label: 'Today' },
@@ -47,6 +48,7 @@ function RatingStars({ rating }) {
 }
 
 export default function Performance() {
+  const { t } = useTranslation();
   const [data, setData]     = useState(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod]   = useState('month');
@@ -105,7 +107,7 @@ export default function Performance() {
       {/* Hero */}
       <div className="module-hero">
         <div className="hero-content">
-          <h1 className="hero-title">Performance & SLA</h1>
+          <h1 className="hero-title">{t("performance.title")}</h1>
           <p className="hero-subtitle">
             Delivery metrics, SLA compliance, and driver scorecards
           </p>
@@ -145,7 +147,7 @@ export default function Performance() {
             </div>
             <div className="perf-stat-body">
               <span className="perf-stat-val">{kpis.total || 0}</span>
-              <span className="perf-stat-lbl">Total Shipments</span>
+              <span className="perf-stat-lbl">{t("performance.total_shipments")}</span>
             </div>
           </div>
         </div>
@@ -219,7 +221,7 @@ export default function Performance() {
             <div className="perf-sla-card">
               <SLARing percent={kpis.onTimePct || 0}
                 color={(kpis.onTimePct||0) >= 85 ? '#16a34a' : (kpis.onTimePct||0) >= 60 ? '#f97316' : '#ef4444'} />
-              <div className="perf-sla-label">On-Time Delivery</div>
+              <div className="perf-sla-label">{t("performance.on_time_delivery")}</div>
               <div className="perf-sla-sub">Target: {slaTarget}h — {gradeLabel(kpis.onTimePct || 0)}</div>
             </div>
             <div className="perf-sla-card">
@@ -231,7 +233,7 @@ export default function Performance() {
             <div className="perf-sla-card">
               <SLARing percent={kpis.deliveryRate || 0}
                 color={(kpis.deliveryRate||0) >= 85 ? '#16a34a' : (kpis.deliveryRate||0) >= 60 ? '#f97316' : '#ef4444'} />
-              <div className="perf-sla-label">Overall Delivery Rate</div>
+              <div className="perf-sla-label">{t("performance.overall_rate")}</div>
               <div className="perf-sla-sub">{kpis.delivered || 0} of {kpis.total || 0} — {gradeLabel(kpis.deliveryRate || 0)}</div>
             </div>
             <div className="perf-sla-card">
@@ -251,7 +253,7 @@ export default function Performance() {
                 <StatsUpSquare width={16} height={16} style={{ color: '#f97316' }} />
                 Status Distribution
               </div>
-              <div className="perf-chart-sub">Shipment outcomes for selected period</div>
+              <div className="perf-chart-sub">{t("performance.subtitle")}</div>
               <div className="perf-chart-body">
                 <div style={{ display: 'flex', gap: 20, alignItems: 'flex-end', height: '100%', paddingBottom: 20 }}>
                   {[
@@ -325,7 +327,7 @@ export default function Performance() {
         driverPerf.length === 0 ? (
           <div className="perf-empty">
             <div className="perf-empty-icon"><DeliveryTruck width={28} height={28} /></div>
-            <h3>No Driver Data</h3>
+            <h3>{t("performance.no_driver_data")}</h3>
             <p>No assigned orders found for the selected period</p>
           </div>
         ) : (
@@ -338,11 +340,11 @@ export default function Performance() {
                   <th>Total</th>
                   <th>Delivered</th>
                   <th>Failed</th>
-                  <th>Success Rate</th>
-                  <th>On-Time</th>
+                  <th>{t("performance.success_rate")}</th>
+                  <th>{t("performance.on_time")}</th>
                   <th>Avg Time</th>
-                  <th>Rating</th>
-                  <th>Grade</th>
+                  <th>{t("performance.rating")}</th>
+                  <th>{t("performance.grade")}</th>
                 </tr>
               </thead>
               <tbody>

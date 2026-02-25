@@ -7,6 +7,14 @@
 			"command": "cd /Users/usama/Desktop/trasealla/delivery_service/delivery-service-frontend && npm run dev",
 			"isBackground": true,
 			"problemMatcher": []
+		},
+		{
+			"label": "Start Frontend Dev Server",
+			"type": "shell",
+			"command": "npm run dev",
+			"isBackground": true,
+			"problemMatcher": [],
+			"group": "build"
 		}
 	]
 }

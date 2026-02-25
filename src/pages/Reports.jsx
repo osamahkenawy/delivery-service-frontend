@@ -10,6 +10,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import api from '../lib/api';
 import './CRMPages.css';
+import { useTranslation } from 'react-i18next';
 
 /* ── Helpers ──────────────────────────────────────────────────── */
 const fmtAED = v => `AED ${parseFloat(v || 0).toFixed(2)}`;
@@ -38,6 +39,7 @@ const CHART_BASE = {
 const COLORS = ['#f97316', '#244066', '#22c55e', '#ef4444', '#8b5cf6', '#0ea5e9', '#f59e0b'];
 
 export default function Reports() {
+  const { t } = useTranslation();
   const [period,   setPeriod]   = useState('30');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo,   setDateTo]   = useState('');
@@ -236,7 +238,7 @@ export default function Reports() {
       <div className="page-header-row">
         <div>
           <h2 className="page-heading">Reports</h2>
-          <p className="page-subheading">Analytics & performance insights</p>
+          <p className="page-subheading">{t("reports.subtitle")}</p>
         </div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
           <input type="date" className="filter-date" value={dateFrom}
@@ -246,9 +248,9 @@ export default function Reports() {
             onChange={e => setDateTo(e.target.value)} />
           <select className="rpt-period-select" value={period}
             onChange={e => { setPeriod(e.target.value); setDateFrom(''); setDateTo(''); }}>
-            <option value="7">Last 7 days</option>
-            <option value="30">Last 30 days</option>
-            <option value="90">Last 90 days</option>
+            <option value="7">{t("reports.last_7_days")}</option>
+            <option value="30">{t("reports.last_30_days")}</option>
+            <option value="90">{t("reports.last_90_days")}</option>
             <option value="365">Last year</option>
           </select>
           <button className="btn-outline-action" onClick={fetchAll}>
@@ -339,7 +341,7 @@ export default function Reports() {
               {data?.failure_reasons?.length > 0 && (
                 <div className="rpt-chart-row" style={{ marginTop: 20 }}>
                   <div className="rpt-chart-card">
-                    <div className="rpt-chart-header"><h4>Failure Reasons Breakdown</h4></div>
+                    <div className="rpt-chart-header"><h4>{t("reports.failure_reasons")}</h4></div>
                     <ReactApexChart type="donut" height={280}
                       series={data.failure_reasons.map(d => d.count || 0)}
                       options={{
@@ -353,7 +355,7 @@ export default function Reports() {
                     />
                   </div>
                   <div className="rpt-table-card" style={{ flex: 1 }}>
-                    <h4 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600 }}>Failure Details</h4>
+                    <h4 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600 }}>{t("reports.failure_details")}</h4>
                     <table className="od-items-table">
                       <thead><tr><th>Reason</th><th>Count</th><th>% of Failed</th></tr></thead>
                       <tbody>
@@ -379,7 +381,7 @@ export default function Reports() {
           {activeSection === 'volume' && (
             <div className="rpt-chart-card">
               <div className="rpt-chart-header">
-                <h4>Daily Order Volume</h4>
+                <h4>{t("reports.daily_volume")}</h4>
                 <button className="btn-outline-action" onClick={() => exportCSV(data?.volume_by_day, 'volume-by-day')}>
                   <Download width={13} height={13} /> Export CSV
                 </button>
@@ -616,13 +618,13 @@ export default function Reports() {
                   </div>
                   <div className="rpt-table-card">
                     <div className="rpt-chart-header" style={{ marginBottom: 16 }}>
-                      <h4>Client Analytics</h4>
+                      <h4>{t("reports.client_analytics")}</h4>
                       <button className="btn-outline-action" onClick={() => exportCSV(data?.top_clients, 'client-analytics')}>
                         <Download width={13} height={13} /> Export CSV
                       </button>
                     </div>
                     <table className="od-items-table">
-                      <thead><tr><th>Client</th><th>Company</th><th>Orders</th><th>Delivered</th><th>Failed</th><th>Success %</th><th>Revenue</th><th>Avg Value</th><th>COD Total</th></tr></thead>
+                      <thead><tr><th>Client</th><th>Company</th><th>Orders</th><th>Delivered</th><th>Failed</th><th>Success %</th><th>Revenue</th><th>Avg Value</th><th>{t("reports.cod_total")}</th></tr></thead>
                       <tbody>
                         {data.top_clients.map((row, i) => (
                           <tr key={i}>
@@ -704,7 +706,7 @@ export default function Reports() {
                 <>
                   <div className="rpt-chart-card" style={{ marginBottom: 20 }}>
                     <div className="rpt-chart-header">
-                      <h4>Average Delivery Time by Zone</h4>
+                      <h4>{t("reports.avg_delivery_time")}</h4>
                       <button className="btn-outline-action" onClick={() => exportCSV(data?.delivery_time_by_zone, 'delivery-time-by-zone')}>
                         <Download width={13} height={13} /> Export CSV
                       </button>
@@ -726,7 +728,7 @@ export default function Reports() {
                   </div>
                   <div className="rpt-table-card">
                     <table className="od-items-table">
-                      <thead><tr><th>Zone</th><th>Deliveries</th><th>Avg Time</th><th>Fastest</th><th>Slowest</th></tr></thead>
+                      <thead><tr><th>Zone</th><th>{t("reports.deliveries")}</th><th>Avg Time</th><th>{t("reports.fastest")}</th><th>Slowest</th></tr></thead>
                       <tbody>
                         {data.delivery_time_by_zone.map((row, i) => {
                           const fmtM = m => { if (!m) return '—'; return m >= 60 ? `${(m/60).toFixed(1)}h` : `${m}m`; };
@@ -875,7 +877,7 @@ export default function Reports() {
                           </button>
                         </div>
                         <table className="od-items-table">
-                          <thead><tr><th>Driver</th><th>Deliveries</th><th>Revenue Generated</th><th>COD Collected</th><th>COD Settled</th><th>COD Pending</th></tr></thead>
+                          <thead><tr><th>Driver</th><th>{t("reports.deliveries")}</th><th>Revenue Generated</th><th>{t("reports.cod_collected")}</th><th>{t("reports.cod_settled")}</th><th>{t("reports.cod_pending")}</th></tr></thead>
                           <tbody>
                             {finData.driver_settlements.map((row, i) => (
                               <tr key={i}>
@@ -921,10 +923,10 @@ export default function Reports() {
 
               {showScheduleForm && (
                 <div className="rpt-table-card" style={{ marginBottom: 20, padding: 24 }}>
-                  <h4 style={{ margin: '0 0 16px', fontWeight: 600 }}>Create New Schedule</h4>
+                  <h4 style={{ margin: '0 0 16px', fontWeight: 600 }}>{t("reports.create_schedule")}</h4>
                   <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: '#475569' }}>Frequency</label>
+                      <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: '#475569' }}>{t("reports.frequency")}</label>
                       <select className="rpt-period-select" value={scheduleForm.frequency}
                         onChange={e => setScheduleForm(f => ({ ...f, frequency: e.target.value }))}>
                         <option value="daily">Daily (7:00 AM)</option>
@@ -953,10 +955,10 @@ export default function Reports() {
                   <table className="od-items-table">
                     <thead>
                       <tr>
-                        <th>Frequency</th>
+                        <th>{t("reports.frequency")}</th>
                         <th>Recipients</th>
                         <th>Schedule</th>
-                        <th>Last Sent</th>
+                        <th>{t("reports.last_sent")}</th>
                         <th>Status</th>
                         <th>Actions</th>
                       </tr>

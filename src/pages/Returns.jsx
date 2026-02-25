@@ -6,6 +6,7 @@ import {
 } from 'iconoir-react';
 import { api } from '../lib/api';
 import './Returns.css';
+import { useTranslation } from 'react-i18next';
 
 const RETURN_STATUS_LABELS = {
   requested: 'Requested', approved: 'Approved', pickup_scheduled: 'Pickup Scheduled',
@@ -29,6 +30,7 @@ const emptyForm = {
 };
 
 export default function Returns() {
+  const { t } = useTranslation();
   const [returns, setReturns] = useState([]);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -121,7 +123,7 @@ export default function Returns() {
           <div className="module-hero-icon"><RefreshDouble size={26} /></div>
           <div>
             <h1 className="module-hero-title">Returns Management</h1>
-            <p className="module-hero-sub">Handle return requests, pickups, and refunds</p>
+            <p className="module-hero-sub">{t("returns.subtitle")}</p>
           </div>
         </div>
         <div className="module-hero-actions">
@@ -168,7 +170,7 @@ export default function Returns() {
       <div className="ret-filters">
         <div className="ret-search-wrap">
           <Search size={16} className="ret-search-icon" />
-          <input className="ret-search-input" placeholder="Search returns..."
+          <input className="ret-search-input" placeholder={t("returns.search_placeholder")}
                  value={search} onChange={e => setSearch(e.target.value)} />
         </div>
       </div>
@@ -179,17 +181,17 @@ export default function Returns() {
       ) : filtered.length === 0 ? (
         <div className="ret-empty">
           <div className="ret-empty-icon"><RefreshDouble size={28} /></div>
-          <h3>No Returns Found</h3>
-          <p>No return requests match your criteria</p>
+          <h3>{t("returns.no_returns")}</h3>
+          <p>{t("returns.no_results")}</p>
         </div>
       ) : (
         <div className="ret-table-wrap">
           <table className="ret-table">
             <thead>
               <tr>
-                <th>Return ID</th>
+                <th>{t("returns.return_id")}</th>
                 <th>Order #</th>
-                <th>Customer</th>
+                <th>{t("returns.customer")}</th>
                 <th>Reason</th>
                 <th>Status</th>
                 <th>Requested</th>
@@ -292,26 +294,26 @@ export default function Returns() {
                   </select>
                 </div>
                 <div className="ret-form-group span-2">
-                  <label className="ret-form-label">Pickup Address</label>
-                  <input className="ret-form-input" placeholder="Address for return pickup"
+                  <label className="ret-form-label">{t("returns.pickup_address")}</label>
+                  <input className="ret-form-input" placeholder={t("returns.address_placeholder")}
                          value={form.pickup_address}
                          onChange={e => setForm(f => ({ ...f, pickup_address: e.target.value }))} />
                 </div>
                 <div className="ret-form-group">
-                  <label className="ret-form-label">Preferred Pickup Date</label>
+                  <label className="ret-form-label">{t("returns.preferred_date")}</label>
                   <input type="date" className="ret-form-input" value={form.pickup_date}
                          onChange={e => setForm(f => ({ ...f, pickup_date: e.target.value }))} />
                 </div>
                 <div className="ret-form-group span-2">
                   <label className="ret-form-label">Notes</label>
-                  <textarea className="ret-form-textarea" placeholder="Additional notes..."
+                  <textarea className="ret-form-textarea" placeholder={t("returns.notes_placeholder")}
                             value={form.notes}
                             onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
                 </div>
               </div>
             </div>
             <div className="ret-modal-footer">
-              <button className="ret-btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
+              <button className="ret-btn-secondary" onClick={() => setShowModal(false)}>{t("common.cancel")}</button>
               <button className="ret-btn-primary" onClick={handleSubmit} disabled={saving || !form.order_id || !form.reason}>
                 {saving ? 'Submitting...' : <><Plus size={14} /> Submit Return</>}
               </button>
@@ -331,7 +333,7 @@ export default function Returns() {
             <div className="ret-modal-body">
               <div className="ret-detail-grid">
                 <div className="ret-detail-item">
-                  <div className="ret-detail-label">Return ID</div>
+                  <div className="ret-detail-label">{t("returns.return_id")}</div>
                   <div className="ret-detail-value" style={{ color: '#f97316', fontFamily: 'monospace' }}>RET-{String(showDetail.id).padStart(4, '0')}</div>
                 </div>
                 <div className="ret-detail-item">
@@ -348,7 +350,7 @@ export default function Returns() {
                   <div className="ret-detail-value" style={{ fontFamily: 'monospace' }}>{showDetail.order_number || `#${showDetail.order_id}`}</div>
                 </div>
                 <div className="ret-detail-item">
-                  <div className="ret-detail-label">Customer</div>
+                  <div className="ret-detail-label">{t("returns.customer")}</div>
                   <div className="ret-detail-value">{showDetail.recipient_name || '—'}</div>
                 </div>
                 <div className="ret-detail-item ret-detail-wide">
@@ -363,7 +365,7 @@ export default function Returns() {
                 )}
                 {showDetail.pickup_address && (
                   <div className="ret-detail-item ret-detail-wide">
-                    <div className="ret-detail-label">Pickup Address</div>
+                    <div className="ret-detail-label">{t("returns.pickup_address")}</div>
                     <div className="ret-detail-value" style={{ fontSize: 13 }}>{showDetail.pickup_address}</div>
                   </div>
                 )}
@@ -380,7 +382,7 @@ export default function Returns() {
               </div>
             </div>
             <div className="ret-modal-footer">
-              <button className="ret-btn-secondary" onClick={() => setShowDetail(null)}>Close</button>
+              <button className="ret-btn-secondary" onClick={() => setShowDetail(null)}>{t("common.close")}</button>
               {showDetail.status === 'requested' && (
                 <>
                   <button className="ret-btn-danger" onClick={() => { handleAction(showDetail.id, 'rejected'); setShowDetail(null); }}>

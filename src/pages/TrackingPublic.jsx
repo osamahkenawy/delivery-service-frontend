@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { io } from 'socket.io-client';
+import { useTranslation } from 'react-i18next';
 import {
   Clock, Check, User, Package, DeliveryTruck, CheckCircle, Xmark,
   MapPin, Phone, Refresh, Map, NavArrowRight, Prohibition,
@@ -64,6 +65,7 @@ const S = {
 };
 
 export default function TrackingPublic() {
+  const { t } = useTranslation();
   const { token } = useParams();
   const mapRef = useRef(null);
   const mapObjRef = useRef(null);
@@ -227,7 +229,7 @@ export default function TrackingPublic() {
           <img src="/logo-icon.png" alt="Trasealla" style={S.logo} />
           <div>
             <div style={{ color: '#fff', fontWeight: 800, fontSize: 18, letterSpacing: '-0.02em' }}>Trasealla</div>
-            <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, fontWeight: 500 }}>Delivery Tracking</div>
+            <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, fontWeight: 500 }}>{t("trackingPublic.title")}</div>
           </div>
         </div>
         <div style={S.headerRight}>
@@ -250,7 +252,7 @@ export default function TrackingPublic() {
         {loading && (
           <div style={{ textAlign: 'center', padding: 80 }}>
             <div style={{ width: 48, height: 48, border: '4px solid #f1f5f9', borderTopColor: '#f97316', borderRadius: '50%', margin: '0 auto 20px', animation: 'tpSpin 0.8s linear infinite' }} />
-            <div style={{ color: '#64748b', fontSize: 16, fontWeight: 600 }}>Loading tracking info...</div>
+            <div style={{ color: '#64748b', fontSize: 16, fontWeight: 600 }}>{t("trackingPublic.loading")}</div>
           </div>
         )}
 
@@ -261,7 +263,7 @@ export default function TrackingPublic() {
               <WarningTriangle width={32} height={32} color="#dc2626" />
             </div>
             <div style={{ color: '#dc2626', fontSize: 18, fontWeight: 700 }}>{error}</div>
-            <div style={{ color: '#64748b', fontSize: 14, marginTop: 8 }}>Check your tracking link or contact support</div>
+            <div style={{ color: '#64748b', fontSize: 14, marginTop: 8 }}>{t("trackingPublic.not_found")}</div>
           </div>
         )}
 
@@ -349,7 +351,7 @@ export default function TrackingPublic() {
               <div className="tp-card" style={{ ...S.card, border: '1px solid #fed7aa', background: '#fffbf5' }}>
                 <div style={{ padding: '16px 20px', borderBottom: '1px solid #fed7aa', display: 'flex', alignItems: 'center', gap: 8 }}>
                   <DeliveryTruck width={18} height={18} color="#c2410c" />
-                  <span style={{ fontWeight: 700, fontSize: 14, color: '#c2410c' }}>Your Driver</span>
+                  <span style={{ fontWeight: 700, fontSize: 14, color: '#c2410c' }}>{t("trackingPublic.your_driver")}</span>
                 </div>
                 <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 14 }}>
                   <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg, #f97316, #ea580c)', color: '#fff', fontSize: 20, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -374,7 +376,7 @@ export default function TrackingPublic() {
             <div className="tp-card" style={S.card}>
               <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Package width={18} height={18} color="#f97316" />
-                <span style={{ fontWeight: 700, fontSize: 15, color: '#0f172a' }}>Order Details</span>
+                <span style={{ fontWeight: 700, fontSize: 15, color: '#0f172a' }}>{t("trackingPublic.order_details")}</span>
               </div>
               <div style={{ padding: '4px 20px 12px' }}>
                 {[
@@ -404,7 +406,7 @@ export default function TrackingPublic() {
               <div className="tp-card" style={S.card}>
                 <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Timer width={18} height={18} color="#f97316" />
-                  <span style={{ fontWeight: 700, fontSize: 15, color: '#0f172a' }}>Shipment Journey</span>
+                  <span style={{ fontWeight: 700, fontSize: 15, color: '#0f172a' }}>{t("trackingPublic.journey")}</span>
                 </div>
                 <div style={{ padding: '16px 20px', position: 'relative', paddingLeft: 44 }}>
                   <div style={{ position: 'absolute', left: 30, top: 8, bottom: 8, width: 2, background: '#f1f5f9' }} />

@@ -6,6 +6,7 @@ import {
 } from 'iconoir-react';
 import { api } from '../lib/api';
 import './BulkImport.css';
+import { useTranslation } from 'react-i18next';
 
 const REQUIRED_FIELDS = ['recipient_name', 'recipient_phone', 'recipient_address'];
 const SYSTEM_FIELDS = [
@@ -59,6 +60,7 @@ function downloadCSV(content, filename) {
 }
 
 export default function BulkImport() {
+  const { t } = useTranslation();
   const fileRef = useRef(null);
   const [step, setStep] = useState(1); // 1=upload, 2=map, 3=preview, 4=importing, 5=done
   const [dragOver, setDragOver] = useState(false);
@@ -197,8 +199,8 @@ export default function BulkImport() {
         <div className="module-hero-left">
           <div className="module-hero-icon"><Upload size={26} /></div>
           <div>
-            <h1 className="module-hero-title">Bulk Import</h1>
-            <p className="module-hero-sub">Import orders from CSV files in bulk</p>
+            <h1 className="module-hero-title">{t("bulkImport.title")}</h1>
+            <p className="module-hero-sub">{t("bulkImport.subtitle")}</p>
           </div>
         </div>
         <div className="module-hero-actions">
@@ -253,10 +255,10 @@ export default function BulkImport() {
             onClick={() => fileRef.current?.click()}
           >
             <div className="blk-upload-icon"><Upload size={28} /></div>
-            <div className="blk-upload-title">Drag & drop your CSV file here</div>
+            <div className="blk-upload-title">{t("bulkImport.drag_drop")}</div>
             <div className="blk-upload-sub">or click to browse from your computer</div>
             <button className="blk-upload-btn" type="button"><Plus size={16} /> Select File</button>
-            <div className="blk-upload-formats">Supported formats: .csv, .txt (comma-separated)</div>
+            <div className="blk-upload-formats">{t("bulkImport.supported_formats")}</div>
             <input ref={fileRef} type="file" accept=".csv,.txt" style={{ display: 'none' }} onChange={handleFileSelect} />
           </div>
 
@@ -294,19 +296,19 @@ export default function BulkImport() {
             <div className="blk-stat-card primary">
               <div className="blk-stat-card-row">
                 <div className="blk-stat-icon" style={{ background: '#fff7ed' }}><Page size={20} color="#f97316" /></div>
-                <div><span className="blk-stat-val">{csvRows.length}</span><span className="blk-stat-lbl">ROWS DETECTED</span></div>
+                <div><span className="blk-stat-val">{csvRows.length}</span><span className="blk-stat-lbl">{t("bulkImport.rows_detected")}</span></div>
               </div>
             </div>
             <div className="blk-stat-card success">
               <div className="blk-stat-card-row">
                 <div className="blk-stat-icon" style={{ background: '#dcfce7' }}><Check size={20} color="#16a34a" /></div>
-                <div><span className="blk-stat-val">{csvHeaders.length}</span><span className="blk-stat-lbl">COLUMNS FOUND</span></div>
+                <div><span className="blk-stat-val">{csvHeaders.length}</span><span className="blk-stat-lbl">{t("bulkImport.columns_found")}</span></div>
               </div>
             </div>
             <div className="blk-stat-card warning">
               <div className="blk-stat-card-row">
                 <div className="blk-stat-icon" style={{ background: '#fef3c7' }}><NavArrowRight size={20} color="#d97706" /></div>
-                <div><span className="blk-stat-val">{Object.keys(mapping).length}</span><span className="blk-stat-lbl">AUTO-MAPPED</span></div>
+                <div><span className="blk-stat-val">{Object.keys(mapping).length}</span><span className="blk-stat-lbl">{t("bulkImport.auto_mapped")}</span></div>
               </div>
             </div>
           </div>
@@ -356,19 +358,19 @@ export default function BulkImport() {
             <div className="blk-stat-card primary">
               <div className="blk-stat-card-row">
                 <div className="blk-stat-icon" style={{ background: '#fff7ed' }}><Package size={20} color="#f97316" /></div>
-                <div><span className="blk-stat-val">{csvRows.length}</span><span className="blk-stat-lbl">TOTAL ROWS</span></div>
+                <div><span className="blk-stat-val">{csvRows.length}</span><span className="blk-stat-lbl">{t("bulkImport.total_rows")}</span></div>
               </div>
             </div>
             <div className="blk-stat-card success">
               <div className="blk-stat-card-row">
                 <div className="blk-stat-icon" style={{ background: '#dcfce7' }}><Check size={20} color="#16a34a" /></div>
-                <div><span className="blk-stat-val">{validCount}</span><span className="blk-stat-lbl">VALID</span></div>
+                <div><span className="blk-stat-val">{validCount}</span><span className="blk-stat-lbl">{t("bulkImport.valid")}</span></div>
               </div>
             </div>
             <div className="blk-stat-card danger">
               <div className="blk-stat-card-row">
                 <div className="blk-stat-icon" style={{ background: '#fee2e2' }}><Xmark size={20} color="#ef4444" /></div>
-                <div><span className="blk-stat-val">{invalidCount}</span><span className="blk-stat-lbl">INVALID</span></div>
+                <div><span className="blk-stat-val">{invalidCount}</span><span className="blk-stat-lbl">{t("bulkImport.invalid")}</span></div>
               </div>
             </div>
           </div>
@@ -434,8 +436,8 @@ export default function BulkImport() {
             </svg>
             <div className="blk-progress-ring-text">{importProgress}%</div>
           </div>
-          <div className="blk-progress-title">Importing Orders...</div>
-          <div className="blk-progress-sub">Please wait while we create your orders</div>
+          <div className="blk-progress-title">{t("bulkImport.importing")}</div>
+          <div className="blk-progress-sub">{t("bulkImport.please_wait")}</div>
           <div className="blk-spinner" />
         </div>
       )}
@@ -460,14 +462,14 @@ export default function BulkImport() {
               <div className="blk-stat-card success">
                 <div className="blk-stat-card-row">
                   <div className="blk-stat-icon" style={{ background: '#dcfce7' }}><Check size={20} color="#16a34a" /></div>
-                  <div><span className="blk-stat-val">{importResult.success}</span><span className="blk-stat-lbl">IMPORTED</span></div>
+                  <div><span className="blk-stat-val">{importResult.success}</span><span className="blk-stat-lbl">{t("bulkImport.imported")}</span></div>
                 </div>
               </div>
               {importResult.failed > 0 && (
                 <div className="blk-stat-card danger">
                   <div className="blk-stat-card-row">
                     <div className="blk-stat-icon" style={{ background: '#fee2e2' }}><Xmark size={20} color="#ef4444" /></div>
-                    <div><span className="blk-stat-val">{importResult.failed}</span><span className="blk-stat-lbl">FAILED</span></div>
+                    <div><span className="blk-stat-val">{importResult.failed}</span><span className="blk-stat-lbl">{t("bulkImport.failed")}</span></div>
                   </div>
                 </div>
               )}
@@ -476,7 +478,7 @@ export default function BulkImport() {
             {/* Error details */}
             {importResult.errors.length > 0 && (
               <div style={{ marginTop: 20, textAlign: 'left', maxWidth: 500, margin: '20px auto 0' }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#ef4444', marginBottom: 8 }}>Failed Rows:</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#ef4444', marginBottom: 8 }}>{t("bulkImport.failed_rows")}</div>
                 {importResult.errors.slice(0, 10).map((err, i) => (
                   <div key={i} style={{ fontSize: 12, color: '#64748b', padding: '4px 0', borderBottom: '1px solid #fafafa' }}>
                     Row {err.row}: {err.error}

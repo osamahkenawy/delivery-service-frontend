@@ -10,6 +10,7 @@ import { AuthContext } from '../App';
 import api from '../lib/api';
 import MapView from '../components/MapView';
 import './CRMPages.css';
+import { useTranslation } from 'react-i18next';
 
 /* ── Status metadata (shared with Orders.jsx) ──────────────────── */
 const STATUS_META = {
@@ -103,6 +104,7 @@ const StatusProgress = ({ status }) => {
    Main Component
    ══════════════════════════════════════════════════════════════════ */
 export default function OrderDetail() {
+  const { t } = useTranslation();
   const { id }       = useParams();
   const navigate     = useNavigate();
   const { user }     = useContext(AuthContext);
@@ -192,7 +194,7 @@ export default function OrderDetail() {
     <div className="page-container">
       <div className="ord-empty">
         <Package width={48} height={48} />
-        <h3>Order not found</h3>
+        <h3>{t("orderDetail.order_not_found")}</h3>
         <button className="btn-primary-action" onClick={() => navigate('/orders')}>
           <ArrowLeft width={15} height={15} /> Back to Orders
         </button>
@@ -321,7 +323,7 @@ export default function OrderDetail() {
                   {order.vehicle_plate && <InfoRow icon={Hashtag} label="Plate" value={order.vehicle_plate} mono />}
                 </>
               ) : (
-                <p className="od-no-driver">No driver assigned yet</p>
+                <p className="od-no-driver">{t("orderDetail.no_driver")}</p>
               )}
               {showReassign && (
                 <div className="od-reassign-row">
@@ -337,7 +339,7 @@ export default function OrderDetail() {
                   <button className="btn-primary-action" onClick={handleReassign} disabled={!reassignDriver || reassigning}>
                     {reassigning ? 'Assigning…' : 'Confirm'}
                   </button>
-                  <button className="btn-outline-action" onClick={() => setShowReassign(false)}>Cancel</button>
+                  <button className="btn-outline-action" onClick={() => setShowReassign(false)}>{t("common.cancel")}</button>
                 </div>
               )}
             </div>
@@ -379,7 +381,7 @@ export default function OrderDetail() {
                     <input
                       type="text"
                       className="od-note-input"
-                      placeholder="Add a note (optional)…"
+                      placeholder={t("orderDetail.add_note")}
                       value={statusNote}
                       onChange={e => setStatusNote(e.target.value)}
                     />
@@ -411,7 +413,7 @@ export default function OrderDetail() {
         {activeTab === 'timeline' && (
           <div className="od-timeline-wrap">
             {!order.status_logs?.length ? (
-              <p className="od-empty-tab">No status history yet.</p>
+              <p className="od-empty-tab">{t("orderDetail.no_history")}</p>
             ) : (
               <div className="od-timeline">
                 {order.status_logs.map((log, i) => {

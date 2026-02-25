@@ -8,6 +8,7 @@ import {
 } from 'iconoir-react';
 import { api } from '../lib/api';
 import './ShipmentTracking.css';
+import { useTranslation } from 'react-i18next';
 
 const STATUS_FLOW = ['pending','confirmed','assigned','picked_up','in_transit','delivered'];
 const STATUS_LABELS = {
@@ -37,6 +38,7 @@ function formatDate(d) {
 }
 
 export default function ShipmentTracking() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [stats, setStats] = useState({});
@@ -176,7 +178,7 @@ export default function ShipmentTracking() {
         <div className="module-hero-left">
           <div className="module-hero-icon"><MapPin size={26} /></div>
           <div>
-            <h1 className="module-hero-title">Shipment Tracking</h1>
+            <h1 className="module-hero-title">{t("shipmentTracking.title")}</h1>
             <p className="module-hero-sub">Track, monitor and manage all shipments in real-time</p>
           </div>
         </div>
@@ -197,14 +199,14 @@ export default function ShipmentTracking() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#fff' }}>
           <Search width={18} height={18} />
-          <span style={{ fontWeight: 800, fontSize: 16 }}>Quick Track</span>
-          <span style={{ fontSize: 12, color: '#94a3b8', marginLeft: 4 }}>Enter a tracking token to get instant status</span>
+          <span style={{ fontWeight: 800, fontSize: 16 }}>{t("shipmentTracking.quick_track")}</span>
+          <span style={{ fontSize: 12, color: '#94a3b8', marginLeft: 4 }}>{t("shipmentTracking.enter_token")}</span>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <input
             value={quickTrack} onChange={e => setQuickTrack(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && doQuickTrack()}
-            placeholder="Paste tracking token here..."
+            placeholder={t("shipmentTracking.paste_token")}
             style={{
               flex: 1, padding: '12px 16px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.15)',
               background: 'rgba(255,255,255,0.08)', color: '#fff', fontSize: 14, fontFamily: 'monospace',
@@ -323,7 +325,7 @@ export default function ShipmentTracking() {
       ) : orders.length === 0 ? (
         <div className="trk-empty">
           <div className="trk-empty-icon"><Package size={28} /></div>
-          <h3>No Shipments Found</h3>
+          <h3>{t("shipmentTracking.no_shipments")}</h3>
           <p>Try adjusting your search or filters</p>
         </div>
       ) : (
@@ -337,7 +339,7 @@ export default function ShipmentTracking() {
                   <th>Tracking</th>
                   <th>Recipient</th>
                   <th>Status</th>
-                  <th>Progress</th>
+                  <th>{t("shipmentTracking.progress")}</th>
                   <th>Driver</th>
                   <th>Zone</th>
                   <th>Payment</th>
@@ -421,7 +423,7 @@ export default function ShipmentTracking() {
             <div className="trk-pagination">
               <button className="trk-page-btn" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Previous</button>
               <span className="trk-page-info">Page {page} of {totalPages} ({total} shipments)</span>
-              <button className="trk-page-btn" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Next</button>
+              <button className="trk-page-btn" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>{t("common.next")}</button>
             </div>
           )}
         </>
@@ -460,7 +462,7 @@ export default function ShipmentTracking() {
                     <div className="trk-detail-section-title"><Package size={14} /> Order Information</div>
                     <div className="trk-detail-grid">
                       <div className="trk-detail-item">
-                        <div className="trk-detail-label">Order Number</div>
+                        <div className="trk-detail-label">{t("shipmentTracking.order_number")}</div>
                         <div className="trk-detail-value" style={{ fontFamily: 'monospace', color: '#f97316' }}>
                           {orderDetail.order_number}
                         </div>
@@ -490,7 +492,7 @@ export default function ShipmentTracking() {
                         <div className="trk-detail-value" style={{ textTransform: 'uppercase' }}>{orderDetail.payment_method}</div>
                       </div>
                       <div className="trk-detail-item">
-                        <div className="trk-detail-label">COD Amount</div>
+                        <div className="trk-detail-label">{t("shipmentTracking.cod_amount")}</div>
                         <div className="trk-detail-value">AED {parseFloat(orderDetail.cod_amount || 0).toFixed(2)}</div>
                       </div>
                     </div>
@@ -661,7 +663,7 @@ export default function ShipmentTracking() {
                           ))}
                         </div>
                       ) : (
-                        <p style={{ fontSize: 12, color: '#64748b', marginBottom: 8 }}>No photos attached</p>
+                        <p style={{ fontSize: 12, color: '#64748b', marginBottom: 8 }}>{t("shipmentTracking.no_photos")}</p>
                       )}
                       <div className="trk-pod-sig">
                         <div>

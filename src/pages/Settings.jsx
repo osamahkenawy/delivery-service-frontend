@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useContext } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AuthContext } from '../App';
 import {
   Settings as SettingsIcon, User, Building, DeliveryTruck, Mail, Bell,
@@ -11,7 +12,7 @@ import Toast, { useToast } from '../components/Toast';
 import './Settings.css';
 
 /* ── helpers ──────────────────────────────────────────────── */
-const fmtDate = d => d ? new Date(d).toLocaleDateString('en-AE', { day:'2-digit', month:'short', year:'numeric' }) : '—';
+const fmtDate = (d, language = 'en') => d ? new Date(d).toLocaleDateString(language === 'ar' ? 'ar-AE' : 'en-AE', { day:'2-digit', month:'short', year:'numeric' }) : '—';
 
 const ROLE_META = {
   superadmin: { badge:'#7c3aed', bg:'#ede9fe', label:'Super Admin' },
