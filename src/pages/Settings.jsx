@@ -7,6 +7,7 @@ import {
   NavArrowRight, SwitchOn as ToggleOn,
 } from 'iconoir-react';
 import api from '../lib/api';
+import Toast, { useToast } from '../components/Toast';
 import './Settings.css';
 
 /* ── helpers ──────────────────────────────────────────────── */
@@ -24,28 +25,6 @@ const EMIRATE_OPTIONS = ['Dubai','Abu Dhabi','Sharjah','Ajman','RAK','Fujairah',
 const TIMEZONE_OPTIONS = ['Asia/Dubai','Asia/Riyadh','Asia/Kuwait','Europe/London','America/New_York'];
 const CURRENCY_OPTIONS = ['AED','USD','SAR','KWD','BHD','EUR'];
 const CATEGORY_COLORS  = ['#f97316','#3b82f6','#8b5cf6','#16a34a','#ec4899','#ef4444','#0d9488','#64748b','#f59e0b','#06b6d4','#84cc16','#a855f7'];
-
-/* ── Toast ────────────────────────────────────────────────── */
-function Toast({ toasts }) {
-  return (
-    <div style={{ position:'fixed', top:24, right:24, zIndex:99999, display:'flex', flexDirection:'column', gap:10, pointerEvents:'none' }}>
-      {toasts.map(t => (
-        <div key={t.id} style={{
-          display:'flex', alignItems:'center', gap:10,
-          padding:'12px 18px', borderRadius:12, pointerEvents:'auto',
-          background: t.type==='success' ? '#dcfce7' : t.type==='error' ? '#fee2e2' : '#fff',
-          border:`1px solid ${t.type==='success'?'#86efac':t.type==='error'?'#fca5a5':'#e2e8f0'}`,
-          color: t.type==='success' ? '#15803d' : t.type==='error' ? '#dc2626' : '#0f172a',
-          boxShadow:'0 8px 24px rgba(0,0,0,.1)', fontSize:14, fontWeight:600, minWidth:260,
-          animation:'stgToastIn .3s ease',
-        }}>
-          {t.type==='success' ? <CheckCircle width={16} height={16}/> : <WarningCircle width={16} height={16}/>}
-          {t.msg}
-        </div>
-      ))}
-    </div>
-  );
-}
 
 /* ── Toggle switch ────────────────────────────────────────── */
 function Toggle({ on, onChange }) {
@@ -669,13 +648,11 @@ export default function Settings() {
   const [data,    setData]   = useState({});
   const [loading, setLoading]= useState(true);
   const [saving,  setSaving] = useState(false);
-  const [toasts,  setToasts] = useState([]);
 
-  const showToast = useCallback((type, msg) => {
-    const id = Date.now();
-    setToasts(t => [...t, { id, type, msg }]);
-    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 3500);
-  }, []);
+  const { toasts, showToast } = useToast();
+
+  // Adapter so older (type,msg) call-sites still work:
+  const toast = useCallback((type, msg) => showToast(msg, type), [showToast]);
 
   useEffect(() => {
     api.get('/settings').then(res => {
@@ -692,8 +669,8 @@ export default function Settings() {
       tenant: { name, logo_url, phone, email, address, city, country, currency, timezone },
       settings,
     });
-    if (res.success) showToast('success', 'Settings saved successfully');
-    else showToast('error', res.message || 'Failed to save settings');
+    if (res.success) showToast('Settings saved successfully', 'success');
+    else showToast(res.message || 'Failed to save settings', 'error');
     setSaving(false);
   };
 
@@ -755,8 +732,8 @@ export default function Settings() {
             {tab==='general'       && <GeneralTab       data={data} setData={setData} onSave={handleSave} saving={saving}/>}
             {tab==='delivery'      && <DeliveryTab      data={data} setData={setData} onSave={handleSave} saving={saving}/>}
             {tab==='notifications' && <NotificationsTab data={data} setData={setData} onSave={handleSave} saving={saving}/>}
-            {tab==='categories'    && <CategoriesTab    toast={showToast}/>}
-            {tab==='users'         && <UsersTab         toast={showToast}/>}
+            {tab==='categories'    && <CategoriesTab    toast={toast}/>}
+            {tab==='users'         && <UsersTab         toast={toast}/>}
           </div>
         </div>
       )}

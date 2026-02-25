@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect, createContext } from 'react';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Delivery Platform Pages
 import LoginPage from './pages/LoginPage';
@@ -35,6 +36,8 @@ import SuperAdminLogin from './pages/SuperAdmin/SuperAdminLogin';
 import SuperAdminLayout from './pages/SuperAdmin/SuperAdminLayout';
 import SuperAdminDashboard from './pages/SuperAdmin/SuperAdminDashboard';
 import SuperAdminTenants from './pages/SuperAdmin/SuperAdminTenants';
+import SuperAdminModules from './pages/SuperAdmin/SuperAdminModules';
+import SuperAdminUsers from './pages/SuperAdmin/SuperAdminUsers';
 
 // Components
 import Layout from './components/Layout';
@@ -173,8 +176,9 @@ function App() {
   };
 
   return (
-    <AuthContext.Provider value={{ user, tenant, login, logout, checkSession, setUser, setTenant }}>
-      <Routes>
+    <ErrorBoundary>
+      <AuthContext.Provider value={{ user, tenant, login, logout, checkSession, setUser, setTenant }}>
+        <Routes>
         {/* Public routes */}
         <Route path="/login" element={user ? <Navigate to={homeRoute} /> : <LoginPage />} />
         <Route path="/register" element={user ? <Navigate to={homeRoute} /> : <RegisterPage />} />
@@ -216,12 +220,15 @@ function App() {
           <Route path="dashboard" element={<SuperAdminDashboard />} />
           <Route path="tenants"   element={<SuperAdminTenants />} />
           <Route path="tenants/:id" element={<SuperAdminTenants />} />
+          <Route path="modules"  element={<SuperAdminModules />} />
+          <Route path="users"    element={<SuperAdminUsers />} />
         </Route>
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </AuthContext.Provider>
+    </ErrorBoundary>
   );
 }
 

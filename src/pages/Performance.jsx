@@ -60,12 +60,23 @@ export default function Performance() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [ordRes, drvRes] = await Promise.all([
-        api.get('/orders'),
-        api.get('/drivers'),
-      ]);
-      setOrders(ordRes.orders || ordRes || []);
+      // Fetch drivers (usually small dataset — one page is fine)
+      const drvRes = await api.get('/drivers?limit=500');
       setDrivers(drvRes.drivers || drvRes || []);
+
+      // Fetch ALL orders by walking pages (pagination caps at 100/page)
+      const PAGE_SIZE = 100;
+      let allOrders = [];
+      let page = 1;
+      while (true) {
+        const res = await api.get(`/orders?limit=${PAGE_SIZE}&page=${page}`);
+        const batch = res.orders || (Array.isArray(res) ? res : []);
+        allOrders = allOrders.concat(batch);
+        if (batch.length < PAGE_SIZE) break;   // last page reached
+        page++;
+        if (page > 100) break;                 // safety cap: max 10 000 orders
+      }
+      setOrders(allOrders);
     } catch (e) {
       console.error('Performance load error', e);
     } finally {

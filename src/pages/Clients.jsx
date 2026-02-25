@@ -7,25 +7,7 @@ import {
   StatsUpSquare, Wallet, Filter, Eye,
 } from 'iconoir-react';
 import api from '../lib/api';
-
-/* ── Toast notification ── */
-function Toast({ toasts }) {
-  return (
-    <div style={{ position:'fixed', top:24, right:24, zIndex:9999, display:'flex', flexDirection:'column', gap:10, pointerEvents:'none' }}>
-      {toasts.map(t => (
-        <div key={t.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'13px 18px',
-          borderRadius:12, fontWeight:600, fontSize:14, minWidth:260, maxWidth:380,
-          boxShadow:'0 8px 30px rgba(0,0,0,0.15)',
-          background: t.type==='success'?'#16a34a': t.type==='error'?'#dc2626':'#f97316',
-          color:'#fff', animation:'slideInRight 0.3s ease' }}>
-          {t.type==='success' ? <CheckCircle width={18} height={18} /> : <WarningTriangle width={18} height={18} />}
-          {t.msg}
-        </div>
-      ))}
-      <style>{`@keyframes slideInRight{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}`}</style>
-    </div>
-  );
-}
+import Toast, { useToast } from '../components/Toast';
 
 const TYPE_META = {
   ecommerce:  { bg: '#dbeafe', color: '#1d4ed8', label: 'E-Commerce'  },
@@ -309,13 +291,7 @@ export default function Clients() {
   });
 
   /* ── Toast ── */
-  const [toasts, setToasts] = useState([]);
-  const toastId = useRef(0);
-  const showToast = (msg, type = 'success') => {
-    const id = ++toastId.current;
-    setToasts(prev => [...prev, { id, msg, type }]);
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3500);
-  };
+  const { toasts, showToast } = useToast();
 
   /* ── Zones ── */
   const [zones, setZones] = useState([]);

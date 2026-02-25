@@ -9,6 +9,7 @@ import {
   CreditCard, Weight, Prohibition, Refresh, Group, OpenNewWindow, ShareAndroid,
 } from 'iconoir-react';
 import api from '../lib/api';
+import Toast, { useToast } from '../components/Toast';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -21,27 +22,6 @@ L.Icon.Default.mergeOptions({
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
-
-/* ══════════════════════════════════════════════════════════════
-   TOAST
-   ══════════════════════════════════════════════════════════════ */
-function Toast({ toasts }) {
-  return (
-    <div style={{ position:'fixed', top:24, right:24, zIndex:9999, display:'flex', flexDirection:'column', gap:10, pointerEvents:'none' }}>
-      {toasts.map(t => (
-        <div key={t.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'13px 18px',
-          borderRadius:12, fontWeight:600, fontSize:14, minWidth:260, maxWidth:380,
-          boxShadow:'0 8px 30px rgba(0,0,0,0.15)',
-          background: t.type==='success'?'#16a34a': t.type==='error'?'#dc2626':'#f97316',
-          color:'#fff', animation:'slideInRight 0.3s ease' }}>
-          {t.type==='success' ? <CheckCircle width={18} height={18} /> : <WarningTriangle width={18} height={18} />}
-          {t.msg}
-        </div>
-      ))}
-      <style>{`@keyframes slideInRight{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}`}</style>
-    </div>
-  );
-}
 
 /* ══════════════════════════════════════════════════════════════
    CONSTANTS
@@ -350,18 +330,11 @@ export default function Orders() {
   const [zones,      setZones]      = useState([]);
   const [clients,    setClients]    = useState([]);
   const [drivers,    setDrivers]    = useState([]);
-  const [toasts,     setToasts]     = useState([]);
+  const { toasts, showToast } = useToast();
   const [copied,     setCopied]     = useState('');
   const [cancelConfirm, setCancelConfirm] = useState(null);
   const debounceRef = useRef(null);
   const didAutoOpen = useRef(false);
-
-  /* toast helper */
-  const showToast = useCallback((msg, type='success') => {
-    const id = Date.now() + Math.random();
-    setToasts(t => [...t, { id, msg, type }]);
-    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 3500);
-  }, []);
 
   /* Auto-open new order if ?client_id= is in the URL (from Clients drawer) */
   useEffect(() => {
@@ -477,6 +450,21 @@ export default function Orders() {
       if (!form.recipient_name) return 'Recipient name is required';
       if (!form.recipient_phone) return 'Recipient phone is required';
       if (!form.recipient_address) return 'Delivery address is required';
+    }
+    // Validate numeric ranges on final step
+    if (step === STEPS.length) {
+      const w = parseFloat(form.weight_kg);
+      if (form.weight_kg !== '' && (isNaN(w) || w < 0 || w > 99999))
+        return 'Weight must be between 0 and 99,999 kg';
+      const cod = parseFloat(form.cod_amount);
+      if (form.cod_amount !== '' && (isNaN(cod) || cod < 0 || cod > 99999999))
+        return 'COD amount is out of range';
+      const fee = parseFloat(form.delivery_fee);
+      if (form.delivery_fee !== '' && (isNaN(fee) || fee < 0 || fee > 99999999))
+        return 'Delivery fee is out of range';
+      const disc = parseFloat(form.discount);
+      if (form.discount !== '' && (isNaN(disc) || disc < 0 || disc > 99999999))
+        return 'Discount is out of range';
     }
     return null;
   };
@@ -1414,7 +1402,7 @@ export default function Orders() {
                     </div>
                     <div>
                       <label style={LABEL}>Weight (kg)</label>
-                      <input type="number" min="0" step="0.1" value={form.weight_kg}
+                      <input type="number" min="0" max="99999" step="0.1" value={form.weight_kg}
                         onChange={e=>set('weight_kg',e.target.value)} style={INPUT} placeholder="0.0" />
                     </div>
                     <div>

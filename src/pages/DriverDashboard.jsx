@@ -6,6 +6,7 @@ import {
   Prohibition, Refresh, Eye, Copy, ArrowRight, Calendar, Timer,
 } from 'iconoir-react';
 import api from '../lib/api';
+import Toast, { useToast } from '../components/Toast';
 import './DriverPortal.css';
 
 /* ── Status meta ── */
@@ -62,20 +63,7 @@ function ProgressSteps({ current }) {
   );
 }
 
-/* ── Toast ── */
-function Toast({ toasts }) {
-  return (
-    <div className="dp-toast-container">
-      {toasts.map(t => (
-        <div key={t.id} className={`dp-toast ${t.type}`}>
-          {t.type === 'success' ? <CheckCircle width={18} height={18} /> : <WarningTriangle width={18} height={18} />}
-          {t.msg}
-        </div>
-      ))}
-    </div>
-  );
-}
-
+/* ── Dashboard ── */
 export default function DriverDashboard() {
   const navigate = useNavigate();
   const [data, setData]         = useState(null);
@@ -83,24 +71,19 @@ export default function DriverDashboard() {
   const [tab, setTab]           = useState('active');
   const [updating, setUpdating] = useState(null);
   const [codInput, setCodInput] = useState({});
-  const [toasts, setToasts]     = useState([]);
+  const { toasts, showToast } = useToast();
   const [starting, setStarting] = useState(false);
   const [expanded, setExpanded] = useState(null);
   const [noProfile, setNoProfile] = useState(false);
   const [gpsActive, setGpsActive] = useState(false);
   const [gpsError, setGpsError]   = useState(null);
   const [gpsCoords, setGpsCoords] = useState(null);   // for debug display
+  const [proofUploading, setProofUploading] = useState(null); // order.id being uploaded
   const refreshRef              = useRef(null);
   const gpsRef                  = useRef(null);
   const watchRef                = useRef(null);
   const lastPosRef              = useRef(null);   // persist GPS across re-renders
   const dataRef                 = useRef(null);    // always-current data for sendPing
-
-  const showToast = useCallback((msg, type = 'success') => {
-    const id = Date.now() + Math.random();
-    setToasts(t => [...t, { id, msg, type }]);
-    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 3500);
-  }, []);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -250,8 +233,33 @@ export default function DriverDashboard() {
     finally { setUpdating(null); }
   };
 
-  const markFailed = async (order) => {
-    const reason = prompt('Failure reason (optional):');
+  /* Proof-of-delivery photo upload */
+  const uploadProof = async (orderId, file) => {
+    if (!file) return;
+    setProofUploading(orderId);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`/api/uploads/orders/${orderId}/proof`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${localStorage.getItem('auth_token')}` },
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('Proof photo uploaded ✓');
+        fetchOrders();
+      } else {
+        showToast(data.message || 'Upload failed', 'error');
+      }
+    } catch {
+      showToast('Network error uploading proof', 'error');
+    } finally {
+      setProofUploading(null);
+    }
+  };
+
+  const markFailed = async (order) => {    const reason = prompt('Failure reason (optional):');
     setUpdating(order.id);
     const gps = await getGPS();
     try {
@@ -631,6 +639,32 @@ export default function DriverDashboard() {
                             </>
                           )}
                         </button>
+                      )}
+                      {/* Proof-of-delivery photo upload (shown when in_transit) */}
+                      {order.status === 'in_transit' && !order.proof_of_delivery_url && (
+                        <label style={{
+                          display: 'flex', alignItems: 'center', gap: 6,
+                          padding: '8px 14px', borderRadius: 10, border: '1.5px dashed #94a3b8',
+                          cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#64748b',
+                          background: '#f8fafc',
+                        }}>
+                          {proofUploading === order.id
+                            ? <><div className="dp-btn-spinner" /> Uploading…</>
+                            : <><Eye width={14} height={14} /> Add Proof Photo</>
+                          }
+                          <input
+                            type="file" accept="image/*" capture="environment"
+                            style={{ display: 'none' }}
+                            disabled={!!proofUploading}
+                            onChange={e => uploadProof(order.id, e.target.files?.[0])}
+                          />
+                        </label>
+                      )}
+                      {order.proof_of_delivery_url && (
+                        <a href={order.proof_of_delivery_url} target="_blank" rel="noreferrer"
+                          style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#16a34a', fontWeight: 600 }}>
+                          <CheckCircle width={13} height={13} /> Proof uploaded
+                        </a>
                       )}
                       {['assigned', 'picked_up', 'in_transit'].includes(order.status) && (
                         <button onClick={() => markFailed(order)} disabled={isUpdating} className="dp-btn-fail">
