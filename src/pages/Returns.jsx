@@ -8,10 +8,16 @@ import { api } from '../lib/api';
 import './Returns.css';
 import { useTranslation } from 'react-i18next';
 
-const RETURN_STATUS_LABELS = {
-  requested: 'Requested', approved: 'Approved', pickup_scheduled: 'Pickup Scheduled',
-  picked_up: 'Picked Up', received: 'Received', refunded: 'Refunded',
-  rejected: 'Rejected', cancelled: 'Cancelled'
+const RETURN_REASON_KEYS = {
+  'Damaged item': 'damaged_item',
+  'Wrong item delivered': 'wrong_item',
+  'Item not as described': 'not_as_described',
+  'Customer changed mind': 'changed_mind',
+  'Defective product': 'defective',
+  'Missing parts': 'missing_parts',
+  'Duplicate order': 'duplicate_order',
+  'Late delivery': 'late_delivery',
+  'Other': 'other'
 };
 
 const RETURN_REASONS = [
@@ -108,11 +114,11 @@ export default function Returns() {
   };
 
   const statCards = [
-    { label: 'TOTAL RETURNS', value: stats.total, color: 'primary', bg: '#fff7ed', iconColor: '#f97316', icon: RefreshDouble },
-    { label: 'PENDING', value: stats.requested, color: 'warning', bg: '#fef3c7', iconColor: '#d97706', icon: Clock },
-    { label: 'IN PROGRESS', value: stats.approved + stats.in_progress, color: 'info', bg: '#eff6ff', iconColor: '#2563eb', icon: DeliveryTruck },
-    { label: 'COMPLETED', value: stats.completed, color: 'success', bg: '#dcfce7', iconColor: '#16a34a', icon: Check },
-    { label: 'REJECTED', value: stats.rejected, color: 'danger', bg: '#fee2e2', iconColor: '#ef4444', icon: Xmark },
+    { label: t('returns.stats.total_returns'), value: stats.total, color: 'primary', bg: '#fff7ed', iconColor: '#f97316', icon: RefreshDouble },
+    { label: t('returns.stats.pending'), value: stats.requested, color: 'warning', bg: '#fef3c7', iconColor: '#d97706', icon: Clock },
+    { label: t('returns.stats.in_progress'), value: stats.approved + stats.in_progress, color: 'info', bg: '#eff6ff', iconColor: '#2563eb', icon: DeliveryTruck },
+    { label: t('returns.stats.completed'), value: stats.completed, color: 'success', bg: '#dcfce7', iconColor: '#16a34a', icon: Check },
+    { label: t('returns.stats.rejected'), value: stats.rejected, color: 'danger', bg: '#fee2e2', iconColor: '#ef4444', icon: Xmark },
   ];
 
   return (
@@ -122,13 +128,13 @@ export default function Returns() {
         <div className="module-hero-left">
           <div className="module-hero-icon"><RefreshDouble size={26} /></div>
           <div>
-            <h1 className="module-hero-title">Returns Management</h1>
+            <h1 className="module-hero-title">{t('returns.page_title')}</h1>
             <p className="module-hero-sub">{t("returns.subtitle")}</p>
           </div>
         </div>
         <div className="module-hero-actions">
           <button className="module-btn module-btn-primary" onClick={() => setShowModal(true)}>
-            <Plus size={16} /> New Return
+            <Plus size={16} /> {t('returns.new_return')}
           </button>
         </div>
       </div>
@@ -153,15 +159,15 @@ export default function Returns() {
       {/* Tabs */}
       <div className="ret-tabs">
         {[
-          { key: 'all', label: 'All Returns', count: stats.total },
-          { key: 'pending', label: 'Pending', count: stats.requested },
-          { key: 'active', label: 'In Progress', count: stats.approved + stats.in_progress },
-          { key: 'completed', label: 'Completed', count: stats.completed },
-          { key: 'rejected', label: 'Rejected', count: stats.rejected },
-        ].map(t => (
-          <button key={t.key} className={`ret-tab ${activeTab === t.key ? 'active' : ''}`} onClick={() => setActiveTab(t.key)}>
-            {t.label}
-            <span className="ret-tab-badge">{t.count}</span>
+          { key: 'all', label: t('returns.tabs.all'), count: stats.total },
+          { key: 'pending', label: t('returns.tabs.pending'), count: stats.requested },
+          { key: 'active', label: t('returns.tabs.in_progress'), count: stats.approved + stats.in_progress },
+          { key: 'completed', label: t('returns.tabs.completed'), count: stats.completed },
+          { key: 'rejected', label: t('returns.tabs.rejected'), count: stats.rejected },
+        ].map(tab => (
+          <button key={tab.key} className={`ret-tab ${activeTab === tab.key ? 'active' : ''}`} onClick={() => setActiveTab(tab.key)}>
+            {tab.label}
+            <span className="ret-tab-badge">{tab.count}</span>
           </button>
         ))}
       </div>
@@ -190,12 +196,12 @@ export default function Returns() {
             <thead>
               <tr>
                 <th>{t("returns.return_id")}</th>
-                <th>Order #</th>
+                <th>{t("returns.col.order_num")}</th>
                 <th>{t("returns.customer")}</th>
-                <th>Reason</th>
-                <th>Status</th>
-                <th>Requested</th>
-                <th>Actions</th>
+                <th>{t("returns.col.reason")}</th>
+                <th>{t("returns.col.status")}</th>
+                <th>{t("returns.col.requested")}</th>
+                <th>{t("returns.col.actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -211,12 +217,12 @@ export default function Returns() {
                     <span style={{ fontWeight: 600, color: '#1e293b' }}>{ret.recipient_name || '—'}</span>
                   </td>
                   <td>
-                    <span className="ret-reason-tag">{ret.reason}</span>
+                    <span className="ret-reason-tag">{RETURN_REASON_KEYS[ret.reason] ? t('returns.reasons.' + RETURN_REASON_KEYS[ret.reason]) : ret.reason}</span>
                   </td>
                   <td>
                     <span className={`ret-status ${ret.status}`}>
                       <span className="ret-status-dot" />
-                      {RETURN_STATUS_LABELS[ret.status] || ret.status}
+                      {t('returns.status_labels.' + ret.status)}
                     </span>
                   </td>
                   <td style={{ fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>
@@ -224,31 +230,31 @@ export default function Returns() {
                   </td>
                   <td>
                     <div className="ret-actions" onClick={e => e.stopPropagation()}>
-                      <button className="ret-action-btn" onClick={() => setShowDetail(ret)} title="View">
+                      <button className="ret-action-btn" onClick={() => setShowDetail(ret)} title={t("common.view")}>
                         <Eye size={14} />
                       </button>
                       {ret.status === 'requested' && (
                         <>
-                          <button className="ret-action-btn approve" onClick={() => handleAction(ret.id, 'approved')} title="Approve">
+                          <button className="ret-action-btn approve" onClick={() => handleAction(ret.id, 'approved')} title={t("returns.approve")}>
                             <Check size={14} />
                           </button>
-                          <button className="ret-action-btn reject" onClick={() => handleAction(ret.id, 'rejected')} title="Reject">
+                          <button className="ret-action-btn reject" onClick={() => handleAction(ret.id, 'rejected')} title={t("returns.reject")}>
                             <Xmark size={14} />
                           </button>
                         </>
                       )}
                       {ret.status === 'approved' && (
-                        <button className="ret-action-btn approve" onClick={() => handleAction(ret.id, 'pickup_scheduled')} title="Schedule Pickup">
+                        <button className="ret-action-btn approve" onClick={() => handleAction(ret.id, 'pickup_scheduled')} title={t("returns.schedule_pickup")}>
                           <DeliveryTruck size={14} />
                         </button>
                       )}
                       {ret.status === 'pickup_scheduled' && (
-                        <button className="ret-action-btn approve" onClick={() => handleAction(ret.id, 'picked_up')} title="Mark Picked Up">
+                        <button className="ret-action-btn approve" onClick={() => handleAction(ret.id, 'picked_up')} title={t("returns.mark_picked_up")}>
                           <Package size={14} />
                         </button>
                       )}
                       {ret.status === 'picked_up' && (
-                        <button className="ret-action-btn approve" onClick={() => handleAction(ret.id, 'received')} title="Mark Received">
+                        <button className="ret-action-btn approve" onClick={() => handleAction(ret.id, 'received')} title={t("returns.mark_received")}>
                           <Check size={14} />
                         </button>
                       )}
@@ -266,16 +272,16 @@ export default function Returns() {
         <div className="ret-modal-overlay" onClick={() => setShowModal(false)}>
           <div className="ret-modal" onClick={e => e.stopPropagation()}>
             <div className="ret-modal-header">
-              <h3><RefreshDouble size={18} /> New Return Request</h3>
+              <h3><RefreshDouble size={18} /> {t('returns.modal.new_title')}</h3>
               <button className="ret-modal-close" onClick={() => setShowModal(false)}><Xmark size={16} /></button>
             </div>
             <div className="ret-modal-body">
               <div className="ret-form-grid">
                 <div className="ret-form-group span-2">
-                  <label className="ret-form-label">Order *</label>
+                  <label className="ret-form-label">{t('returns.form.order')}</label>
                   <select className="ret-form-select" value={form.order_id}
                           onChange={e => setForm(f => ({ ...f, order_id: e.target.value }))}>
-                    <option value="">Select delivered order</option>
+                    <option value="">{t('returns.form.select_order')}</option>
                     {orders.map(o => (
                       <option key={o.id} value={o.id}>
                         {o.order_number} — {o.recipient_name}
@@ -284,12 +290,12 @@ export default function Returns() {
                   </select>
                 </div>
                 <div className="ret-form-group span-2">
-                  <label className="ret-form-label">Reason *</label>
+                  <label className="ret-form-label">{t('returns.form.reason')}</label>
                   <select className="ret-form-select" value={form.reason}
                           onChange={e => setForm(f => ({ ...f, reason: e.target.value }))}>
-                    <option value="">Select reason</option>
+                    <option value="">{t('returns.form.select_reason')}</option>
                     {RETURN_REASONS.map(r => (
-                      <option key={r} value={r}>{r}</option>
+                      <option key={r} value={r}>{t('returns.reasons.' + RETURN_REASON_KEYS[r])}</option>
                     ))}
                   </select>
                 </div>
@@ -305,7 +311,7 @@ export default function Returns() {
                          onChange={e => setForm(f => ({ ...f, pickup_date: e.target.value }))} />
                 </div>
                 <div className="ret-form-group span-2">
-                  <label className="ret-form-label">Notes</label>
+                  <label className="ret-form-label">{t('returns.form.notes')}</label>
                   <textarea className="ret-form-textarea" placeholder={t("returns.notes_placeholder")}
                             value={form.notes}
                             onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
@@ -315,7 +321,7 @@ export default function Returns() {
             <div className="ret-modal-footer">
               <button className="ret-btn-secondary" onClick={() => setShowModal(false)}>{t("common.cancel")}</button>
               <button className="ret-btn-primary" onClick={handleSubmit} disabled={saving || !form.order_id || !form.reason}>
-                {saving ? 'Submitting...' : <><Plus size={14} /> Submit Return</>}
+                {saving ? t('returns.submitting') : <><Plus size={14} /> {t('returns.submit')}</>}
               </button>
             </div>
           </div>
@@ -327,7 +333,7 @@ export default function Returns() {
         <div className="ret-modal-overlay" onClick={() => setShowDetail(null)}>
           <div className="ret-modal" onClick={e => e.stopPropagation()}>
             <div className="ret-modal-header">
-              <h3><Eye size={18} /> Return Details</h3>
+              <h3><Eye size={18} /> {t('returns.modal.detail_title')}</h3>
               <button className="ret-modal-close" onClick={() => setShowDetail(null)}><Xmark size={16} /></button>
             </div>
             <div className="ret-modal-body">
@@ -337,16 +343,16 @@ export default function Returns() {
                   <div className="ret-detail-value" style={{ color: '#f97316', fontFamily: 'monospace' }}>RET-{String(showDetail.id).padStart(4, '0')}</div>
                 </div>
                 <div className="ret-detail-item">
-                  <div className="ret-detail-label">Status</div>
+                  <div className="ret-detail-label">{t('returns.detail.status')}</div>
                   <div className="ret-detail-value">
                     <span className={`ret-status ${showDetail.status}`}>
                       <span className="ret-status-dot" />
-                      {RETURN_STATUS_LABELS[showDetail.status]}
+                      {t('returns.status_labels.' + showDetail.status)}
                     </span>
                   </div>
                 </div>
                 <div className="ret-detail-item">
-                  <div className="ret-detail-label">Order</div>
+                  <div className="ret-detail-label">{t('returns.detail.order')}</div>
                   <div className="ret-detail-value" style={{ fontFamily: 'monospace' }}>{showDetail.order_number || `#${showDetail.order_id}`}</div>
                 </div>
                 <div className="ret-detail-item">
@@ -354,12 +360,12 @@ export default function Returns() {
                   <div className="ret-detail-value">{showDetail.recipient_name || '—'}</div>
                 </div>
                 <div className="ret-detail-item ret-detail-wide">
-                  <div className="ret-detail-label">Reason</div>
-                  <div className="ret-detail-value">{showDetail.reason}</div>
+                  <div className="ret-detail-label">{t('returns.detail.reason')}</div>
+                  <div className="ret-detail-value">{RETURN_REASON_KEYS[showDetail.reason] ? t('returns.reasons.' + RETURN_REASON_KEYS[showDetail.reason]) : showDetail.reason}</div>
                 </div>
                 {showDetail.notes && (
                   <div className="ret-detail-item ret-detail-wide">
-                    <div className="ret-detail-label">Notes</div>
+                    <div className="ret-detail-label">{t('returns.detail.notes')}</div>
                     <div className="ret-detail-value" style={{ fontSize: 13, fontWeight: 400 }}>{showDetail.notes}</div>
                   </div>
                 )}
@@ -370,12 +376,12 @@ export default function Returns() {
                   </div>
                 )}
                 <div className="ret-detail-item">
-                  <div className="ret-detail-label">Requested</div>
+                  <div className="ret-detail-label">{t('returns.detail.requested')}</div>
                   <div className="ret-detail-value" style={{ fontSize: 12 }}>{formatDate(showDetail.created_at)}</div>
                 </div>
                 {showDetail.resolved_at && (
                   <div className="ret-detail-item">
-                    <div className="ret-detail-label">Resolved</div>
+                    <div className="ret-detail-label">{t('returns.detail.resolved')}</div>
                     <div className="ret-detail-value" style={{ fontSize: 12 }}>{formatDate(showDetail.resolved_at)}</div>
                   </div>
                 )}
@@ -386,10 +392,10 @@ export default function Returns() {
               {showDetail.status === 'requested' && (
                 <>
                   <button className="ret-btn-danger" onClick={() => { handleAction(showDetail.id, 'rejected'); setShowDetail(null); }}>
-                    <Xmark size={14} /> Reject
+                    <Xmark size={14} /> {t('returns.reject')}
                   </button>
                   <button className="ret-btn-success" onClick={() => { handleAction(showDetail.id, 'approved'); setShowDetail(null); }}>
-                    <Check size={14} /> Approve
+                    <Check size={14} /> {t('returns.approve')}
                   </button>
                 </>
               )}

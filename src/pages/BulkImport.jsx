@@ -91,7 +91,7 @@ export default function BulkImport() {
   const handleFile = (file) => {
     if (!file) return;
     if (!file.name.match(/\.(csv|txt)$/i)) {
-      alert('Please upload a CSV file');
+      alert(t('bulkImport.upload_csv_alert'));
       return;
     }
     setFileName(file.name);
@@ -124,7 +124,7 @@ export default function BulkImport() {
       REQUIRED_FIELDS.forEach(field => {
         const csvCol = mapping[field];
         if (!csvCol || !row[csvCol]?.trim()) {
-          errors.push(`Missing ${field.replace(/_/g, ' ')}`);
+          errors.push(t('bulkImport.missing_field', { field: t('bulkImport.fields.' + field) }));
         }
       });
       return { ...row, __errors: errors, __valid: errors.length === 0 };
@@ -157,7 +157,7 @@ export default function BulkImport() {
         const orderData = buildOrderData(validRows[i]);
         const res = await api.post('/orders', orderData);
         if (res?.success) success++;
-        else { failed++; errors.push({ row: i + 1, error: res?.message || 'Unknown error' }); }
+        else { failed++; errors.push({ row: i + 1, error: res?.message || t('bulkImport.unknown_error') }); }
       } catch (err) {
         failed++;
         errors.push({ row: i + 1, error: err.message });
@@ -205,7 +205,7 @@ export default function BulkImport() {
         </div>
         <div className="module-hero-actions">
           <button className="module-btn module-btn-outline" onClick={() => downloadCSV(generateCSVTemplate(), 'trasealla_import_template.csv')}>
-            <Download size={16} /> Download Template
+            <Download size={16} /> {t('bulkImport.download_template')}
           </button>
         </div>
       </div>
@@ -213,11 +213,11 @@ export default function BulkImport() {
       {/* Steps Indicator */}
       <div className="blk-steps">
         {[
-          { num: 1, label: 'Upload File' },
-          { num: 2, label: 'Map Columns' },
-          { num: 3, label: 'Preview & Validate' },
-          { num: 4, label: 'Import' },
-          { num: 5, label: 'Complete' },
+          { num: 1, label: t('bulkImport.step_upload') },
+          { num: 2, label: t('bulkImport.step_map') },
+          { num: 3, label: t('bulkImport.step_preview') },
+          { num: 4, label: t('bulkImport.step_import') },
+          { num: 5, label: t('bulkImport.step_complete') },
         ].map((s, i) => (
           <span key={s.num} style={{ display: 'contents' }}>
             <div className={`blk-step ${step === s.num ? 'active' : ''} ${step > s.num ? 'completed' : ''}`}>
@@ -238,11 +238,11 @@ export default function BulkImport() {
           <div className="blk-template-card">
             <div className="blk-template-icon"><Page size={24} /></div>
             <div className="blk-template-body">
-              <div className="blk-template-title">CSV Template</div>
-              <div className="blk-template-sub">Download our template to ensure your data is correctly formatted</div>
+              <div className="blk-template-title">{t('bulkImport.csv_template')}</div>
+              <div className="blk-template-sub">{t('bulkImport.csv_template_desc')}</div>
             </div>
             <button className="blk-template-btn" onClick={() => downloadCSV(generateCSVTemplate(), 'trasealla_import_template.csv')}>
-              <Download size={14} /> Download
+              <Download size={14} /> {t('bulkImport.download')}
             </button>
           </div>
 
@@ -256,8 +256,8 @@ export default function BulkImport() {
           >
             <div className="blk-upload-icon"><Upload size={28} /></div>
             <div className="blk-upload-title">{t("bulkImport.drag_drop")}</div>
-            <div className="blk-upload-sub">or click to browse from your computer</div>
-            <button className="blk-upload-btn" type="button"><Plus size={16} /> Select File</button>
+            <div className="blk-upload-sub">{t('bulkImport.browse_hint')}</div>
+            <button className="blk-upload-btn" type="button"><Plus size={16} /> {t('bulkImport.select_file')}</button>
             <div className="blk-upload-formats">{t("bulkImport.supported_formats")}</div>
             <input ref={fileRef} type="file" accept=".csv,.txt" style={{ display: 'none' }} onChange={handleFileSelect} />
           </div>
@@ -265,7 +265,7 @@ export default function BulkImport() {
           {/* Import History */}
           {importHistory.length > 0 && (
             <div className="blk-history-card">
-              <div className="blk-history-header"><Clock size={16} /> Recent Imports</div>
+              <div className="blk-history-header"><Clock size={16} /> {t('bulkImport.recent_imports')}</div>
               {importHistory.slice(0, 5).map((h, i) => (
                 <div key={i} className="blk-history-item">
                   <div className="blk-history-icon" style={{ background: h.failed > 0 ? '#fef3c7' : '#dcfce7' }}>
@@ -274,13 +274,13 @@ export default function BulkImport() {
                   <div className="blk-history-body">
                     <div className="blk-history-name">{h.fileName}</div>
                     <div className="blk-history-meta">
-                      <span>{h.success} imported</span>
-                      {h.failed > 0 && <span>{h.failed} failed</span>}
+                      <span>{t('bulkImport.imported_count', { count: h.success })}</span>
+                      {h.failed > 0 && <span>{t('bulkImport.failed_count', { count: h.failed })}</span>}
                       <span>{new Date(h.timestamp).toLocaleString()}</span>
                     </div>
                   </div>
                   <span className={`blk-history-badge ${h.failed === 0 ? 'success' : 'partial'}`}>
-                    {h.failed === 0 ? 'Complete' : 'Partial'}
+                    {h.failed === 0 ? t('bulkImport.status_complete') : t('bulkImport.status_partial')}
                   </span>
                 </div>
               ))}
@@ -314,15 +314,15 @@ export default function BulkImport() {
           </div>
 
           <div className="blk-mapping-card">
-            <div className="blk-mapping-title"><NavArrowRight size={18} /> Column Mapping</div>
+            <div className="blk-mapping-title"><NavArrowRight size={18} /> {t('bulkImport.column_mapping')}</div>
             <p style={{ fontSize: 13, color: '#94a3b8', marginBottom: 16 }}>
-              Map your CSV columns to the system fields. Fields marked with * are required.
+              {t('bulkImport.mapping_desc')}
             </p>
             <div className="blk-mapping-grid">
               {SYSTEM_FIELDS.map(field => (
                 <span key={field.key} style={{ display: 'contents' }}>
                   <div className="blk-mapping-label">
-                    {field.label} {field.required && <span style={{ color: '#ef4444' }}>*</span>}
+                    {t('bulkImport.fields.' + field.key)} {field.required && <span style={{ color: '#ef4444' }}>*</span>}
                   </div>
                   <div className="blk-mapping-arrow"><NavArrowRight size={16} /></div>
                   <select
@@ -330,7 +330,7 @@ export default function BulkImport() {
                     value={mapping[field.key] || ''}
                     onChange={e => setMapping(prev => ({ ...prev, [field.key]: e.target.value }))}
                   >
-                    <option value="">— Skip —</option>
+                    <option value="">{t('bulkImport.skip')}</option>
                     {csvHeaders.map(h => (
                       <option key={h} value={h}>{h}</option>
                     ))}
@@ -342,10 +342,10 @@ export default function BulkImport() {
 
           <div className="blk-action-bar">
             <button className="blk-btn-secondary" onClick={resetImport}>
-              <NavArrowLeft size={14} /> Back
+              <NavArrowLeft size={14} /> {t('bulkImport.back')}
             </button>
             <button className="blk-btn-primary" disabled={!requiredMapped} onClick={() => setStep(3)}>
-              Next: Preview <NavArrowRight size={14} />
+              {t('bulkImport.next_preview')} <NavArrowRight size={14} />
             </button>
           </div>
         </>
@@ -379,10 +379,10 @@ export default function BulkImport() {
             <table className="blk-preview-table">
               <thead>
                 <tr>
-                  <th>#</th>
-                  <th>Status</th>
+                  <th>{t('bulkImport.row_number')}</th>
+                  <th>{t('bulkImport.status')}</th>
                   {SYSTEM_FIELDS.filter(f => mapping[f.key]).map(f => (
-                    <th key={f.key}>{f.label}</th>
+                    <th key={f.key}>{t('bulkImport.fields.' + f.key)}</th>
                   ))}
                 </tr>
               </thead>
@@ -392,7 +392,7 @@ export default function BulkImport() {
                     <td style={{ fontWeight: 600, color: '#94a3b8' }}>{i + 1}</td>
                     <td>
                       {row.__valid ? (
-                        <span className="blk-valid"><Check size={12} /> Valid</span>
+                        <span className="blk-valid"><Check size={12} /> {t('bulkImport.valid_label')}</span>
                       ) : (
                         <span className="blk-invalid" title={row.__errors.join(', ')}>
                           <Xmark size={12} /> {row.__errors[0]}
@@ -409,16 +409,16 @@ export default function BulkImport() {
           </div>
           {csvRows.length > 100 && (
             <p style={{ fontSize: 12, color: '#94a3b8', textAlign: 'center', padding: 12 }}>
-              Showing first 100 of {csvRows.length} rows
+              {t('bulkImport.showing_rows', { shown: 100, total: csvRows.length })}
             </p>
           )}
 
           <div className="blk-action-bar">
             <button className="blk-btn-secondary" onClick={() => setStep(2)}>
-              <NavArrowLeft size={14} /> Back to Mapping
+              <NavArrowLeft size={14} /> {t('bulkImport.back_to_mapping')}
             </button>
             <button className="blk-btn-primary" disabled={validCount === 0} onClick={runImport}>
-              <Upload size={14} /> Import {validCount} Orders
+              <Upload size={14} /> {t('bulkImport.import_orders', { count: validCount })}
             </button>
           </div>
         </>
@@ -452,10 +452,10 @@ export default function BulkImport() {
               {importResult.failed === 0 ? <Check size={28} color="#16a34a" /> : <WarningCircle size={28} color="#d97706" />}
             </div>
             <div className="blk-progress-title">
-              {importResult.failed === 0 ? 'Import Complete!' : 'Import Completed with Warnings'}
+              {importResult.failed === 0 ? t('bulkImport.import_complete') : t('bulkImport.import_with_warnings')}
             </div>
             <div className="blk-progress-sub">
-              {importResult.success} of {importResult.total} orders imported successfully
+              {t('bulkImport.import_success_msg', { success: importResult.success, total: importResult.total })}
             </div>
 
             <div className="blk-stats-grid" style={{ marginTop: 24, maxWidth: 500, margin: '24px auto 0' }}>
@@ -481,7 +481,7 @@ export default function BulkImport() {
                 <div style={{ fontSize: 13, fontWeight: 700, color: '#ef4444', marginBottom: 8 }}>{t("bulkImport.failed_rows")}</div>
                 {importResult.errors.slice(0, 10).map((err, i) => (
                   <div key={i} style={{ fontSize: 12, color: '#64748b', padding: '4px 0', borderBottom: '1px solid #fafafa' }}>
-                    Row {err.row}: {err.error}
+                    {t('bulkImport.row_error', { row: err.row, error: err.error })}
                   </div>
                 ))}
               </div>
@@ -490,10 +490,10 @@ export default function BulkImport() {
 
           <div className="blk-action-bar" style={{ justifyContent: 'center' }}>
             <button className="blk-btn-secondary" onClick={resetImport}>
-              <RefreshDouble size={14} /> Import More
+              <RefreshDouble size={14} /> {t('bulkImport.import_more')}
             </button>
             <button className="blk-btn-primary" onClick={() => window.location.href = '/orders'}>
-              <Eye size={14} /> View Orders
+              <Eye size={14} /> {t('bulkImport.view_orders')}
             </button>
           </div>
         </>

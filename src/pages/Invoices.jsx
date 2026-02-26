@@ -23,7 +23,7 @@ const STATUS_CONFIG = {
 
 /* ═══════════════════════════ MAIN COMPONENT ═══════════════════════════ */
 export default function Invoices() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
@@ -64,7 +64,7 @@ export default function Invoices() {
       const res = await fetch(`${API_BASE}/invoices/${inv.id}/pdf`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) return alert('Failed to generate PDF');
+      if (!res.ok) return alert(t('invoices.pdf_failed'));
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -90,7 +90,7 @@ export default function Invoices() {
   };
 
   const deleteInvoice = async (invoiceId) => {
-    if (!confirm('Delete this invoice? This action cannot be undone.')) return;
+    if (!confirm(t('invoices.delete_confirm'))) return;
     try {
       const res = await api.delete(`/invoices/${invoiceId}`);
       if (res.success) fetchInvoices();
@@ -119,14 +119,14 @@ export default function Invoices() {
   const paidPct = totalAmount > 0 ? ((paidAmount / totalAmount) * 100).toFixed(0) : 0;
 
   /* ── Helpers ── */
-  const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+  const fmtDate = (d) => d ? new Date(d).toLocaleDateString(i18n.language === 'ar' ? 'ar-EG' : 'en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
   const fmtMoney = (v) => parseFloat(v || 0).toFixed(2);
 
   const statCards = [
-    { label: 'TOTAL INVOICED', value: `AED ${fmtMoney(totalAmount)}`,   sub: `${invoices.length} invoices`,    cardColor: 'primary', bg: '#fff7ed', iconColor: '#f97316', Icon: DollarCircle },
-    { label: 'COLLECTED',      value: `AED ${fmtMoney(paidAmount)}`,    sub: `${paidPct}% rate`,               cardColor: 'success', bg: '#dcfce7', iconColor: '#16a34a', Icon: CheckCircleSolid },
-    { label: 'PENDING',        value: `AED ${fmtMoney(pendingAmount)}`, sub: `${invoices.filter(i => ['draft','sent','partially_paid'].includes(i.status)).length} invoices`, cardColor: 'warning', bg: '#fef3c7', iconColor: '#d97706', Icon: ClockSolid },
-    { label: 'OVERDUE',        value: `AED ${fmtMoney(overdueAmount)}`, sub: `${invoices.filter(i => i.status === 'overdue').length} invoices`, cardColor: 'danger', bg: '#fee2e2', iconColor: '#ef4444', Icon: WarningTriangle },
+    { label: t('invoices.stats.total'), value: `AED ${fmtMoney(totalAmount)}`, sub: t('invoices.invoices_count', { count: invoices.length }), cardColor: 'primary', bg: '#fff7ed', iconColor: '#f97316', Icon: DollarCircle },
+    { label: t('invoices.stats.collected'), value: `AED ${fmtMoney(paidAmount)}`, sub: t('invoices.collection_rate', { rate: paidPct }), cardColor: 'success', bg: '#dcfce7', iconColor: '#16a34a', Icon: CheckCircleSolid },
+    { label: t('invoices.stats.pending'), value: `AED ${fmtMoney(pendingAmount)}`, sub: t('invoices.invoices_count', { count: invoices.filter(i => ['draft','sent','partially_paid'].includes(i.status)).length }), cardColor: 'warning', bg: '#fef3c7', iconColor: '#d97706', Icon: ClockSolid },
+    { label: t('invoices.stats.overdue'), value: `AED ${fmtMoney(overdueAmount)}`, sub: t('invoices.invoices_count', { count: invoices.filter(i => i.status === 'overdue').length }), cardColor: 'danger', bg: '#fee2e2', iconColor: '#ef4444', Icon: WarningTriangle },
   ];
 
   /* ═══════════════════════════ RENDER ═══════════════════════════ */
@@ -141,12 +141,12 @@ export default function Invoices() {
           </div>
           <div>
             <h1 className="module-hero-title">{t("invoices.title")}</h1>
-            <p className="module-hero-sub">Auto-generated from confirmed orders · Real-time payment tracking</p>
+            <p className="module-hero-sub">{t('invoices.subtitle')}</p>
           </div>
         </div>
         <div className="module-hero-actions">
           <button className="module-btn module-btn-outline" onClick={fetchInvoices}>
-            <RefreshDouble width={16} height={16} /> Refresh
+            <RefreshDouble width={16} height={16} /> {t('common.refresh')}
           </button>
         </div>
       </div>
@@ -220,13 +220,13 @@ export default function Invoices() {
         </div>
 
         <FilterPill active={!statusFilter} onClick={() => { setStatusFilter(''); setPage(1); }}>
-          All ({invoices.length})
+          {t('invoices.filter_all')} ({invoices.length})
         </FilterPill>
         {Object.entries(STATUS_CONFIG).filter(([k]) => !['void','cancelled'].includes(k)).map(([key, cfg]) => {
           const IconComp = cfg.Icon;
           return (
             <FilterPill key={key} active={statusFilter === key} onClick={() => { setStatusFilter(key); setPage(1); }} color={cfg.color}>
-              <IconComp width={13} height={13} /> {cfg.label} ({invoices.filter(i => i.status === key).length})
+              <IconComp width={13} height={13} /> {t('invoices.status.' + key)} ({invoices.filter(i => i.status === key).length})
             </FilterPill>
           );
         })}
@@ -249,8 +249,7 @@ export default function Invoices() {
           <Page width={44} height={44} color="#94a3b8" style={{ marginBottom: 14 }} />
           <h3 style={{ margin: '0 0 8px', fontSize: 17, fontWeight: 700, color: '#1e293b' }}>{t("invoices.no_invoices")}</h3>
           <p style={{ margin: 0, fontSize: 13, color: '#94a3b8', maxWidth: 380, marginInline: 'auto', lineHeight: 1.6 }}>
-            Invoices are automatically generated when an order is confirmed.
-            Try confirming an order or adjusting your filters.
+            {t('invoices.empty_hint')}
           </p>
         </div>
       ) : (
@@ -265,7 +264,7 @@ export default function Invoices() {
 
           {totalPages > 1 && (
             <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 24, flexWrap: 'wrap' }}>
-              <PgBtn disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>Prev</PgBtn>
+              <PgBtn disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>{t('invoices.prev')}</PgBtn>
               {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
                 <PgBtn key={p} active={p === page} onClick={() => setPage(p)}>{p}</PgBtn>
               ))}
@@ -342,6 +341,7 @@ function PgBtn({ active, disabled, onClick, children }) {
 
 /* ── Invoice Card ── */
 function InvoiceCard({ inv, onView, onDownload, onDelete, onStatusChange }) {
+  const { t, i18n } = useTranslation();
   const cfg = STATUS_CONFIG[inv.status] || STATUS_CONFIG.draft;
   const StatusIcon = cfg.Icon;
   const [hovered, setHovered] = useState(false);
@@ -384,7 +384,7 @@ function InvoiceCard({ inv, onView, onDownload, onDelete, onStatusChange }) {
           </div>
           <div>
             <div style={{ fontSize: 15, fontWeight: 800, color: '#1e293b', letterSpacing: '-0.3px' }}>{inv.invoice_number}</div>
-            <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500, marginTop: 1 }}>{inv.client_name || 'Walk-in'}</div>
+            <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500, marginTop: 1 }}>{inv.client_name || t('invoices.walk_in')}</div>
           </div>
         </div>
         <span style={{
@@ -397,7 +397,7 @@ function InvoiceCard({ inv, onView, onDownload, onDelete, onStatusChange }) {
           textTransform: 'uppercase',
           letterSpacing: '0.3px',
         }}>
-          {cfg.label}
+          {t('invoices.status.' + inv.status)}
         </span>
       </div>
 
@@ -429,13 +429,13 @@ function InvoiceCard({ inv, onView, onDownload, onDelete, onStatusChange }) {
         {/* Details row */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14, fontSize: 12 }}>
           <div>
-            <div style={{ color: '#94a3b8', fontWeight: 600, fontSize: 10, textTransform: 'uppercase', marginBottom: 2 }}>Created</div>
+            <div style={{ color: '#94a3b8', fontWeight: 600, fontSize: 10, textTransform: 'uppercase', marginBottom: 2 }}>{t('invoices.created')}</div>
             <div style={{ color: '#1e293b', fontWeight: 600 }}>
-              {inv.created_at ? new Date(inv.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '—'}
+              {inv.created_at ? new Date(inv.created_at).toLocaleDateString(i18n.language === 'ar' ? 'ar-EG' : 'en-GB', { day: '2-digit', month: 'short' }) : '—'}
             </div>
           </div>
           <div>
-            <div style={{ color: '#94a3b8', fontWeight: 600, fontSize: 10, textTransform: 'uppercase', marginBottom: 2 }}>Payment</div>
+            <div style={{ color: '#94a3b8', fontWeight: 600, fontSize: 10, textTransform: 'uppercase', marginBottom: 2 }}>{t('invoices.payment')}</div>
             <div style={{ color: '#1e293b', fontWeight: 600, textTransform: 'uppercase' }}>{inv.payment_method || 'COD'}</div>
           </div>
         </div>
@@ -443,17 +443,17 @@ function InvoiceCard({ inv, onView, onDownload, onDelete, onStatusChange }) {
         {/* Actions */}
         <div style={{ display: 'flex', gap: 6 }}>
           <ActionBtn onClick={() => onView(inv)} color="#3b82f6" flex={1}>
-            <Eye width={14} height={14} /> View
+            <Eye width={14} height={14} /> {t('invoices.view')}
           </ActionBtn>
           <ActionBtn onClick={() => onDownload(inv)} color="#64748b" flex={1}>
-            <Download width={14} height={14} /> PDF
+            <Download width={14} height={14} /> {t('invoices.pdf')}
           </ActionBtn>
           {inv.status !== 'paid' && inv.status !== 'void' && inv.status !== 'cancelled' && (
-            <ActionBtn onClick={() => onStatusChange(inv.id, 'paid')} color="#16a34a" flex={0} title="Mark Paid">
+            <ActionBtn onClick={() => onStatusChange(inv.id, 'paid')} color="#16a34a" flex={0} title={t('invoices.mark_paid')}>
               <Check width={14} height={14} />
             </ActionBtn>
           )}
-          <ActionBtn onClick={() => onDelete(inv.id)} color="#ef4444" flex={0} title="Delete">
+          <ActionBtn onClick={() => onDelete(inv.id)} color="#ef4444" flex={0} title={t('common.delete')}>
             <Trash width={14} height={14} />
           </ActionBtn>
         </div>
@@ -495,6 +495,7 @@ function ActionBtn({ onClick, color, flex, children, title }) {
 
 /* ── Detail Modal ── */
 function DetailModal({ invoice, loading, onClose, onDownload, onStatusChange, fmtDate, fmtMoney }) {
+  const { t } = useTranslation();
   if (!invoice && !loading) return null;
   const cfg = invoice ? (STATUS_CONFIG[invoice.status] || STATUS_CONFIG.draft) : STATUS_CONFIG.draft;
   const StatusIcon = cfg.Icon;
@@ -559,7 +560,7 @@ function DetailModal({ invoice, loading, onClose, onDownload, onStatusChange, fm
                   <StatusIcon width={20} height={20} color={cfg.color} />
                 </div>
                 <div>
-                  <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Invoice</div>
+                  <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t('invoices.label')}</div>
                   <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, letterSpacing: '-0.5px' }}>{invoice.invoice_number}</h2>
                 </div>
               </div>
@@ -582,10 +583,10 @@ function DetailModal({ invoice, loading, onClose, onDownload, onStatusChange, fm
             <div style={{ padding: '22px 24px' }}>
               {/* Info Grid */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
-                <MInfoBlock label="Client" value={invoice.client_name || 'Walk-in'} sub={invoice.client_email} />
-                <MInfoBlock label="Order" value={invoice.order_number || 'N/A'} sub={invoice.order_status ? `Status: ${invoice.order_status}` : null} />
-                <MInfoBlock label="Created" value={fmtDate(invoice.created_at)} />
-                <MInfoBlock label="Due Date" value={invoice.due_date ? fmtDate(invoice.due_date) : 'Not set'} />
+                <MInfoBlock label={t('invoices.client')} value={invoice.client_name || t('invoices.walk_in')} sub={invoice.client_email} />
+                <MInfoBlock label={t('invoices.order')} value={invoice.order_number || t('invoices.na')} sub={invoice.order_status ? t('invoices.order_status_prefix', { status: invoice.order_status }) : null} />
+                <MInfoBlock label={t('invoices.created')} value={fmtDate(invoice.created_at)} />
+                <MInfoBlock label={t('invoices.due_date')} value={invoice.due_date ? fmtDate(invoice.due_date) : t('invoices.not_set')} />
               </div>
 
               {/* Big Amount */}
@@ -605,16 +606,16 @@ function DetailModal({ invoice, loading, onClose, onDownload, onStatusChange, fm
                   {invoice.currency || 'AED'} {fmtMoney(invoice.total_amount)}
                 </div>
                 <div style={{ marginTop: 8, fontSize: 12, color: '#94a3b8', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                  <span>Subtotal: {invoice.currency || 'AED'} {fmtMoney(invoice.subtotal)}</span>
-                  {parseFloat(invoice.discount_amount || 0) > 0 && <span>Discount: -{invoice.currency || 'AED'} {fmtMoney(invoice.discount_amount)}</span>}
-                  {parseFloat(invoice.tax_amount || 0) > 0 && <span>Tax: {invoice.currency || 'AED'} {fmtMoney(invoice.tax_amount)}</span>}
+                  <span>{t('invoices.subtotal')} {invoice.currency || 'AED'} {fmtMoney(invoice.subtotal)}</span>
+                  {parseFloat(invoice.discount_amount || 0) > 0 && <span>{t('invoices.discount')} -{invoice.currency || 'AED'} {fmtMoney(invoice.discount_amount)}</span>}
+                  {parseFloat(invoice.tax_amount || 0) > 0 && <span>{t('invoices.tax')} {invoice.currency || 'AED'} {fmtMoney(invoice.tax_amount)}</span>}
                 </div>
               </div>
 
               {/* Line Items */}
               {invoice.items && invoice.items.length > 0 && (
                 <div style={{ marginBottom: 20 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8 }}>Line Items</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8 }}>{t('invoices.line_items')}</div>
                   <div style={{ border: '1px solid #f1f5f9', borderRadius: 10, overflow: 'hidden' }}>
                     <div style={{
                       display: 'grid',
@@ -626,10 +627,10 @@ function DetailModal({ invoice, loading, onClose, onDownload, onStatusChange, fm
                       color: '#94a3b8',
                       textTransform: 'uppercase',
                     }}>
-                      <span>Description</span>
-                      <span style={{ textAlign: 'right' }}>Qty</span>
-                      <span style={{ textAlign: 'right' }}>Price</span>
-                      <span style={{ textAlign: 'right' }}>Total</span>
+                      <span>{t('invoices.description')}</span>
+                      <span style={{ textAlign: 'right' }}>{t('invoices.qty')}</span>
+                      <span style={{ textAlign: 'right' }}>{t('invoices.price')}</span>
+                      <span style={{ textAlign: 'right' }}>{t('invoices.total')}</span>
                     </div>
                     {invoice.items.map((item, idx) => (
                       <div key={idx} style={{
@@ -653,7 +654,7 @@ function DetailModal({ invoice, loading, onClose, onDownload, onStatusChange, fm
               {/* Status & Payment */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 20 }}>
                 <div style={{ background: '#f8fafc', padding: 14, borderRadius: 10, border: '1px solid #f1f5f9' }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: 6 }}>Status</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: 6 }}>{t('invoices.status_label')}</div>
                   <span style={{
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -665,20 +666,20 @@ function DetailModal({ invoice, loading, onClose, onDownload, onStatusChange, fm
                     fontSize: 12,
                     fontWeight: 700,
                   }}>
-                    <StatusIcon width={14} height={14} /> {invoice.status?.replace('_', ' ')}
+                    <StatusIcon width={14} height={14} /> {t('invoices.status.' + invoice.status)}
                   </span>
                 </div>
                 <div style={{ background: '#f8fafc', padding: 14, borderRadius: 10, border: '1px solid #f1f5f9' }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: 6 }}>Payment</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: 6 }}>{t('invoices.payment')}</div>
                   <div style={{ fontSize: 15, fontWeight: 700, color: '#1e293b', textTransform: 'uppercase' }}>{invoice.payment_method || 'COD'}</div>
-                  {invoice.paid_at && <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 3 }}>Paid: {fmtDate(invoice.paid_at)}</div>}
+                  {invoice.paid_at && <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 3 }}>{t('invoices.paid_at')} {fmtDate(invoice.paid_at)}</div>}
                 </div>
               </div>
 
               {/* Notes */}
               {invoice.notes && (
                 <div style={{ background: '#fef3c7', border: '1px solid #fde68a', padding: 14, borderRadius: 10, marginBottom: 20 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: '#d97706', textTransform: 'uppercase', marginBottom: 4 }}>Notes</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: '#d97706', textTransform: 'uppercase', marginBottom: 4 }}>{t('invoices.notes')}</div>
                   <div style={{ fontSize: 13, color: '#1e293b', lineHeight: 1.5 }}>{invoice.notes}</div>
                 </div>
               )}
@@ -706,7 +707,7 @@ function DetailModal({ invoice, loading, onClose, onDownload, onStatusChange, fm
                     transition: 'all 0.2s',
                   }}
                 >
-                  <Download width={16} height={16} /> Download PDF
+                  <Download width={16} height={16} /> {t('invoices.download_pdf')}
                 </button>
                 {invoice.status !== 'paid' && invoice.status !== 'void' && invoice.status !== 'cancelled' && (
                   <button
@@ -729,7 +730,7 @@ function DetailModal({ invoice, loading, onClose, onDownload, onStatusChange, fm
                       transition: 'all 0.2s'
                     }}
                   >
-                    <CheckCircleSolid width={16} height={16} /> Mark as Paid
+                    <CheckCircleSolid width={16} height={16} /> {t('invoices.mark_as_paid')}
                   </button>
                 )}
               </div>

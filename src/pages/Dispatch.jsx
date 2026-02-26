@@ -51,13 +51,13 @@ export default function Dispatch() {
     try {
       const res = await api.post('/dispatch/assign', { order_id: selectedOrder, driver_id: selectedDriver });
       if (res.success) { setSelectedOrder(null); setSelectedDriver(''); fetchBoard(); }
-      else { setError(res.message || 'Assignment failed'); }
-    } catch { setError('Failed to assign. Please try again.'); }
+      else { setError(res.message || t('dispatch.error.assignment_failed')); }
+    } catch { setError(t('dispatch.error.assign_failed')); }
     finally { setAssigning(null); }
   };
 
   const handleUnassign = async (orderId) => {
-    if (!window.confirm('Unassign this driver?')) return;
+    if (!window.confirm(t('dispatch.confirm_unassign'))) return;
     try { await api.post('/dispatch/unassign', { order_id: orderId }); fetchBoard(); }
     catch { /* ignore */ }
   };
@@ -92,12 +92,12 @@ export default function Dispatch() {
 
   const statusBadgeInfo = (status) => {
     const map = {
-      pending:    { bg: '#fef3c7', color: '#d97706', label: 'Pending' },
-      confirmed:  { bg: '#dbeafe', color: '#1d4ed8', label: 'Confirmed' },
-      assigned:   { bg: '#ede9fe', color: '#7c3aed', label: 'Assigned' },
-      picked_up:  { bg: '#fce7f3', color: '#be185d', label: 'Picked Up' },
-      in_transit: { bg: '#e0f2fe', color: '#0369a1', label: 'In Transit' },
-      delivered:  { bg: '#dcfce7', color: '#16a34a', label: 'Delivered' },
+      pending:    { bg: '#fef3c7', color: '#d97706', label: t('dispatch.status.pending') },
+      confirmed:  { bg: '#dbeafe', color: '#1d4ed8', label: t('dispatch.status.confirmed') },
+      assigned:   { bg: '#ede9fe', color: '#7c3aed', label: t('dispatch.status.assigned') },
+      picked_up:  { bg: '#fce7f3', color: '#be185d', label: t('dispatch.status.picked_up') },
+      in_transit: { bg: '#e0f2fe', color: '#0369a1', label: t('dispatch.status.in_transit') },
+      delivered:  { bg: '#dcfce7', color: '#16a34a', label: t('dispatch.status.delivered') },
     };
     return map[status] || map.pending;
   };
@@ -109,13 +109,13 @@ export default function Dispatch() {
     return (
       <div style={popupStyles.card}>
         <div style={{ ...popupStyles.header('#fff', '#fff'), background: headerBg }}>
-          <span>Order #{o.order_number || o.id}</span>
+          <span>{t('dispatch.order_label')} #{o.order_number || o.id}</span>
           <span style={popupStyles.badge(si.bg, si.color)}>{si.label}</span>
         </div>
         <div style={popupStyles.body}>
           {/* Recipient */}
           <div>
-            <div style={popupStyles.label}>Recipient</div>
+            <div style={popupStyles.label}>{t('dispatch.popup.recipient')}</div>
             <div style={{ ...popupStyles.row, fontWeight: 600, fontSize: '0.88rem' }}>
               <span>👤</span> {o.recipient_name || '—'}
             </div>
@@ -130,7 +130,7 @@ export default function Dispatch() {
 
           {/* Address */}
           <div>
-            <div style={popupStyles.label}>Delivery Address</div>
+            <div style={popupStyles.label}>{t('dispatch.popup.delivery_address')}</div>
             <div style={popupStyles.row}>
               <span>📍</span> <span style={popupStyles.value}>{o.recipient_address || '—'}</span>
             </div>
@@ -141,7 +141,7 @@ export default function Dispatch() {
             )}
             {o.zone_name && (
               <div style={{ ...popupStyles.row, fontSize: '0.78rem', color: '#6b7280' }}>
-                <span>🗺️</span> Zone: {o.zone_name}
+                <span>🗺️</span> {t('dispatch.popup.zone')} {o.zone_name}
               </div>
             )}
           </div>
@@ -151,7 +151,7 @@ export default function Dispatch() {
             <>
               <div style={popupStyles.divider} />
               <div>
-                <div style={popupStyles.label}>Driver</div>
+                <div style={popupStyles.label}>{t('dispatch.popup.driver')}</div>
                 <div style={popupStyles.driverTag}>
                   <span style={{ width: 24, height: 24, borderRadius: '50%', background: '#16a34a', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.7rem' }}>
                     {o.driver_name.charAt(0)}
@@ -169,14 +169,14 @@ export default function Dispatch() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 {o.payment_method && (
                   <span style={popupStyles.badge('#f3f4f6', '#374151')}>
-                    {o.payment_method === 'cod' ? '💵 COD' : o.payment_method === 'prepaid' ? '💳 Prepaid' : o.payment_method}
+                    {o.payment_method === 'cod' ? `💵 ${t('dispatch.popup.cod')}` : o.payment_method === 'prepaid' ? `💳 ${t('dispatch.popup.prepaid')}` : o.payment_method}
                   </span>
                 )}
                 {o.cod_amount > 0 && (
-                  <span style={popupStyles.codTag}>AED {parseFloat(o.cod_amount).toFixed(0)}</span>
+                  <span style={popupStyles.codTag}>{t('dispatch.currency')} {parseFloat(o.cod_amount).toFixed(0)}</span>
                 )}
                 {o.delivery_fee > 0 && (
-                  <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>Fee: AED {parseFloat(o.delivery_fee).toFixed(0)}</span>
+                  <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>{t('dispatch.popup.fee')} {t('dispatch.currency')} {parseFloat(o.delivery_fee).toFixed(0)}</span>
                 )}
               </div>
             </>
@@ -206,11 +206,11 @@ export default function Dispatch() {
           </span>
           <span>{d.full_name}</span>
         </div>
-        <span style={popupStyles.badge('#dcfce7', '#16a34a')}>Available</span>
+        <span style={popupStyles.badge('#dcfce7', '#16a34a')}>{t('dispatch.status.available')}</span>
       </div>
       <div style={popupStyles.body}>
         <div>
-          <div style={popupStyles.label}>Vehicle</div>
+          <div style={popupStyles.label}>{t('dispatch.popup.vehicle')}</div>
           <div style={popupStyles.row}>
             <span>🚗</span>
             <span style={{ ...popupStyles.value, textTransform: 'capitalize' }}>{d.vehicle_type || '—'}</span>
@@ -230,7 +230,7 @@ export default function Dispatch() {
           <>
             <div style={popupStyles.divider} />
             <div style={popupStyles.row}>
-              <span>🗺️</span> <span style={popupStyles.value}>Zone: {d.zone_name}</span>
+              <span>🗺️</span> <span style={popupStyles.value}>{t('dispatch.popup.zone')} {d.zone_name}</span>
             </div>
           </>
         )}
@@ -238,7 +238,7 @@ export default function Dispatch() {
           <>
             <div style={popupStyles.divider} />
             <div style={popupStyles.row}>
-              <span>📦</span> <span style={popupStyles.value}>{d.active_orders} active order{d.active_orders > 1 ? 's' : ''}</span>
+              <span>📦</span> <span style={popupStyles.value}>{t('dispatch.popup.active_orders', { count: d.active_orders })}</span>
             </div>
           </>
         )}
@@ -293,7 +293,7 @@ export default function Dispatch() {
             <div className="dispatch-order-id">#{order.id}</div>
             <div className="dispatch-recipient">{order.recipient_name}</div>
           </div>
-          <span className="status-badge" style={sc}>{order.status}</span>
+          <span className="status-badge" style={sc}>{t(`dispatch.status.${order.status}`, order.status)}</span>
         </div>
         {!mini && (
           <div className="dispatch-meta">
@@ -308,12 +308,12 @@ export default function Dispatch() {
               className={`btn-sm ${isSelected ? 'btn-sm-primary' : 'btn-sm-outline'}`}
               onClick={() => setSelectedOrder(isSelected ? null : order.id)}
             >
-              {isSelected ? <><Check width={14} height={14} /> Selected</> : 'Select'}
+              {isSelected ? <><Check width={14} height={14} /> {t('dispatch.selected')}</> : t('dispatch.select')}
             </button>
           )}
           {showUnassign && (
             <button className="btn-sm btn-sm-danger" onClick={() => handleUnassign(order.id)}>
-              <Xmark width={14} height={14} /> Unassign
+              <Xmark width={14} height={14} /> {t('dispatch.unassign')}
             </button>
           )}
         </div>
@@ -328,8 +328,8 @@ export default function Dispatch() {
       {/* ── Header ── */}
       <div className="page-header-row">
         <div>
-          <h2 className="page-heading">Dispatch Board</h2>
-          <p className="page-subheading">Assign drivers to orders in real time</p>
+          <h2 className="page-heading">{t('dispatch.title')}</h2>
+          <p className="page-subheading">{t('dispatch.subtitle')}</p>
         </div>
         <div style={{ display:'flex', gap: 10, alignItems:'center' }}>
           <button onClick={() => navigate('/orders')} style={{
@@ -337,32 +337,32 @@ export default function Dispatch() {
             cursor: 'pointer', fontWeight: 600, fontSize: 13, color: '#475569',
             display: 'flex', alignItems: 'center', gap: 5,
           }}>
-            <Package width={14} height={14} /> Orders
+            <Package width={14} height={14} /> {t('dispatch.orders')}
           </button>
           <button onClick={() => navigate('/live-map')} style={{
             padding: '8px 14px', borderRadius: 10, border: '1px solid #bfdbfe', background: '#eff6ff',
             cursor: 'pointer', fontWeight: 600, fontSize: 13, color: '#2563eb',
             display: 'flex', alignItems: 'center', gap: 5,
           }}>
-            <MapIcon width={14} height={14} /> Live Map
+            <MapIcon width={14} height={14} /> {t('dispatch.live_map')}
           </button>
           <button onClick={() => navigate('/shipment-tracking')} style={{
             padding: '8px 14px', borderRadius: 10, border: '1px solid #bbf7d0', background: '#f0fdf4',
             cursor: 'pointer', fontWeight: 600, fontSize: 13, color: '#16a34a',
             display: 'flex', alignItems: 'center', gap: 5,
           }}>
-            <MapPin width={14} height={14} /> Track
+            <MapPin width={14} height={14} /> {t('dispatch.track')}
           </button>
           <div className="view-toggle">
             <button className={`view-toggle-btn ${view === 'board' ? 'active' : ''}`} onClick={() => setView('board')}>
-              <ViewGrid width={15} height={15} /> Board
+              <ViewGrid width={15} height={15} /> {t('dispatch.view.board')}
             </button>
             <button className={`view-toggle-btn ${view === 'map' ? 'active' : ''}`} onClick={() => setView('map')}>
-              <MapIcon width={15} height={15} /> Map
+              <MapIcon width={15} height={15} /> {t('dispatch.view.map')}
             </button>
           </div>
           <button className="btn-outline-action" onClick={fetchBoard}>
-            <Refresh width={16} height={16} /> Refresh
+            <Refresh width={16} height={16} /> {t('dispatch.refresh')}
           </button>
         </div>
       </div>
@@ -378,11 +378,11 @@ export default function Dispatch() {
         <div className="assign-panel">
           <div className="assign-panel-label">
             <Package width={16} height={16} />
-            Order <strong>#{selectedOrder}</strong> selected
+            {t('dispatch.order_label')} <strong>#{selectedOrder}</strong> {t('dispatch.order_selected_suffix')}
           </div>
           <select className="assign-select" value={selectedDriver}
             onChange={e => setSelectedDriver(e.target.value)}>
-            <option value="">Select Driver...</option>
+            <option value="">{t('dispatch.select_driver')}</option>
             {board.available_drivers?.map(d => (
               <option key={d.id} value={d.id}>
                 {d.full_name} &mdash; {d.vehicle_type} ({d.vehicle_plate})
@@ -391,11 +391,11 @@ export default function Dispatch() {
           </select>
           <button className="btn-primary-action" onClick={handleAssign}
             disabled={!selectedDriver || assigning}>
-            {assigning ? 'Assigning...' : 'Assign Driver'}
+            {assigning ? t('dispatch.assigning') : t('dispatch.assign_driver')}
           </button>
           <button className="btn-outline-action"
             onClick={() => { setSelectedOrder(null); setSelectedDriver(''); }}>
-            Cancel
+            {t('dispatch.cancel')}
           </button>
         </div>
       )}
@@ -411,7 +411,7 @@ export default function Dispatch() {
           <div className="dispatch-col">
             <div className="dispatch-col-header">
               <div className="col-dot" style={{ background: '#f59e0b' }} />
-              <h3>Unassigned</h3>
+              <h3>{t('dispatch.col.unassigned')}</h3>
               <span className="col-count amber">{board.unassigned?.length || 0}</span>
             </div>
             {board.unassigned?.length === 0
@@ -424,11 +424,11 @@ export default function Dispatch() {
           <div className="dispatch-col">
             <div className="dispatch-col-header">
               <div className="col-dot" style={{ background: '#3b82f6' }} />
-              <h3>In Progress</h3>
+              <h3>{t('dispatch.col.in_progress')}</h3>
               <span className="col-count blue">{board.active_deliveries?.length || 0}</span>
             </div>
             {board.active_deliveries?.length === 0
-              ? <div className="empty-col">No active orders</div>
+              ? <div className="empty-col">{t('dispatch.no_active')}</div>
               : board.active_deliveries.map(o => <OrderCard key={o.id} order={o} showUnassign={true} />)
             }
           </div>
@@ -441,7 +441,7 @@ export default function Dispatch() {
               <span className="col-count green">{board.available_drivers?.length || 0}</span>
             </div>
             {board.available_drivers?.length === 0
-              ? <div className="empty-col">No available drivers</div>
+              ? <div className="empty-col">{t('dispatch.no_drivers')}</div>
               : board.available_drivers.map(driver => (
                 <div key={driver.id} className="driver-card">
                   <div className="driver-avatar">{driver.full_name?.charAt(0)}</div>
@@ -449,7 +449,7 @@ export default function Dispatch() {
                     <div className="driver-name">{driver.full_name}</div>
                     <div className="driver-meta">{driver.vehicle_type} &bull; {driver.vehicle_plate}</div>
                   </div>
-                  <span className="status-badge" style={{ background: '#f0fdf4', color: '#16a34a' }}>Online</span>
+                  <span className="status-badge" style={{ background: '#f0fdf4', color: '#16a34a' }}>{t('dispatch.online')}</span>
                 </div>
               ))
             }
@@ -462,9 +462,9 @@ export default function Dispatch() {
             {mapMarkers.length === 0 ? (
               <div className="empty-state-mini" style={{ padding: '4rem 0', textAlign: 'center' }}>
                 <MapPin width={48} height={48} />
-                <p style={{ fontWeight: 600, marginTop: 12 }}>No locations to display</p>
+                <p style={{ fontWeight: 600, marginTop: 12 }}>{t('dispatch.map.no_locations')}</p>
                 <p style={{ color: 'var(--gray-400)', fontSize: '0.85rem' }}>
-                  Orders and drivers need GPS coordinates to appear on the map
+                  {t('dispatch.map.no_coords')}
                 </p>
               </div>
             ) : (
@@ -474,15 +474,15 @@ export default function Dispatch() {
             <div style={{ display:'flex', gap:20, marginTop:10, fontSize:'0.82rem', color:'var(--gray-500)' }}>
               <span style={{ display:'flex', alignItems:'center', gap:5 }}>
                 <span style={{ width:10, height:10, borderRadius:'50%', background:'#f59e0b', display:'inline-block' }}/>
-                Unassigned
+                {t('dispatch.legend.unassigned')}
               </span>
               <span style={{ display:'flex', alignItems:'center', gap:5 }}>
                 <span style={{ width:10, height:10, borderRadius:'50%', background:'#3b82f6', display:'inline-block' }}/>
-                In Progress
+                {t('dispatch.legend.in_progress')}
               </span>
               <span style={{ display:'flex', alignItems:'center', gap:5 }}>
                 <span style={{ width:10, height:10, borderRadius:'50%', background:'#22c55e', display:'inline-block' }}/>
-                Drivers
+                {t('dispatch.legend.drivers')}
               </span>
             </div>
           </div>
@@ -490,13 +490,13 @@ export default function Dispatch() {
           {/* Sidebar mini cards */}
           <div className="dispatch-map-sidebar">
             <div style={{ fontWeight:700, fontSize:'0.85rem', marginBottom:8, color:'var(--gray-700)' }}>
-              Unassigned ({board.unassigned?.length || 0})
+              {t('dispatch.sidebar.unassigned', { count: board.unassigned?.length || 0 })}
             </div>
             {board.unassigned?.map(o => (
               <OrderCard key={o.id} order={o} showUnassign={false} mini />
             ))}
             <div style={{ fontWeight:700, fontSize:'0.85rem', margin:'12px 0 8px', color:'var(--gray-700)' }}>
-              Active ({board.active_deliveries?.length || 0})
+              {t('dispatch.sidebar.active', { count: board.active_deliveries?.length || 0 })}
             </div>
             {board.active_deliveries?.map(o => (
               <OrderCard key={o.id} order={o} showUnassign={true} mini />

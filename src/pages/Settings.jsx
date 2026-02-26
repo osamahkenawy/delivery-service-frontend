@@ -15,11 +15,11 @@ import './Settings.css';
 const fmtDate = (d, language = 'en') => d ? new Date(d).toLocaleDateString(language === 'ar' ? 'ar-AE' : 'en-AE', { day:'2-digit', month:'short', year:'numeric' }) : '—';
 
 const ROLE_META = {
-  superadmin: { badge:'#7c3aed', bg:'#ede9fe', label:'Super Admin' },
-  admin:      { badge:'#1d4ed8', bg:'#dbeafe', label:'Admin'       },
-  dispatcher: { badge:'#0d9488', bg:'#ccfbf1', label:'Dispatcher'  },
-  driver:     { badge:'#d97706', bg:'#fef3c7', label:'Driver'      },
-  client:     { badge:'#64748b', bg:'#f1f5f9', label:'Client'      },
+  superadmin: { badge:'#7c3aed', bg:'#ede9fe' },
+  admin:      { badge:'#1d4ed8', bg:'#dbeafe' },
+  dispatcher: { badge:'#0d9488', bg:'#ccfbf1' },
+  driver:     { badge:'#d97706', bg:'#fef3c7' },
+  client:     { badge:'#64748b', bg:'#f1f5f9' },
 };
 
 const EMIRATE_OPTIONS = ['Dubai','Abu Dhabi','Sharjah','Ajman','RAK','Fujairah','UAQ'];
@@ -48,6 +48,7 @@ function Toggle({ on, onChange }) {
    GENERAL TAB
 ═══════════════════════════════════════════════════════════════ */
 function GeneralTab({ data, setData, onSave, saving }) {
+  const { t } = useTranslation();
   const s = data.settings || {};
   const set = (k, v) => setData(d => ({ ...d, settings: { ...d.settings, [k]: v } }));
   const setTenant = (k, v) => setData(d => ({ ...d, [k]: v }));
@@ -58,53 +59,53 @@ function GeneralTab({ data, setData, onSave, saving }) {
         <div className="stg-section-head">
           <div className="stg-section-icon orange"><Building width={18} height={18}/></div>
           <div>
-            <div className="stg-section-title">Company Information</div>
-            <div className="stg-section-sub">Your business identity and contact details</div>
+            <div className="stg-section-title">{t('settings.general.company_info')}</div>
+            <div className="stg-section-sub">{t('settings.general.company_info_sub')}</div>
           </div>
         </div>
         <div className="stg-grid">
           <div className="stg-field">
-            <label>Company Name</label>
+            <label>{t('settings.general.company_name')}</label>
             <div className="stg-input-wrap"><Building width={15} height={15} className="stg-input-icon"/>
-              <input value={data.name||''} onChange={e=>setTenant('name',e.target.value)} placeholder="Trasealla Delivery Co." />
+              <input value={data.name||''} onChange={e=>setTenant('name',e.target.value)} placeholder="Trasealla Solutions Co." />
             </div>
           </div>
           <div className="stg-field">
-            <label>Company Phone</label>
+            <label>{t('settings.general.company_phone')}</label>
             <div className="stg-input-wrap"><Phone width={15} height={15} className="stg-input-icon"/>
               <input value={data.phone||''} onChange={e=>setTenant('phone',e.target.value)} placeholder="+971 4 000 0000" />
             </div>
           </div>
           <div className="stg-field">
-            <label>Company Email</label>
+            <label>{t('settings.general.company_email')}</label>
             <div className="stg-input-wrap"><Mail width={15} height={15} className="stg-input-icon"/>
               <input type="email" value={data.email||''} onChange={e=>setTenant('email',e.target.value)} placeholder="info@company.ae" />
             </div>
           </div>
           <div className="stg-field">
-            <label>Website</label>
+            <label>{t('settings.general.website')}</label>
             <div className="stg-input-wrap"><Globe width={15} height={15} className="stg-input-icon"/>
               <input value={s.website||''} onChange={e=>set('website',e.target.value)} placeholder="www.company.ae" />
             </div>
           </div>
           <div className="stg-field stg-span">
-            <label>Company Address</label>
+            <label>{t('settings.general.company_address')}</label>
             <div className="stg-input-wrap"><MapPin width={15} height={15} className="stg-input-icon"/>
               <input value={data.address||''} onChange={e=>setTenant('address',e.target.value)} placeholder="Office 123, Business Bay, Dubai" />
             </div>
           </div>
           <div className="stg-field">
-            <label>City</label>
+            <label>{t('settings.general.city')}</label>
             <input value={data.city||''} onChange={e=>setTenant('city',e.target.value)} placeholder="Dubai" />
           </div>
           <div className="stg-field">
-            <label>VAT Number</label>
+            <label>{t('settings.general.vat_number')}</label>
             <div className="stg-input-wrap"><Wallet width={15} height={15} className="stg-input-icon"/>
               <input value={s.vat_number||''} onChange={e=>set('vat_number',e.target.value)} placeholder="100XXXXXXXXX003" />
             </div>
           </div>
           <div className="stg-field">
-            <label>Logo URL</label>
+            <label>{t('settings.general.logo_url')}</label>
             <div className="stg-input-wrap"><Upload width={15} height={15} className="stg-input-icon"/>
               <input value={data.logo_url||''} onChange={e=>setTenant('logo_url',e.target.value)} placeholder="https://cdn.example.com/logo.png" />
             </div>
@@ -116,29 +117,29 @@ function GeneralTab({ data, setData, onSave, saving }) {
         <div className="stg-section-head">
           <div className="stg-section-icon blue"><Globe width={18} height={18}/></div>
           <div>
-            <div className="stg-section-title">Regional Settings</div>
-            <div className="stg-section-sub">Timezone, currency and locale</div>
+            <div className="stg-section-title">{t('settings.general.regional')}</div>
+            <div className="stg-section-sub">{t('settings.general.regional_sub')}</div>
           </div>
         </div>
         <div className="stg-grid">
           <div className="stg-field">
-            <label>Timezone</label>
+            <label>{t('settings.general.timezone')}</label>
             <select value={data.timezone||'Asia/Dubai'} onChange={e=>setTenant('timezone',e.target.value)}>
               {TIMEZONE_OPTIONS.map(tz=><option key={tz} value={tz}>{tz}</option>)}
             </select>
           </div>
           <div className="stg-field">
-            <label>Currency</label>
+            <label>{t('settings.general.currency')}</label>
             <select value={data.currency||'AED'} onChange={e=>setTenant('currency',e.target.value)}>
               {CURRENCY_OPTIONS.map(c=><option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div className="stg-field">
-            <label>Country</label>
+            <label>{t('settings.general.country')}</label>
             <input value={data.country||''} onChange={e=>setTenant('country',e.target.value)} placeholder="United Arab Emirates" />
           </div>
           <div className="stg-field">
-            <label>Default Language</label>
+            <label>{t('settings.general.default_language')}</label>
             <select value={s.default_language||'en'} onChange={e=>set('default_language',e.target.value)}>
               <option value="en">English</option>
               <option value="ar">Arabic (العربية)</option>
@@ -149,7 +150,7 @@ function GeneralTab({ data, setData, onSave, saving }) {
 
       <div className="stg-save-bar">
         <button type="submit" className="stg-btn-primary" disabled={saving}>
-          {saving ? <><span className="stg-spin"/>Saving…</> : <><CheckCircle width={16} height={16}/>Save Changes</>}
+          {saving ? <><span className="stg-spin"/>{t('settings.saving')}</> : <><CheckCircle width={16} height={16}/>{t('settings.save_changes')}</>}
         </button>
       </div>
     </form>
@@ -160,6 +161,7 @@ function GeneralTab({ data, setData, onSave, saving }) {
    DELIVERY TAB
 ═══════════════════════════════════════════════════════════════ */
 function DeliveryTab({ data, setData, onSave, saving }) {
+  const { t } = useTranslation();
   const s = data.settings || {};
   const set = (k, v) => setData(d => ({ ...d, settings: { ...d.settings, [k]: v } }));
 
@@ -169,43 +171,43 @@ function DeliveryTab({ data, setData, onSave, saving }) {
         <div className="stg-section-head">
           <div className="stg-section-icon orange"><DeliveryTruck width={18} height={18}/></div>
           <div>
-            <div className="stg-section-title">Delivery Defaults</div>
-            <div className="stg-section-sub">Default values applied to new orders</div>
+            <div className="stg-section-title">{t('settings.delivery.defaults')}</div>
+            <div className="stg-section-sub">{t('settings.delivery.defaults_sub')}</div>
           </div>
         </div>
         <div className="stg-grid">
           <div className="stg-field">
-            <label>Default Emirate</label>
+            <label>{t('settings.delivery.default_emirate')}</label>
             <select value={s.default_emirate||'Dubai'} onChange={e=>set('default_emirate',e.target.value)}>
               {EMIRATE_OPTIONS.map(e=><option key={e} value={e}>{e}</option>)}
             </select>
           </div>
           <div className="stg-field">
-            <label>Default Delivery Fee (AED)</label>
+            <label>{t('settings.delivery.default_fee')}</label>
             <div className="stg-input-wrap"><span className="stg-prefix">AED</span>
               <input type="number" min="0" step="0.01" value={s.default_delivery_fee||''} onChange={e=>set('default_delivery_fee',e.target.value)} placeholder="15.00" style={{paddingLeft:52}} />
             </div>
           </div>
           <div className="stg-field">
-            <label>Max COD Amount (AED)</label>
+            <label>{t('settings.delivery.max_cod')}</label>
             <div className="stg-input-wrap"><span className="stg-prefix">AED</span>
               <input type="number" min="0" value={s.max_cod_amount||''} onChange={e=>set('max_cod_amount',e.target.value)} placeholder="5000" style={{paddingLeft:52}} />
             </div>
           </div>
           <div className="stg-field">
-            <label>Driver Commission (%)</label>
+            <label>{t('settings.delivery.driver_commission')}</label>
             <div className="stg-input-wrap"><span className="stg-prefix">%</span>
               <input type="number" min="0" max="100" step="0.1" value={s.driver_commission_percent||''} onChange={e=>set('driver_commission_percent',e.target.value)} placeholder="20" style={{paddingLeft:36}} />
             </div>
           </div>
           <div className="stg-field">
-            <label>Expected Delivery Days</label>
+            <label>{t('settings.delivery.expected_days')}</label>
             <div className="stg-input-wrap"><Clock width={15} height={15} className="stg-input-icon"/>
               <input type="number" min="1" value={s.expected_delivery_days||''} onChange={e=>set('expected_delivery_days',e.target.value)} placeholder="1" />
             </div>
           </div>
           <div className="stg-field">
-            <label>Max Weight (kg)</label>
+            <label>{t('settings.delivery.max_weight')}</label>
             <div className="stg-input-wrap"><span className="stg-prefix">kg</span>
               <input type="number" min="0" step="0.1" value={s.max_weight_kg||''} onChange={e=>set('max_weight_kg',e.target.value)} placeholder="30" style={{paddingLeft:38}} />
             </div>
@@ -217,18 +219,18 @@ function DeliveryTab({ data, setData, onSave, saving }) {
         <div className="stg-section-head">
           <div className="stg-section-icon purple"><ToggleOn width={18} height={18}/></div>
           <div>
-            <div className="stg-section-title">Feature Toggles</div>
-            <div className="stg-section-sub">Enable or disable platform features</div>
+            <div className="stg-section-title">{t('settings.delivery.feature_toggles')}</div>
+            <div className="stg-section-sub">{t('settings.delivery.feature_toggles_sub')}</div>
           </div>
         </div>
         <div className="stg-toggles">
           {[
-            { key:'cod_enabled',           label:'Cash on Delivery (COD)',         desc:'Allow orders to be paid on delivery' },
-            { key:'return_enabled',        label:'Return Orders',                  desc:'Enable return/reverse logistics' },
-            { key:'express_enabled',       label:'Express Delivery',               desc:'Allow same-day / express order types' },
-            { key:'sms_tracking_enabled',  label:'SMS Tracking Notifications',     desc:'Send automated SMS when status changes' },
-            { key:'email_tracking_enabled',label:'Email Tracking Notifications',   desc:'Send automated emails when status changes' },
-            { key:'driver_tip_enabled',    label:'Driver Tips',                    desc:'Allow recipients to tip the driver' },
+            { key:'cod_enabled',           label:t('settings.delivery.cod_enabled'),         desc:t('settings.delivery.cod_desc') },
+            { key:'return_enabled',        label:t('settings.delivery.return_enabled'),      desc:t('settings.delivery.return_desc') },
+            { key:'express_enabled',       label:t('settings.delivery.express_enabled'),     desc:t('settings.delivery.express_desc') },
+            { key:'sms_tracking_enabled',  label:t('settings.delivery.sms_tracking'),        desc:t('settings.delivery.sms_tracking_desc') },
+            { key:'email_tracking_enabled',label:t('settings.delivery.email_tracking'),      desc:t('settings.delivery.email_tracking_desc') },
+            { key:'driver_tip_enabled',    label:t('settings.delivery.driver_tips'),         desc:t('settings.delivery.driver_tips_desc') },
           ].map(({ key, label, desc }) => (
             <div key={key} className="stg-toggle-row">
               <div>
@@ -243,7 +245,7 @@ function DeliveryTab({ data, setData, onSave, saving }) {
 
       <div className="stg-save-bar">
         <button type="submit" className="stg-btn-primary" disabled={saving}>
-          {saving ? <><span className="stg-spin"/>Saving…</> : <><CheckCircle width={16} height={16}/>Save Changes</>}
+          {saving ? <><span className="stg-spin"/>{t('settings.saving')}</> : <><CheckCircle width={16} height={16}/>{t('settings.save_changes')}</>}
         </button>
       </div>
     </form>
@@ -254,6 +256,7 @@ function DeliveryTab({ data, setData, onSave, saving }) {
    NOTIFICATIONS TAB
 ═══════════════════════════════════════════════════════════════ */
 function NotificationsTab({ data, setData, onSave, saving }) {
+  const { t } = useTranslation();
   const s = data.settings || {};
   const set = (k, v) => setData(d => ({ ...d, settings: { ...d.settings, [k]: v } }));
   const [showPass, setShowPass] = useState(false);
@@ -264,27 +267,27 @@ function NotificationsTab({ data, setData, onSave, saving }) {
         <div className="stg-section-head">
           <div className="stg-section-icon blue"><Mail width={18} height={18}/></div>
           <div>
-            <div className="stg-section-title">Email / SMTP</div>
-            <div className="stg-section-sub">Configure outbound email delivery</div>
+            <div className="stg-section-title">{t('settings.notifications.email_smtp')}</div>
+            <div className="stg-section-sub">{t('settings.notifications.email_smtp_sub')}</div>
           </div>
         </div>
         <div className="stg-grid">
           <div className="stg-field">
-            <label>SMTP Host</label>
+            <label>{t('settings.notifications.smtp_host')}</label>
             <input value={s.smtp_host||''} onChange={e=>set('smtp_host',e.target.value)} placeholder="smtp.office365.com" />
           </div>
           <div className="stg-field">
-            <label>SMTP Port</label>
+            <label>{t('settings.notifications.smtp_port')}</label>
             <input type="number" value={s.smtp_port||''} onChange={e=>set('smtp_port',e.target.value)} placeholder="587" />
           </div>
           <div className="stg-field">
-            <label>SMTP Username</label>
+            <label>{t('settings.notifications.smtp_username')}</label>
             <div className="stg-input-wrap"><Mail width={15} height={15} className="stg-input-icon"/>
               <input value={s.smtp_user||''} onChange={e=>set('smtp_user',e.target.value)} placeholder="noreply@company.ae" />
             </div>
           </div>
           <div className="stg-field">
-            <label>SMTP Password</label>
+            <label>{t('settings.notifications.smtp_password')}</label>
             <div className="stg-input-wrap" style={{position:'relative'}}>
               <input type={showPass?'text':'password'} value={s.smtp_pass||''} onChange={e=>set('smtp_pass',e.target.value)} placeholder="••••••••••" style={{paddingRight:40}} />
               <button type="button" onClick={()=>setShowPass(p=>!p)} style={{position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',color:'#94a3b8',padding:0}}>
@@ -293,11 +296,11 @@ function NotificationsTab({ data, setData, onSave, saving }) {
             </div>
           </div>
           <div className="stg-field">
-            <label>From Name</label>
-            <input value={s.email_from_name||''} onChange={e=>set('email_from_name',e.target.value)} placeholder="Trasealla Delivery" />
+            <label>{t('settings.notifications.from_name')}</label>
+            <input value={s.email_from_name||''} onChange={e=>set('email_from_name',e.target.value)} placeholder="Trasealla Solutions" />
           </div>
           <div className="stg-field">
-            <label>Reply-To Email</label>
+            <label>{t('settings.notifications.reply_to')}</label>
             <input type="email" value={s.email_reply_to||''} onChange={e=>set('email_reply_to',e.target.value)} placeholder="support@company.ae" />
           </div>
         </div>
@@ -307,25 +310,25 @@ function NotificationsTab({ data, setData, onSave, saving }) {
         <div className="stg-section-head">
           <div className="stg-section-icon green"><Bell width={18} height={18}/></div>
           <div>
-            <div className="stg-section-title">SMS Settings</div>
-            <div className="stg-section-sub">Configure SMS gateway for notifications</div>
+            <div className="stg-section-title">{t('settings.notifications.sms_title')}</div>
+            <div className="stg-section-sub">{t('settings.notifications.sms_sub')}</div>
           </div>
         </div>
         <div className="stg-grid">
           <div className="stg-field">
-            <label>SMS Sender ID</label>
+            <label>{t('settings.notifications.sms_sender_id')}</label>
             <input value={s.sms_sender_id||''} onChange={e=>set('sms_sender_id',e.target.value)} placeholder="TRASEALLA" maxLength={11} />
           </div>
           <div className="stg-field">
-            <label>Twilio Account SID</label>
+            <label>{t('settings.notifications.twilio_sid')}</label>
             <input value={s.twilio_sid||''} onChange={e=>set('twilio_sid',e.target.value)} placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" />
           </div>
           <div className="stg-field">
-            <label>Twilio Auth Token</label>
+            <label>{t('settings.notifications.twilio_token')}</label>
             <input type="password" value={s.twilio_token||''} onChange={e=>set('twilio_token',e.target.value)} placeholder="••••••••••••••••••••••••••••••••" />
           </div>
           <div className="stg-field">
-            <label>Twilio Phone Number</label>
+            <label>{t('settings.notifications.twilio_phone')}</label>
             <div className="stg-input-wrap"><Phone width={15} height={15} className="stg-input-icon"/>
               <input value={s.twilio_phone||''} onChange={e=>set('twilio_phone',e.target.value)} placeholder="+12015550123" />
             </div>
@@ -333,13 +336,13 @@ function NotificationsTab({ data, setData, onSave, saving }) {
         </div>
         <div className="stg-info-box">
           <Bell width={14} height={14}/>
-          SMS notifications are sent automatically when an order status changes if <strong>SMS Tracking</strong> is enabled in Delivery settings.
+          {t('settings.notifications.sms_info')}
         </div>
       </div>
 
       <div className="stg-save-bar">
         <button type="submit" className="stg-btn-primary" disabled={saving}>
-          {saving ? <><span className="stg-spin"/>Saving…</> : <><CheckCircle width={16} height={16}/>Save Changes</>}
+          {saving ? <><span className="stg-spin"/>{t('settings.saving')}</> : <><CheckCircle width={16} height={16}/>{t('settings.save_changes')}</>}
         </button>
       </div>
     </form>
@@ -350,6 +353,7 @@ function NotificationsTab({ data, setData, onSave, saving }) {
    CATEGORIES TAB
 ═══════════════════════════════════════════════════════════════ */
 function CategoriesTab({ toast }) {
+  const { t } = useTranslation();
   const [categories, setCategories] = useState([]);
   const [loading, setLoading]       = useState(true);
   const [showModal, setShowModal]   = useState(false);
@@ -376,19 +380,19 @@ function CategoriesTab({ toast }) {
       ? await api.put('/settings/categories/'+editing.id, form)
       : await api.post('/settings/categories', form);
     if (res.success) {
-      toast('success', editing ? 'Category updated' : 'Category created');
+      toast('success', editing ? t('settings.categories.updated') : t('settings.categories.created'));
       setShowModal(false); load();
     } else {
-      toast('error', res.message || 'Failed to save category');
+      toast('error', res.message || t('settings.categories.save_failed'));
     }
     setSaving(false);
   };
 
   const handleDelete = async cat => {
-    if (!confirm('Delete category "'+cat.name+'"?')) return;
+    if (!confirm(t('settings.categories.delete_confirm', { name: cat.name }))) return;
     const res = await api.delete('/settings/categories/'+cat.id);
-    if (res.success) { toast('success', 'Category deleted'); load(); }
-    else toast('error', 'Failed to delete category');
+    if (res.success) { toast('success', t('settings.categories.deleted')); load(); }
+    else toast('error', t('settings.categories.delete_failed'));
   };
 
   const handleToggle = async cat => {
@@ -396,7 +400,7 @@ function CategoriesTab({ toast }) {
     load();
   };
 
-  if (loading) return <div className="stg-loader">Loading categories…</div>;
+  if (loading) return <div className="stg-loader">{t('settings.categories.loading')}</div>;
 
   return (
     <div className="stg-content">
@@ -405,12 +409,12 @@ function CategoriesTab({ toast }) {
           <div style={{display:'flex',alignItems:'center',gap:12}}>
             <div className="stg-section-icon purple"><Tag width={18} height={18}/></div>
             <div>
-              <div className="stg-section-title">Order Categories</div>
-              <div className="stg-section-sub">{categories.length} categories · Used to classify shipments</div>
+              <div className="stg-section-title">{t('settings.categories.title')}</div>
+              <div className="stg-section-sub">{t('settings.categories.count', { count: categories.length })}</div>
             </div>
           </div>
           <button className="stg-btn-primary" type="button" onClick={openAdd}>
-            <Plus width={15} height={15}/> Add Category
+            <Plus width={15} height={15}/> {t('settings.categories.add')}
           </button>
         </div>
 
@@ -433,7 +437,7 @@ function CategoriesTab({ toast }) {
             </div>
           ))}
           {categories.length === 0 && (
-            <div className="stg-empty"><Tag width={36} height={36}/><p>No categories yet</p></div>
+            <div className="stg-empty"><Tag width={36} height={36}/><p>{t('settings.categories.empty')}</p></div>
           )}
         </div>
       </div>
@@ -442,25 +446,25 @@ function CategoriesTab({ toast }) {
         <div className="stg-overlay" onClick={e=>e.target===e.currentTarget&&setShowModal(false)}>
           <div className="stg-modal">
             <div className="stg-modal-head">
-              <span>{editing ? 'Edit Category' : 'New Category'}</span>
+              <span>{editing ? t('settings.categories.edit_title') : t('settings.categories.new_title')}</span>
               <button type="button" onClick={()=>setShowModal(false)} className="stg-modal-close"><Xmark width={18} height={18}/></button>
             </div>
             <form onSubmit={handleSave} className="stg-modal-body">
               <div className="stg-grid">
                 <div className="stg-field">
-                  <label>Name (English) *</label>
+                  <label>{t('settings.categories.name_en')}</label>
                   <input required value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="e.g. Electronics" />
                 </div>
                 <div className="stg-field">
-                  <label>Name (Arabic)</label>
+                  <label>{t('settings.categories.name_ar')}</label>
                   <input dir="rtl" value={form.name_ar} onChange={e=>setForm(f=>({...f,name_ar:e.target.value}))} placeholder="إلكترونيات" />
                 </div>
                 <div className="stg-field stg-span">
-                  <label>Description</label>
+                  <label>{t('settings.categories.description')}</label>
                   <input value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))} placeholder="Short description (optional)" />
                 </div>
                 <div className="stg-field stg-span">
-                  <label>Color</label>
+                  <label>{t('settings.categories.color')}</label>
                   <div className="stg-color-picker">
                     {CATEGORY_COLORS.map(c => (
                       <button key={c} type="button"
@@ -479,9 +483,9 @@ function CategoriesTab({ toast }) {
                 </div>
               </div>
               <div className="stg-modal-footer">
-                <button type="button" className="stg-btn-ghost" onClick={()=>setShowModal(false)}>Cancel</button>
+                <button type="button" className="stg-btn-ghost" onClick={()=>setShowModal(false)}>{t('settings.categories.cancel')}</button>
                 <button type="submit" className="stg-btn-primary" disabled={saving}>
-                  {saving ? <><span className="stg-spin"/>Saving…</> : (editing ? 'Update' : 'Create')}
+                  {saving ? <><span className="stg-spin"/>{t('settings.categories.saving')}</> : (editing ? t('settings.categories.update') : t('settings.categories.create'))}
                 </button>
               </div>
             </form>
@@ -496,6 +500,7 @@ function CategoriesTab({ toast }) {
    USERS TAB
 ═══════════════════════════════════════════════════════════════ */
 function UsersTab({ toast }) {
+  const { t } = useTranslation();
   const { user: currentUser } = useContext(AuthContext);
   const [users, setUsers]        = useState([]);
   const [loading, setLoading]    = useState(true);
@@ -518,21 +523,21 @@ function UsersTab({ toast }) {
     e.preventDefault(); setSaving(true);
     const res = await api.post('/settings/users', form);
     if (res.success) {
-      toast('success', 'User created successfully');
+      toast('success', t('settings.users.created'));
       setShowModal(false); setForm(emptyForm); load();
     } else {
-      toast('error', res.message || 'Failed to create user');
+      toast('error', res.message || t('settings.users.create_failed'));
     }
     setSaving(false);
   };
 
   const del = async id => {
-    if (!confirm('Deactivate this user?')) return;
+    if (!confirm(t('settings.users.deactivate_confirm'))) return;
     const res = await api.delete('/settings/users/'+id);
-    if (res.success) { toast('success', 'User deactivated'); load(); }
+    if (res.success) { toast('success', t('settings.users.deactivated')); load(); }
   };
 
-  if (loading) return <div className="stg-loader">Loading team…</div>;
+  if (loading) return <div className="stg-loader">{t('settings.users.loading')}</div>;
 
   return (
     <div className="stg-content">
@@ -541,12 +546,12 @@ function UsersTab({ toast }) {
           <div style={{display:'flex',alignItems:'center',gap:12}}>
             <div className="stg-section-icon blue"><User width={18} height={18}/></div>
             <div>
-              <div className="stg-section-title">Team Members</div>
-              <div className="stg-section-sub">{users.length} user{users.length!==1?'s':''} in your workspace</div>
+              <div className="stg-section-title">{t('settings.users.title')}</div>
+              <div className="stg-section-sub">{t('settings.users.count', { count: users.length })}</div>
             </div>
           </div>
           <button className="stg-btn-primary" type="button" onClick={()=>{ setForm(emptyForm); setShowModal(true); }}>
-            <Plus width={15} height={15}/> Add User
+            <Plus width={15} height={15}/> {t('settings.users.add')}
           </button>
         </div>
 
@@ -565,7 +570,7 @@ function UsersTab({ toast }) {
                   <div className="stg-user-meta">{u.email}{u.phone?' · '+u.phone:''}</div>
                 </div>
                 <div style={{display:'flex',alignItems:'center',gap:10,flexShrink:0}}>
-                  <span className="stg-role-badge" style={{background:meta.bg,color:meta.badge}}>{meta.label}</span>
+                  <span className="stg-role-badge" style={{background:meta.bg,color:meta.badge}}>{t('settings.roles.' + u.role)}</span>
                   <span className="stg-user-date">{fmtDate(u.created_at)}</span>
                   {u.role !== 'superadmin' && !u.is_owner && String(u.id) !== String(currentUser?.id) && (
                     <button className="stg-icon-btn red" onClick={()=>del(u.id)} title="Deactivate"><Trash width={13} height={13}/></button>
@@ -574,7 +579,7 @@ function UsersTab({ toast }) {
               </div>
             );
           })}
-          {users.length === 0 && <div className="stg-empty"><User width={36} height={36}/><p>No team members yet</p></div>}
+          {users.length === 0 && <div className="stg-empty"><User width={36} height={36}/><p>{t('settings.users.empty')}</p></div>}
         </div>
       </div>
 
@@ -582,29 +587,29 @@ function UsersTab({ toast }) {
         <div className="stg-overlay" onClick={e=>e.target===e.currentTarget&&setShowModal(false)}>
           <div className="stg-modal">
             <div className="stg-modal-head">
-              <span>Add Team Member</span>
+              <span>{t('settings.users.modal_title')}</span>
               <button type="button" onClick={()=>setShowModal(false)} className="stg-modal-close"><Xmark width={18} height={18}/></button>
             </div>
             <form onSubmit={handleAdd} className="stg-modal-body">
               <div className="stg-grid">
                 <div className="stg-field">
-                  <label>Full Name *</label>
+                  <label>{t('settings.users.full_name')}</label>
                   <input required value={form.full_name} onChange={e=>setForm(f=>({...f,full_name:e.target.value}))} placeholder="Ahmed Al Mansoori" />
                 </div>
                 <div className="stg-field">
-                  <label>Username *</label>
+                  <label>{t('settings.users.username')}</label>
                   <input required value={form.username} onChange={e=>setForm(f=>({...f,username:e.target.value}))} placeholder="ahmed.mansoori" />
                 </div>
                 <div className="stg-field">
-                  <label>Email *</label>
+                  <label>{t('settings.users.email')}</label>
                   <input required type="email" value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))} placeholder="ahmed@company.ae" />
                 </div>
                 <div className="stg-field">
-                  <label>Phone</label>
+                  <label>{t('settings.users.phone')}</label>
                   <input value={form.phone} onChange={e=>setForm(f=>({...f,phone:e.target.value}))} placeholder="+971 50 000 0000" />
                 </div>
                 <div className="stg-field">
-                  <label>Password *</label>
+                  <label>{t('settings.users.password')}</label>
                   <div className="stg-input-wrap" style={{position:'relative'}}>
                     <input required type={showPw?'text':'password'} value={form.password} onChange={e=>setForm(f=>({...f,password:e.target.value}))} placeholder="Min. 6 characters" style={{paddingRight:40}} />
                     <button type="button" onClick={()=>setShowPw(p=>!p)} style={{position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',color:'#94a3b8',padding:0}}>
@@ -613,16 +618,16 @@ function UsersTab({ toast }) {
                   </div>
                 </div>
                 <div className="stg-field">
-                  <label>Role</label>
+                  <label>{t('settings.users.role')}</label>
                   <select value={form.role} onChange={e=>setForm(f=>({...f,role:e.target.value}))}>
-                    {['admin','dispatcher','driver','client'].map(r=><option key={r} value={r}>{ROLE_META[r]?.label||r}</option>)}
+                    {['admin','dispatcher','driver','client'].map(r=><option key={r} value={r}>{t('settings.roles.' + r)}</option>)}
                   </select>
                 </div>
               </div>
               <div className="stg-modal-footer">
-                <button type="button" className="stg-btn-ghost" onClick={()=>setShowModal(false)}>Cancel</button>
+                <button type="button" className="stg-btn-ghost" onClick={()=>setShowModal(false)}>{t('settings.users.cancel')}</button>
                 <button type="submit" className="stg-btn-primary" disabled={saving}>
-                  {saving ? <><span className="stg-spin"/>Creating…</> : 'Create User'}
+                  {saving ? <><span className="stg-spin"/>{t('settings.users.creating')}</> : t('settings.users.create_user')}
                 </button>
               </div>
             </form>
@@ -637,14 +642,15 @@ function UsersTab({ toast }) {
    MAIN SETTINGS PAGE
 ═══════════════════════════════════════════════════════════════ */
 const TABS = [
-  { id:'general',       label:'General',       icon: Building,      color:'#f97316' },
-  { id:'delivery',      label:'Delivery',      icon: DeliveryTruck, color:'#3b82f6' },
-  { id:'notifications', label:'Notifications', icon: Bell,          color:'#8b5cf6' },
-  { id:'categories',    label:'Categories',    icon: Tag,           color:'#0d9488' },
-  { id:'users',         label:'Users',         icon: User,          color:'#f43f5e' },
+  { id:'general',       icon: Building,      color:'#f97316' },
+  { id:'delivery',      icon: DeliveryTruck, color:'#3b82f6' },
+  { id:'notifications', icon: Bell,          color:'#8b5cf6' },
+  { id:'categories',    icon: Tag,           color:'#0d9488' },
+  { id:'users',         icon: User,          color:'#f43f5e' },
 ];
 
 export default function Settings() {
+  const { t } = useTranslation();
   const [tab,     setTab]    = useState('general');
   const [data,    setData]   = useState({});
   const [loading, setLoading]= useState(true);
@@ -670,12 +676,12 @@ export default function Settings() {
       tenant: { name, logo_url, phone, email, address, city, country, currency, timezone },
       settings,
     });
-    if (res.success) showToast('Settings saved successfully', 'success');
-    else showToast(res.message || 'Failed to save settings', 'error');
+    if (res.success) showToast(t('settings.save_success'), 'success');
+    else showToast(res.message || t('settings.save_failed'), 'error');
     setSaving(false);
   };
 
-  const activeTab = TABS.find(t => t.id === tab);
+  const activeTab = TABS.find(tb => tb.id === tab);
 
   return (
     <div className="page-container">
@@ -687,30 +693,30 @@ export default function Settings() {
             <SettingsIcon width={22} height={22}/>
           </div>
           <div>
-            <h2 className="stg-page-title">Settings</h2>
-            <p className="stg-page-sub">Configure your delivery platform</p>
+            <h2 className="stg-page-title">{t('settings.title')}</h2>
+            <p className="stg-page-sub">{t('settings.subtitle')}</p>
           </div>
         </div>
       </div>
 
       {loading ? (
-        <div className="stg-loader" style={{minHeight:300}}>Loading settings…</div>
+        <div className="stg-loader" style={{minHeight:300}}>{t('settings.loading')}</div>
       ) : (
         <div className="stg-layout">
           <nav className="stg-sidebar">
-            {TABS.map(t => (
+            {TABS.map(tb => (
               <button
-                key={t.id}
+                key={tb.id}
                 type="button"
-                className={'stg-nav-btn'+(tab===t.id?' active':'')}
-                onClick={() => setTab(t.id)}
-                style={tab===t.id?{'--acc':t.color}:undefined}
+                className={'stg-nav-btn'+(tab===tb.id?' active':'')}
+                onClick={() => setTab(tb.id)}
+                style={tab===tb.id?{'--acc':tb.color}:undefined}
               >
-                <div className="stg-nav-icon" style={tab===t.id?{background:t.color+'20',color:t.color}:undefined}>
-                  <t.icon width={16} height={16}/>
+                <div className="stg-nav-icon" style={tab===tb.id?{background:tb.color+'20',color:tb.color}:undefined}>
+                  <tb.icon width={16} height={16}/>
                 </div>
-                <span>{t.label}</span>
-                {tab===t.id && <NavArrowRight width={13} height={13} style={{marginLeft:'auto',color:t.color}}/>}
+                <span>{t('settings.tabs.' + tb.id)}</span>
+                {tab===tb.id && <NavArrowRight width={13} height={13} style={{marginLeft:'auto',color:tb.color}}/>}
               </button>
             ))}
           </nav>
@@ -719,14 +725,8 @@ export default function Settings() {
             <div className="stg-tab-header" style={{'--acc': activeTab?.color}}>
               {activeTab && <activeTab.icon width={20} height={20}/>}
               <div>
-                <div className="stg-tab-title">{activeTab?.label}</div>
-                <div className="stg-tab-sub">
-                  {tab==='general'       && 'Company info, branding and regional preferences'}
-                  {tab==='delivery'      && 'Delivery defaults, COD rules and feature toggles'}
-                  {tab==='notifications' && 'Email SMTP and SMS gateway configuration'}
-                  {tab==='categories'    && 'Manage order categories and shipment types'}
-                  {tab==='users'         && 'Manage team members and their roles'}
-                </div>
+                <div className="stg-tab-title">{t('settings.tabs.' + tab)}</div>
+                <div className="stg-tab-sub">{t('settings.tab_descriptions.' + tab)}</div>
               </div>
             </div>
 

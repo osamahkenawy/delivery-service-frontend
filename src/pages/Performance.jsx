@@ -9,11 +9,11 @@ import './Performance.css';
 import { useTranslation } from 'react-i18next';
 
 const PERIOD_OPTIONS = [
-  { value: 'today', label: 'Today' },
-  { value: 'week', label: 'This Week' },
-  { value: 'month', label: 'This Month' },
-  { value: 'quarter', label: 'This Quarter' },
-  { value: 'custom', label: 'Custom Range' },
+  { value: 'today', labelKey: 'performance.period_today' },
+  { value: 'week', labelKey: 'performance.period_week' },
+  { value: 'month', labelKey: 'performance.period_month' },
+  { value: 'quarter', labelKey: 'performance.period_quarter' },
+  { value: 'custom', labelKey: 'performance.period_custom' },
 ];
 
 function SLARing({ percent, color, size = 100, stroke = 8 }) {
@@ -78,7 +78,7 @@ export default function Performance() {
   const slaTarget = kpis.slaTargetHours || 24;
 
   const gradeClass = (pct) => pct >= 85 ? 'excellent' : pct >= 60 ? 'good' : 'poor';
-  const gradeLabel = (pct) => pct >= 85 ? 'Excellent' : pct >= 60 ? 'Good' : 'Needs Improvement';
+  const gradeLabel = (pct) => pct >= 85 ? t('performance.grade_excellent') : pct >= 60 ? t('performance.grade_good') : t('performance.grade_needs_improvement');
   const rankClass = (i) => i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : 'normal';
 
   const formatHours = (h) => {
@@ -109,15 +109,15 @@ export default function Performance() {
         <div className="hero-content">
           <h1 className="hero-title">{t("performance.title")}</h1>
           <p className="hero-subtitle">
-            Delivery metrics, SLA compliance, and driver scorecards
+            {t('performance.subtitle')}
           </p>
         </div>
         <div className="hero-actions">
-          <button onClick={exportCSV} className="hero-btn secondary" title="Export driver data">
-            <Download width={16} height={16} /> Export
+          <button onClick={exportCSV} className="hero-btn secondary" title={t('performance.export_title')}>
+            <Download width={16} height={16} /> {t('performance.export_btn')}
           </button>
           <button onClick={load} className="hero-btn secondary">
-            <Refresh width={16} height={16} /> Refresh
+            <Refresh width={16} height={16} /> {t('performance.refresh_btn')}
           </button>
         </div>
       </div>
@@ -125,13 +125,13 @@ export default function Performance() {
       {/* Filters */}
       <div className="perf-filters">
         <select className="perf-filter-select" value={period} onChange={e => setPeriod(e.target.value)}>
-          {PERIOD_OPTIONS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+          {PERIOD_OPTIONS.map(p => <option key={p.value} value={p.value}>{t(p.labelKey)}</option>)}
         </select>
         {period === 'custom' && (
           <>
             <input type="date" className="perf-date-input" value={dateFrom}
               onChange={e => setDateFrom(e.target.value)} />
-            <span style={{ color: '#94a3b8' }}>to</span>
+            <span style={{ color: '#94a3b8' }}>{t('performance.date_to')}</span>
             <input type="date" className="perf-date-input" value={dateTo}
               onChange={e => setDateTo(e.target.value)} />
           </>
@@ -158,10 +158,10 @@ export default function Performance() {
             </div>
             <div className="perf-stat-body">
               <span className="perf-stat-val">{kpis.deliveryRate || 0}%</span>
-              <span className="perf-stat-lbl">Delivery Rate</span>
+              <span className="perf-stat-lbl">{t('performance.delivery_rate')}</span>
               <div className={`perf-stat-change ${(kpis.deliveryRate || 0) >= 80 ? 'up' : 'down'}`}>
                 {(kpis.deliveryRate || 0) >= 80 ? <StatUp width={12} height={12} /> : <StatDown width={12} height={12} />}
-                {kpis.delivered || 0} delivered
+                {t('performance.delivered_count', { count: kpis.delivered || 0 })}
               </div>
             </div>
           </div>
@@ -173,7 +173,7 @@ export default function Performance() {
             </div>
             <div className="perf-stat-body">
               <span className="perf-stat-val">{formatHours(kpis.avgDeliveryHours || 0)}</span>
-              <span className="perf-stat-lbl">Avg Delivery Time</span>
+              <span className="perf-stat-lbl">{t('performance.avg_delivery_time')}</span>
             </div>
           </div>
         </div>
@@ -184,7 +184,7 @@ export default function Performance() {
             </div>
             <div className="perf-stat-body">
               <span className="perf-stat-val">{kpis.onTimePct || 0}%</span>
-              <span className="perf-stat-lbl">On-Time ({slaTarget}h SLA)</span>
+              <span className="perf-stat-lbl">{t('performance.on_time_sla', { hours: slaTarget })}</span>
             </div>
           </div>
         </div>
@@ -195,7 +195,7 @@ export default function Performance() {
             </div>
             <div className="perf-stat-body">
               <span className="perf-stat-val">{(kpis.failed || 0) + (kpis.returned || 0)}</span>
-              <span className="perf-stat-lbl">Failed / Returned</span>
+              <span className="perf-stat-lbl">{t('performance.failed_returned')}</span>
             </div>
           </div>
         </div>
@@ -204,12 +204,12 @@ export default function Performance() {
       {/* Tabs */}
       <div className="perf-tabs">
         {[
-          { key: 'overview', label: 'SLA Overview', Icon: StatsUpSquare },
-          { key: 'drivers', label: 'Driver Scorecards', Icon: DeliveryTruck },
-        ].map(t => (
-          <button key={t.key} className={`perf-tab ${activeTab === t.key ? 'active' : ''}`}
-            onClick={() => setActiveTab(t.key)}>
-            <t.Icon width={15} height={15} /> {t.label}
+          { key: 'overview', label: t('performance.tabs.sla'), Icon: StatsUpSquare },
+          { key: 'drivers', label: t('performance.tabs.scorecards'), Icon: DeliveryTruck },
+        ].map(tab => (
+          <button key={tab.key} className={`perf-tab ${activeTab === tab.key ? 'active' : ''}`}
+            onClick={() => setActiveTab(tab.key)}>
+            <tab.Icon width={15} height={15} /> {tab.label}
           </button>
         ))}
       </div>
@@ -222,26 +222,26 @@ export default function Performance() {
               <SLARing percent={kpis.onTimePct || 0}
                 color={(kpis.onTimePct||0) >= 85 ? '#16a34a' : (kpis.onTimePct||0) >= 60 ? '#f97316' : '#ef4444'} />
               <div className="perf-sla-label">{t("performance.on_time_delivery")}</div>
-              <div className="perf-sla-sub">Target: {slaTarget}h — {gradeLabel(kpis.onTimePct || 0)}</div>
+              <div className="perf-sla-sub">{t('performance.sla_target_sub', { hours: slaTarget })} — {gradeLabel(kpis.onTimePct || 0)}</div>
             </div>
             <div className="perf-sla-card">
               <SLARing percent={kpis.firstAttemptPct || 0}
                 color={(kpis.firstAttemptPct||0) >= 85 ? '#16a34a' : (kpis.firstAttemptPct||0) >= 60 ? '#f97316' : '#ef4444'} />
-              <div className="perf-sla-label">First-Attempt Success</div>
-              <div className="perf-sla-sub">{kpis.delivered || 0} of {(kpis.delivered||0) + (kpis.failed||0)} — {gradeLabel(kpis.firstAttemptPct || 0)}</div>
+              <div className="perf-sla-label">{t('performance.sla.first_attempt')}</div>
+              <div className="perf-sla-sub">{t('performance.sla_of_total', { delivered: kpis.delivered || 0, total: (kpis.delivered||0) + (kpis.failed||0) })} — {gradeLabel(kpis.firstAttemptPct || 0)}</div>
             </div>
             <div className="perf-sla-card">
               <SLARing percent={kpis.deliveryRate || 0}
                 color={(kpis.deliveryRate||0) >= 85 ? '#16a34a' : (kpis.deliveryRate||0) >= 60 ? '#f97316' : '#ef4444'} />
               <div className="perf-sla-label">{t("performance.overall_rate")}</div>
-              <div className="perf-sla-sub">{kpis.delivered || 0} of {kpis.total || 0} — {gradeLabel(kpis.deliveryRate || 0)}</div>
+              <div className="perf-sla-sub">{t('performance.sla_of_total', { delivered: kpis.delivered || 0, total: kpis.total || 0 })} — {gradeLabel(kpis.deliveryRate || 0)}</div>
             </div>
             <div className="perf-sla-card">
               <SLARing percent={Math.min(100, Math.round((1 - (kpis.avgDeliveryHours||0) / (slaTarget * 2)) * 100))}
                 color={(kpis.avgDeliveryHours||0) <= slaTarget ? '#16a34a' : '#ef4444'} />
-              <div className="perf-sla-label">Average Speed</div>
+              <div className="perf-sla-label">{t('performance.sla.avg_speed')}</div>
               <div className="perf-sla-sub">
-                {formatHours(kpis.avgDeliveryHours || 0)} avg — {(kpis.avgDeliveryHours||0) <= slaTarget ? 'Within SLA' : 'Over SLA'}
+                {t('performance.sla_avg_sub', { time: formatHours(kpis.avgDeliveryHours || 0) })} — {(kpis.avgDeliveryHours||0) <= slaTarget ? t('performance.sla.within') : t('performance.sla.over')}
               </div>
             </div>
           </div>
@@ -251,16 +251,16 @@ export default function Performance() {
             <div className="perf-chart-card">
               <div className="perf-chart-title">
                 <StatsUpSquare width={16} height={16} style={{ color: '#f97316' }} />
-                Status Distribution
+                {t('performance.chart.status_dist')}
               </div>
               <div className="perf-chart-sub">{t("performance.subtitle")}</div>
               <div className="perf-chart-body">
                 <div style={{ display: 'flex', gap: 20, alignItems: 'flex-end', height: '100%', paddingBottom: 20 }}>
                   {[
-                    { label: 'Delivered', count: kpis.delivered || 0, color: '#16a34a' },
-                    { label: 'In Transit', count: kpis.in_transit || 0, color: '#667eea' },
-                    { label: 'Pending', count: kpis.pending || 0, color: '#d97706' },
-                    { label: 'Failed', count: kpis.failed || 0, color: '#ef4444' },
+                    { label: t('performance.chart.delivered'), count: kpis.delivered || 0, color: '#16a34a' },
+                    { label: t('performance.chart.in_transit'), count: kpis.in_transit || 0, color: '#667eea' },
+                    { label: t('performance.chart.pending'), count: kpis.pending || 0, color: '#d97706' },
+                    { label: t('performance.chart.failed'), count: kpis.failed || 0, color: '#ef4444' },
                   ].map(b => {
                     const max = Math.max(kpis.delivered||0, kpis.in_transit||0, kpis.pending||0, kpis.failed||0, 1);
                     return (
@@ -284,9 +284,9 @@ export default function Performance() {
             <div className="perf-chart-card">
               <div className="perf-chart-title">
                 <DeliveryTruck width={16} height={16} style={{ color: '#f97316' }} />
-                Top Drivers
+                {t('performance.chart.top_drivers')}
               </div>
-              <div className="perf-chart-sub">By delivery success rate</div>
+              <div className="perf-chart-sub">{t('performance.chart.top_drivers_sub')}</div>
               <div className="perf-chart-body">
                 <div style={{ width: '100%', padding: '0 8px' }}>
                   {driverPerf.slice(0, 5).map((d, i) => (
@@ -312,7 +312,7 @@ export default function Performance() {
                   ))}
                   {driverPerf.length === 0 && (
                     <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13, padding: 20 }}>
-                      No driver data available
+                      {t('performance.no_driver_data_available')}
                     </p>
                   )}
                 </div>
@@ -328,23 +328,23 @@ export default function Performance() {
           <div className="perf-empty">
             <div className="perf-empty-icon"><DeliveryTruck width={28} height={28} /></div>
             <h3>{t("performance.no_driver_data")}</h3>
-            <p>No assigned orders found for the selected period</p>
+            <p>{t('performance.no_orders_period')}</p>
           </div>
         ) : (
           <div className="perf-table-wrap">
             <table className="perf-table">
               <thead>
                 <tr>
-                  <th>#</th>
-                  <th>Driver</th>
-                  <th>Total</th>
-                  <th>Delivered</th>
-                  <th>Failed</th>
-                  <th>{t("performance.success_rate")}</th>
-                  <th>{t("performance.on_time")}</th>
-                  <th>Avg Time</th>
-                  <th>{t("performance.rating")}</th>
-                  <th>{t("performance.grade")}</th>
+                  <th>{t('performance.col.rank')}</th>
+                  <th>{t('performance.col.driver')}</th>
+                  <th>{t('performance.col.total')}</th>
+                  <th>{t('performance.col.delivered')}</th>
+                  <th>{t('performance.col.failed')}</th>
+                  <th>{t('performance.success_rate')}</th>
+                  <th>{t('performance.on_time')}</th>
+                  <th>{t('performance.col.avg_time')}</th>
+                  <th>{t('performance.rating')}</th>
+                  <th>{t('performance.grade')}</th>
                 </tr>
               </thead>
               <tbody>

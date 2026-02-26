@@ -50,11 +50,12 @@ const fmtType = t => t ? t.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCas
 
 /* ── StatusBadge ────────────────────────────────────────────────── */
 const StatusBadge = ({ status }) => {
+  const { t } = useTranslation();
   const m = STATUS_META[status] || STATUS_META.pending;
   const Icon = m.icon;
   return (
     <span className="ord-status-badge lg" style={{ background: m.bg, color: m.color }}>
-      <Icon width={14} height={14} /> {m.label}
+      <Icon width={14} height={14} /> {t(`orderDetail.status.${status}`)}
     </span>
   );
 };
@@ -70,6 +71,7 @@ const InfoRow = ({ icon: Icon, label, value, mono }) => (
 
 /* ── Progress bar ───────────────────────────────────────────────── */
 const StatusProgress = ({ status }) => {
+  const { t } = useTranslation();
   const isTerminal = ['failed','returned','cancelled'].includes(status);
   const currentIdx = isTerminal ? -1 : STATUS_FLOW.indexOf(status);
   return (
@@ -87,13 +89,13 @@ const StatusProgress = ({ status }) => {
             {i < STATUS_FLOW.length - 1 && (
               <div className={`od-progress-line ${done ? 'done' : ''}`} />
             )}
-            <span className="od-progress-label">{m.label}</span>
+            <span className="od-progress-label">{t(`orderDetail.status.${s}`)}</span>
           </div>
         );
       })}
       {isTerminal && (
         <div className="od-terminal-badge" style={{ background: STATUS_META[status]?.bg, color: STATUS_META[status]?.color }}>
-          {STATUS_META[status]?.label}
+          {t(`orderDetail.status.${status}`)}
         </div>
       )}
     </div>
@@ -172,10 +174,10 @@ export default function OrderDetail() {
   /* ── Map markers ── */
   const mapMarkers = [];
   if (order?.sender_lat && order?.sender_lng) {
-    mapMarkers.push({ lat: parseFloat(order.sender_lat), lng: parseFloat(order.sender_lng), type: 'pickup', label: 'Pickup', popup: order.sender_address || 'Pickup location' });
+    mapMarkers.push({ lat: parseFloat(order.sender_lat), lng: parseFloat(order.sender_lng), type: 'pickup', label: t('orderDetail.pickup'), popup: order.sender_address || t('orderDetail.pickup_location') });
   }
   if (order?.recipient_lat && order?.recipient_lng) {
-    mapMarkers.push({ lat: parseFloat(order.recipient_lat), lng: parseFloat(order.recipient_lng), type: 'delivery', label: 'Delivery', popup: order.recipient_address || 'Delivery location' });
+    mapMarkers.push({ lat: parseFloat(order.recipient_lat), lng: parseFloat(order.recipient_lng), type: 'delivery', label: t('orderDetail.delivery_label'), popup: order.recipient_address || t('orderDetail.delivery_location') });
   }
 
   /* ── Next possible statuses ── */
@@ -196,7 +198,7 @@ export default function OrderDetail() {
         <Package width={48} height={48} />
         <h3>{t("orderDetail.order_not_found")}</h3>
         <button className="btn-primary-action" onClick={() => navigate('/orders')}>
-          <ArrowLeft width={15} height={15} /> Back to Orders
+          <ArrowLeft width={15} height={15} /> {t('orderDetail.back_to_orders')}
         </button>
       </div>
     </div>
@@ -210,7 +212,7 @@ export default function OrderDetail() {
       {/* ── Header ── */}
       <div className="od-page-header">
         <button className="od-back-btn" onClick={() => navigate('/orders')}>
-          <ArrowLeft width={16} height={16} /> Orders
+          <ArrowLeft width={16} height={16} /> {t('orderDetail.orders_back')}
         </button>
         <div className="od-header-main">
           <div className="od-header-left">
@@ -223,10 +225,10 @@ export default function OrderDetail() {
           </div>
           <div className="od-header-actions">
             <button className="btn-outline-action" onClick={fetchOrder}>
-              <Refresh width={14} height={14} /> Refresh
+              <Refresh width={14} height={14} /> {t('orderDetail.refresh')}
             </button>
-            <button className="btn-outline-action" title="Copy tracking link" onClick={copyToken}>
-              <Copy width={14} height={14} /> {copied ? 'Copied!' : order.tracking_token}
+            <button className="btn-outline-action" title={t('orderDetail.copy_tracking_link')} onClick={copyToken}>
+              <Copy width={14} height={14} /> {copied ? t('orderDetail.copied') : order.tracking_token}
             </button>
             <a
               href={`/track/${order.tracking_token}`}
@@ -235,15 +237,15 @@ export default function OrderDetail() {
               className="btn-outline-action"
               style={{ textDecoration: 'none' }}
             >
-              <Box3dPoint width={14} height={14} /> Track
+              <Box3dPoint width={14} height={14} /> {t('orderDetail.track')}
             </a>
             <button className="btn-outline-action" onClick={() => navigate('/dispatch')}
               style={{ color: '#16a34a', borderColor: '#bbf7d0' }}>
-              <DeliveryTruck width={14} height={14} /> Dispatch
+              <DeliveryTruck width={14} height={14} /> {t('orderDetail.dispatch')}
             </button>
             <button className="btn-outline-action" onClick={() => navigate('/shipment-tracking')}
               style={{ color: '#2563eb', borderColor: '#bfdbfe' }}>
-              <MapPin width={14} height={14} /> All Tracking
+              <MapPin width={14} height={14} /> {t('orderDetail.all_tracking')}
             </button>
           </div>
         </div>
@@ -253,23 +255,23 @@ export default function OrderDetail() {
       <div className="od-progress-card">
         <StatusProgress status={order.status} />
         <div className="od-timestamps">
-          <span><Clock width={13} height={13} /> Created: {fmtDatetime(order.created_at)}</span>
-          {order.scheduled_at && <span><Calendar width={13} height={13} /> Scheduled: {fmtDatetime(order.scheduled_at)}</span>}
-          {order.picked_up_at && <span><Package width={13} height={13} /> Picked up: {fmtDatetime(order.picked_up_at)}</span>}
-          {order.delivered_at && <span><Check width={13} height={13} /> Delivered: {fmtDatetime(order.delivered_at)}</span>}
+          <span><Clock width={13} height={13} /> {t('orderDetail.created')} {fmtDatetime(order.created_at)}</span>
+          {order.scheduled_at && <span><Calendar width={13} height={13} /> {t('orderDetail.scheduled')} {fmtDatetime(order.scheduled_at)}</span>}
+          {order.picked_up_at && <span><Package width={13} height={13} /> {t('orderDetail.picked_up')} {fmtDatetime(order.picked_up_at)}</span>}
+          {order.delivered_at && <span><Check width={13} height={13} /> {t('orderDetail.delivered')} {fmtDatetime(order.delivered_at)}</span>}
         </div>
       </div>
 
       {/* ── Tabs ── */}
       <div className="od-tabs">
-        {['details','timeline','items'].map(t => (
-          <button key={t} className={`od-tab ${activeTab === t ? 'active' : ''}`}
-            onClick={() => setActiveTab(t)}>
-            {t.charAt(0).toUpperCase() + t.slice(1)}
-            {t === 'timeline' && order.status_logs?.length > 0 && (
+        {['details','timeline','items'].map(tab => (
+          <button key={tab} className={`od-tab ${activeTab === tab ? 'active' : ''}`}
+            onClick={() => setActiveTab(tab)}>
+            {t(`orderDetail.tab_${tab}`)}
+            {tab === 'timeline' && order.status_logs?.length > 0 && (
               <span className="od-tab-badge">{order.status_logs.length}</span>
             )}
-            {t === 'items' && order.items?.length > 0 && (
+            {tab === 'items' && order.items?.length > 0 && (
               <span className="od-tab-badge">{order.items.length}</span>
             )}
           </button>
@@ -284,43 +286,43 @@ export default function OrderDetail() {
 
             {/* Recipient */}
             <div className="od-card">
-              <h4 className="od-card-title"><User width={15} height={15} /> Recipient</h4>
-              <InfoRow icon={User}    label="Name"    value={order.recipient_name} />
-              <InfoRow icon={Phone}   label="Phone"   value={order.recipient_phone} mono />
-              <InfoRow icon={MapPin}  label="Address" value={order.recipient_address} />
-              {order.recipient_area && <InfoRow icon={MapPin} label="Area" value={order.recipient_area} />}
-              <InfoRow icon={MapPin}  label="Emirate" value={order.recipient_emirate} />
+              <h4 className="od-card-title"><User width={15} height={15} /> {t('orderDetail.section.recipient')}</h4>
+              <InfoRow icon={User}    label={t('orderDetail.name')}    value={order.recipient_name} />
+              <InfoRow icon={Phone}   label={t('orderDetail.phone')}   value={order.recipient_phone} mono />
+              <InfoRow icon={MapPin}  label={t('orderDetail.address')} value={order.recipient_address} />
+              {order.recipient_area && <InfoRow icon={MapPin} label={t('orderDetail.area')} value={order.recipient_area} />}
+              <InfoRow icon={MapPin}  label={t('orderDetail.emirate')} value={order.recipient_emirate} />
             </div>
 
             {/* Order Info */}
             <div className="od-card">
-              <h4 className="od-card-title"><Package width={15} height={15} /> Order Info</h4>
-              <InfoRow icon={Hashtag}      label="Order #"    value={order.order_number} mono />
-              <InfoRow icon={Box3dPoint}   label="Type"       value={fmtType(order.order_type)} />
-              <InfoRow icon={CreditCard}   label="Payment"    value={PAYMENT_LABELS[order.payment_method] || order.payment_method} />
-              <InfoRow icon={DollarCircle} label="COD Amount" value={fmtAED(order.cod_amount)} />
-              <InfoRow icon={DollarCircle} label="Delivery Fee" value={fmtAED(order.delivery_fee)} />
-              {parseFloat(order.discount) > 0 && <InfoRow icon={DollarCircle} label="Discount" value={`- ${fmtAED(order.discount)}`} />}
-              <InfoRow icon={Weight}       label="Weight"     value={order.weight_kg ? `${order.weight_kg} kg` : '—'} />
-              {order.client_name && <InfoRow icon={User} label="Client" value={order.client_name} />}
+              <h4 className="od-card-title"><Package width={15} height={15} /> {t('orderDetail.section.order_info')}</h4>
+              <InfoRow icon={Hashtag}      label={t('orderDetail.order_num')}    value={order.order_number} mono />
+              <InfoRow icon={Box3dPoint}   label={t('orderDetail.type')}       value={fmtType(order.order_type)} />
+              <InfoRow icon={CreditCard}   label={t('orderDetail.payment')}    value={t(`orderDetail.payment_labels.${order.payment_method}`, { defaultValue: order.payment_method })} />
+              <InfoRow icon={DollarCircle} label={t('orderDetail.cod_amount')} value={fmtAED(order.cod_amount)} />
+              <InfoRow icon={DollarCircle} label={t('orderDetail.delivery_fee')} value={fmtAED(order.delivery_fee)} />
+              {parseFloat(order.discount) > 0 && <InfoRow icon={DollarCircle} label={t('orderDetail.discount')} value={`- ${fmtAED(order.discount)}`} />}
+              <InfoRow icon={Weight}       label={t('orderDetail.weight')}     value={order.weight_kg ? `${order.weight_kg} kg` : '—'} />
+              {order.client_name && <InfoRow icon={User} label={t('orderDetail.client')} value={order.client_name} />}
             </div>
 
             {/* Driver */}
             <div className="od-card">
               <div className="od-card-title-row">
-                <h4 className="od-card-title"><DeliveryTruck width={15} height={15} /> Driver</h4>
+                <h4 className="od-card-title"><DeliveryTruck width={15} height={15} /> {t('orderDetail.section.driver')}</h4>
                 {['pending','confirmed','assigned'].includes(order.status) && (
                   <button className="od-action-btn" onClick={() => setShowReassign(v => !v)}>
-                    <EditPencil width={13} height={13} /> {order.driver_id ? 'Reassign' : 'Assign Driver'}
+                    <EditPencil width={13} height={13} /> {order.driver_id ? t('orderDetail.reassign') : t('orderDetail.assign_driver')}
                   </button>
                 )}
               </div>
               {order.driver_name ? (
                 <>
-                  <InfoRow icon={User}         label="Name"    value={order.driver_name} />
-                  <InfoRow icon={Phone}         label="Phone"   value={order.driver_phone} mono />
-                  <InfoRow icon={DeliveryTruck} label="Vehicle" value={fmtType(order.vehicle_type)} />
-                  {order.vehicle_plate && <InfoRow icon={Hashtag} label="Plate" value={order.vehicle_plate} mono />}
+                  <InfoRow icon={User}         label={t('orderDetail.name')}    value={order.driver_name} />
+                  <InfoRow icon={Phone}         label={t('orderDetail.phone')}   value={order.driver_phone} mono />
+                  <InfoRow icon={DeliveryTruck} label={t('orderDetail.vehicle')} value={fmtType(order.vehicle_type)} />
+                  {order.vehicle_plate && <InfoRow icon={Hashtag} label={t('orderDetail.plate')} value={order.vehicle_plate} mono />}
                 </>
               ) : (
                 <p className="od-no-driver">{t("orderDetail.no_driver")}</p>
@@ -329,7 +331,7 @@ export default function OrderDetail() {
                 <div className="od-reassign-row">
                   <select className="od-select" value={reassignDriver}
                     onChange={e => setReassignDriver(e.target.value)}>
-                    <option value="">— Select driver —</option>
+                    <option value="">{t('orderDetail.select_driver')}</option>
                     {drivers.map(d => (
                       <option key={d.id} value={d.id}>
                         {d.full_name} ({fmtType(d.vehicle_type)})
@@ -337,7 +339,7 @@ export default function OrderDetail() {
                     ))}
                   </select>
                   <button className="btn-primary-action" onClick={handleReassign} disabled={!reassignDriver || reassigning}>
-                    {reassigning ? 'Assigning…' : 'Confirm'}
+                    {reassigning ? t('orderDetail.assigning') : t('orderDetail.confirm')}
                   </button>
                   <button className="btn-outline-action" onClick={() => setShowReassign(false)}>{t("common.cancel")}</button>
                 </div>
@@ -347,7 +349,7 @@ export default function OrderDetail() {
             {/* Notes */}
             {(order.notes || order.description || order.special_instructions) && (
               <div className="od-card">
-                <h4 className="od-card-title"><Notes width={15} height={15} /> Notes</h4>
+                <h4 className="od-card-title"><Notes width={15} height={15} /> {t('orderDetail.section.notes')}</h4>
                 {order.notes && <p className="od-note-text">{order.notes}</p>}
                 {order.description && <p className="od-note-text">{order.description}</p>}
                 {order.special_instructions && (
@@ -361,7 +363,7 @@ export default function OrderDetail() {
             {/* Status Update */}
             {nextStatuses.length > 0 && (
               <div className="od-card od-status-card">
-                <h4 className="od-card-title"><ArrowRight width={15} height={15} /> Update Status</h4>
+                <h4 className="od-card-title"><ArrowRight width={15} height={15} /> {t('orderDetail.update_status')}</h4>
                 <div className="od-status-actions">
                   {nextStatuses.map(s => {
                     const m = STATUS_META[s];
@@ -371,7 +373,7 @@ export default function OrderDetail() {
                         className={`od-status-btn ${newStatus === s ? 'selected' : ''}`}
                         style={{ '--s-color': m.color, '--s-bg': m.bg }}
                         onClick={() => setNewStatus(ns => ns === s ? '' : s)}>
-                        <Icon width={14} height={14} /> {m.label}
+                        <Icon width={14} height={14} /> {t(`orderDetail.status.${s}`)}
                       </button>
                     );
                   })}
@@ -386,7 +388,7 @@ export default function OrderDetail() {
                       onChange={e => setStatusNote(e.target.value)}
                     />
                     <button className="btn-primary-action" onClick={handleStatusUpdate} disabled={savingStatus}>
-                      {savingStatus ? 'Saving…' : `Mark as ${STATUS_META[newStatus]?.label}`}
+                      {savingStatus ? t('orderDetail.saving') : t('orderDetail.mark_as', { status: t(`orderDetail.status.${newStatus}`) })}
                     </button>
                   </div>
                 )}
@@ -396,7 +398,7 @@ export default function OrderDetail() {
             {/* Mini Map */}
             {mapMarkers.length > 0 && (
               <div className="od-card od-map-card">
-                <h4 className="od-card-title"><MapPin width={15} height={15} /> Location</h4>
+                <h4 className="od-card-title"><MapPin width={15} height={15} /> {t('orderDetail.section.location')}</h4>
                 <MapView
                   markers={mapMarkers}
                   height={260}
@@ -428,12 +430,12 @@ export default function OrderDetail() {
                       {!isLast && <div className="od-tl-line" />}
                       <div className="od-tl-content">
                         <div className="od-tl-header">
-                          <span className="od-tl-status" style={{ color: m.color }}>{m.label}</span>
+                          <span className="od-tl-status" style={{ color: m.color }}>{t(`orderDetail.status.${log.status}`)}</span>
                           <span className="od-tl-time">{fmtDatetime(log.created_at)}</span>
                         </div>
                         {log.note && <p className="od-tl-note">{log.note}</p>}
                         {log.changed_by_name && (
-                          <span className="od-tl-by">by {log.changed_by_name}</span>
+                          <span className="od-tl-by">{t('orderDetail.by')} {log.changed_by_name}</span>
                         )}
                         {(log.lat && log.lng) && (
                           <span className="od-tl-gps">
@@ -453,16 +455,16 @@ export default function OrderDetail() {
         {activeTab === 'items' && (
           <div className="od-items-wrap">
             {!order.items?.length ? (
-              <p className="od-empty-tab">No items recorded for this order.</p>
+              <p className="od-empty-tab">{t('orderDetail.no_items')}</p>
             ) : (
               <table className="od-items-table">
                 <thead>
                   <tr>
-                    <th>Item</th>
-                    <th>Qty</th>
-                    <th>Weight</th>
-                    <th>Unit Price</th>
-                    <th>Notes</th>
+                    <th>{t('orderDetail.item')}</th>
+                    <th>{t('orderDetail.qty')}</th>
+                    <th>{t('orderDetail.weight')}</th>
+                    <th>{t('orderDetail.unit_price')}</th>
+                    <th>{t('orderDetail.notes')}</th>
                   </tr>
                 </thead>
                 <tbody>

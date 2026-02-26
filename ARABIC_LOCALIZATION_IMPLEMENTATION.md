@@ -2,7 +2,7 @@
 
 ## 🎯 Overview  
 
-Successfully implemented **comprehensive Arabic localization** for the Trasealla delivery service application with complete RTL (Right-to-Left) support and over **1400+ translation keys**.
+Successfully implemented **comprehensive Arabic localization** for the Trasealla Solutions service application with complete RTL (Right-to-Left) support and over **1400+ translation keys**.
 
 ---
 
@@ -230,7 +230,7 @@ const isRTL = i18n.language === 'ar';
 
 ## 🎯 Result
 
-The Trasealla delivery service now provides a **world-class Arabic experience** with:
+The Trasealla Solutions service now provides a **world-class Arabic experience** with:
 - 🇦🇪 **Complete Arabic UI** with professional translations
 - ⬅️ **Perfect RTL Layout** that feels natural to Arabic users  
 - 📱 **Mobile-First RTL** responsive design

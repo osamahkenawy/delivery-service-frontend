@@ -72,7 +72,7 @@ export default function Reports() {
   };
 
   const deleteSchedule = async (id) => {
-    if (!confirm('Delete this scheduled report?')) return;
+    if (!confirm(t('reports.schedules.delete_confirm'))) return;
     await api.delete(`/reports/schedules/${id}`);
     fetchSchedules();
   };
@@ -84,7 +84,7 @@ export default function Reports() {
 
   const sendNow = async (id) => {
     const res = await api.post(`/reports/schedules/${id}/send-now`);
-    if (res.success) alert('Report sent successfully!');
+    if (res.success) alert(t('reports.schedules.sent_success'));
   };
 
   const fetchFinancial = async () => {
@@ -125,25 +125,25 @@ export default function Reports() {
     // Header
     doc.setFontSize(20);
     doc.setTextColor(36, 64, 102);
-    doc.text('Delivery Report', 14, 20);
+    doc.text(t('reports.pdf.title'), 14, 20);
     doc.setFontSize(10);
     doc.setTextColor(100);
-    doc.text(`Generated: ${now}  |  Period: Last ${period} days`, 14, 28);
+    doc.text(t('reports.pdf.generated_period', { date: now, days: period }), 14, 28);
 
     // KPIs table
     doc.setFontSize(13);
     doc.setTextColor(36, 64, 102);
-    doc.text('Overview', 14, 40);
+    doc.text(t('reports.pdf.overview'), 14, 40);
     autoTable(doc, {
       startY: 44,
-      head: [['Metric', 'Value']],
+      head: [[t('reports.pdf.metric'), t('reports.pdf.value')]],
       body: [
-        ['Total Orders', String(ov.total_orders || 0)],
-        ['Delivered', String(ov.delivered || 0)],
-        ['Failed', String(ov.failed || 0)],
-        ['Success Rate', (ov.success_rate || 0) + '%'],
-        ['Total Revenue', fmtAED(ov.total_revenue)],
-        ['COD Collected', fmtAED(ov.cod_collected)],
+        [t('reports.pdf.total_orders'), String(ov.total_orders || 0)],
+        [t('reports.pdf.delivered'), String(ov.delivered || 0)],
+        [t('reports.pdf.failed'), String(ov.failed || 0)],
+        [t('reports.pdf.success_rate'), (ov.success_rate || 0) + '%'],
+        [t('reports.pdf.total_revenue'), fmtAED(ov.total_revenue)],
+        [t('reports.pdf.cod_collected'), fmtAED(ov.cod_collected)],
       ],
       theme: 'grid',
       headStyles: { fillColor: [36, 64, 102] },
@@ -155,10 +155,10 @@ export default function Reports() {
       doc.setFontSize(13);
       doc.setTextColor(36, 64, 102);
       const zy = doc.lastAutoTable.finalY + 12;
-      doc.text('Orders by Zone', 14, zy);
+      doc.text(t('reports.pdf.orders_by_zone'), 14, zy);
       autoTable(doc, {
         startY: zy + 4,
-        head: [['Zone', 'Orders', 'Delivered', 'Success %', 'Revenue']],
+        head: [[t('reports.pdf.zone'), t('reports.pdf.orders'), t('reports.pdf.delivered'), t('reports.pdf.success_pct'), t('reports.pdf.revenue')]],
         body: data.by_zone.map(r => [r.zone, r.orders, r.delivered, pct(r.delivered, r.orders), fmtAED(r.revenue)]),
         theme: 'grid',
         headStyles: { fillColor: [36, 64, 102] },
@@ -173,10 +173,10 @@ export default function Reports() {
       const startY = dy > 240 ? 20 : dy;
       doc.setFontSize(13);
       doc.setTextColor(36, 64, 102);
-      doc.text('Driver Performance', 14, startY);
+      doc.text(t('reports.pdf.driver_performance'), 14, startY);
       autoTable(doc, {
         startY: startY + 4,
-        head: [['Driver', 'Vehicle', 'Total', 'Delivered', 'Failed', 'Success %', 'Revenue']],
+        head: [[t('reports.pdf.driver'), t('reports.pdf.vehicle'), t('reports.pdf.total'), t('reports.pdf.delivered'), t('reports.pdf.failed'), t('reports.pdf.success_pct'), t('reports.pdf.revenue')]],
         body: data.driver_performance.map(r => [
           r.full_name, r.vehicle_type?.replace('_',' '), r.total_assigned, r.delivered, r.failed,
           pct(r.delivered, r.total_assigned), fmtAED(r.revenue)
@@ -194,10 +194,10 @@ export default function Reports() {
       const startY = cy > 240 ? 20 : cy;
       doc.setFontSize(13);
       doc.setTextColor(36, 64, 102);
-      doc.text('Top Clients', 14, startY);
+      doc.text(t('reports.pdf.top_clients'), 14, startY);
       autoTable(doc, {
         startY: startY + 4,
-        head: [['Client', 'Orders', 'Delivered', 'Revenue', 'Avg Value']],
+        head: [[t('reports.pdf.client'), t('reports.pdf.orders'), t('reports.pdf.delivered'), t('reports.pdf.revenue'), t('reports.pdf.avg_value')]],
         body: data.top_clients.map(r => [r.name, r.orders, r.delivered, fmtAED(r.revenue), fmtAED(r.avg_order_value)]),
         theme: 'grid',
         headStyles: { fillColor: [36, 64, 102] },
@@ -211,15 +211,15 @@ export default function Reports() {
   const ov = data?.overview || {};
 
   const volumeSeries = data?.volume_by_day?.length ? [
-    { name: 'Total',     data: data.volume_by_day.map(d => d.total || 0) },
-    { name: 'Delivered', data: data.volume_by_day.map(d => d.delivered || 0) },
-    { name: 'Failed',    data: data.volume_by_day.map(d => d.failed || 0) },
+    { name: t('reports.chart.total_series'),     data: data.volume_by_day.map(d => d.total || 0) },
+    { name: t('reports.chart.delivered_label'), data: data.volume_by_day.map(d => d.delivered || 0) },
+    { name: t('reports.chart.failed_label'),    data: data.volume_by_day.map(d => d.failed || 0) },
   ] : [];
   const volumeCategories = data?.volume_by_day?.map(d => d.date?.slice(5) || '') || [];
 
   const zoneSeries = data?.by_zone?.length ? [
-    { name: 'Orders',    data: data.by_zone.map(d => d.orders || 0) },
-    { name: 'Delivered', data: data.by_zone.map(d => d.delivered || 0) },
+    { name: t('reports.chart.orders_series'),    data: data.by_zone.map(d => d.orders || 0) },
+    { name: t('reports.chart.delivered_label'), data: data.by_zone.map(d => d.delivered || 0) },
   ] : [];
   const zoneCategories = data?.by_zone?.map(d => d.zone || '') || [];
 
@@ -237,13 +237,13 @@ export default function Reports() {
     <div className="page-container">
       <div className="page-header-row">
         <div>
-          <h2 className="page-heading">Reports</h2>
+          <h2 className="page-heading">{t('reports.title')}</h2>
           <p className="page-subheading">{t("reports.subtitle")}</p>
         </div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
           <input type="date" className="filter-date" value={dateFrom}
             onChange={e => setDateFrom(e.target.value)} />
-          <span className="date-sep">to</span>
+          <span className="date-sep">{t('reports.date_separator')}</span>
           <input type="date" className="filter-date" value={dateTo}
             onChange={e => setDateTo(e.target.value)} />
           <select className="rpt-period-select" value={period}
@@ -251,29 +251,29 @@ export default function Reports() {
             <option value="7">{t("reports.last_7_days")}</option>
             <option value="30">{t("reports.last_30_days")}</option>
             <option value="90">{t("reports.last_90_days")}</option>
-            <option value="365">Last year</option>
+            <option value="365">{t('reports.last_year')}</option>
           </select>
           <button className="btn-outline-action" onClick={fetchAll}>
-            <Refresh width={14} height={14} /> Refresh
+            <Refresh width={14} height={14} /> {t('reports.refresh')}
           </button>
           <button className="btn-outline-action" onClick={exportPDF} style={{ background: '#244066', color: '#fff', border: 'none' }}>
-            <Page width={14} height={14} /> PDF Report
+            <Page width={14} height={14} /> {t('reports.pdf_report')}
           </button>
         </div>
       </div>
 
       <div className="od-tabs" style={{ marginBottom: 24 }}>
         {[
-          { key: 'overview', label: 'Overview' },
-          { key: 'volume',   label: 'Daily Volume' },
-          { key: 'zones',    label: 'By Zone' },
-          { key: 'drivers',  label: 'Driver Performance' },
-          { key: 'clients',  label: 'Clients' },
-          { key: 'types',    label: 'Order Types' },
-          { key: 'delivery_time', label: 'Delivery Time' },
-          { key: 'payments', label: 'Payments' },
-          { key: 'financial', label: 'Financial' },
-          { key: 'schedules', label: 'Email Schedules' },
+          { key: 'overview', label: t('reports.tabs.overview') },
+          { key: 'volume',   label: t('reports.tabs.daily_volume') },
+          { key: 'zones',    label: t('reports.tabs.by_zone') },
+          { key: 'drivers',  label: t('reports.tabs.driver_performance') },
+          { key: 'clients',  label: t('reports.tabs.clients') },
+          { key: 'types',    label: t('reports.tabs.order_types') },
+          { key: 'delivery_time', label: t('reports.tabs.delivery_time') },
+          { key: 'payments', label: t('reports.tabs.payments') },
+          { key: 'financial', label: t('reports.tabs.financial') },
+          { key: 'schedules', label: t('reports.tabs.schedules') },
         ].map(s => (
           <button key={s.key} className={`od-tab ${activeSection === s.key ? 'active' : ''}`}
             onClick={() => setActiveSection(s.key)}>{s.label}</button>
@@ -287,8 +287,8 @@ export default function Reports() {
       ) : !data ? (
         <div className="ord-empty">
           <StatsReport width={48} height={48} />
-          <h3>No data available</h3>
-          <p>No orders found for the selected period</p>
+          <h3>{t('reports.no_data')}</h3>
+          <p>{t('reports.no_orders_period')}</p>
         </div>
       ) : (
         <>
@@ -296,22 +296,22 @@ export default function Reports() {
           {activeSection === 'overview' && (
             <div>
               <div className="rpt-kpi-grid">
-                <KPI icon={Package}      label="Total Orders"  value={ov.total_orders || 0}    color="#244066" />
-                <KPI icon={Check}        label="Delivered"     value={ov.delivered || 0}         color="#16a34a" sub={pct(ov.delivered, ov.total_orders) + ' success rate'} />
-                <KPI icon={Xmark}        label="Failed"        value={ov.failed || 0}            color="#dc2626" sub={pct(ov.failed, ov.total_orders) + ' of total'} />
-                <KPI icon={DollarCircle} label="Revenue"       value={fmtAED(ov.total_revenue)}  color="#f97316" />
-                <KPI icon={DollarCircle} label="COD Collected" value={fmtAED(ov.cod_collected)}  color="#8b5cf6" />
-                <KPI icon={StatsReport}  label="Success Rate"  value={(ov.success_rate || 0) + '%'} color="#0ea5e9" />
+                <KPI icon={Package}      label={t('reports.kpi.total_orders')}  value={ov.total_orders || 0}    color="#244066" />
+                <KPI icon={Check}        label={t('reports.kpi.delivered')}     value={ov.delivered || 0}         color="#16a34a" sub={pct(ov.delivered, ov.total_orders) + ' ' + t('reports.success_rate_suffix')} />
+                <KPI icon={Xmark}        label={t('reports.kpi.failed')}        value={ov.failed || 0}            color="#dc2626" sub={pct(ov.failed, ov.total_orders) + ' ' + t('reports.of_total_suffix')} />
+                <KPI icon={DollarCircle} label={t('reports.kpi.revenue')}       value={fmtAED(ov.total_revenue)}  color="#f97316" />
+                <KPI icon={DollarCircle} label={t('reports.kpi.cod_collected')} value={fmtAED(ov.cod_collected)}  color="#8b5cf6" />
+                <KPI icon={StatsReport}  label={t('reports.kpi.success_rate')}  value={(ov.success_rate || 0) + '%'} color="#0ea5e9" />
               </div>
               {statusBreakdown.length > 0 && (
                 <div className="rpt-chart-row">
                   <div className="rpt-chart-card">
-                    <div className="rpt-chart-header"><h4>Order Status Breakdown</h4></div>
+                    <div className="rpt-chart-header"><h4>{t('reports.chart.status_breakdown')}</h4></div>
                     <ReactApexChart type="donut" height={280}
                       series={statusBreakdown}
                       options={{
                         chart: CHART_BASE,
-                        labels: ['Delivered', 'Failed', 'Other'],
+                        labels: [t('reports.chart.delivered_label'), t('reports.chart.failed_label'), t('reports.chart.other_label')],
                         colors: ['#22c55e', '#ef4444', '#94a3b8'],
                         legend: { position: 'bottom' },
                         dataLabels: { formatter: v => v.toFixed(1) + '%' },
@@ -321,9 +321,9 @@ export default function Reports() {
                   </div>
                   {data?.by_emirate?.length > 0 && (
                     <div className="rpt-chart-card">
-                      <div className="rpt-chart-header"><h4>Orders by Emirate</h4></div>
+                      <div className="rpt-chart-header"><h4>{t('reports.chart.by_emirate')}</h4></div>
                       <ReactApexChart type="bar" height={280}
-                        series={[{ name: 'Orders', data: data.by_emirate.map(d => d.orders || 0) }]}
+                        series={[{ name: t('reports.chart.orders_series'), data: data.by_emirate.map(d => d.orders || 0) }]}
                         options={{
                           chart: CHART_BASE,
                           colors: [COLORS[0]],
@@ -357,7 +357,7 @@ export default function Reports() {
                   <div className="rpt-table-card" style={{ flex: 1 }}>
                     <h4 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600 }}>{t("reports.failure_details")}</h4>
                     <table className="od-items-table">
-                      <thead><tr><th>Reason</th><th>Count</th><th>% of Failed</th></tr></thead>
+                      <thead><tr><th>{t('reports.col.reason')}</th><th>{t('reports.col.count')}</th><th>{t('reports.col.pct_failed')}</th></tr></thead>
                       <tbody>
                         {data.failure_reasons.map((row, i) => {
                           const totalFailed = data.failure_reasons.reduce((a,b) => a + (b.count || 0), 0);
@@ -383,7 +383,7 @@ export default function Reports() {
               <div className="rpt-chart-header">
                 <h4>{t("reports.daily_volume")}</h4>
                 <button className="btn-outline-action" onClick={() => exportCSV(data?.volume_by_day, 'volume-by-day')}>
-                  <Download width={13} height={13} /> Export CSV
+                  <Download width={13} height={13} /> {t('reports.export_csv')}
                 </button>
               </div>
               {volumeSeries.length > 0 ? (
@@ -400,7 +400,7 @@ export default function Reports() {
                     grid: { borderColor: '#f1f5f9' },
                   }}
                 />
-              ) : <p className="od-empty-tab">No daily data yet.</p>}
+              ) : <p className="od-empty-tab">{t('reports.no_daily_data')}</p>}
             </div>
           )}
 
@@ -412,7 +412,7 @@ export default function Reports() {
                 const maxOrders = Math.max(...data.by_zone.map(z => z.orders || 0), 1);
                 return (
                   <div className="rpt-chart-card" style={{ marginBottom: 20 }}>
-                    <div className="rpt-chart-header"><h4>Zone Order Density</h4></div>
+                    <div className="rpt-chart-header"><h4>{t('reports.chart.zone_density')}</h4></div>
                     <div style={{
                       display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
                       gap: 12, padding: '8px 0',
@@ -432,11 +432,11 @@ export default function Reports() {
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                               <div>
                                 <div style={{ fontSize: 26, fontWeight: 800, lineHeight: 1 }}>{z.orders}</div>
-                                <div style={{ fontSize: 11, opacity: 0.85, marginTop: 2 }}>orders</div>
+                                <div style={{ fontSize: 11, opacity: 0.85, marginTop: 2 }}>{t('reports.chart.orders_label')}</div>
                               </div>
                               <div style={{ textAlign: 'right' }}>
                                 <div style={{ fontSize: 14, fontWeight: 700 }}>{successRate}%</div>
-                                <div style={{ fontSize: 10, opacity: 0.8 }}>success</div>
+                                <div style={{ fontSize: 10, opacity: 0.8 }}>{t('reports.chart.success_label')}</div>
                               </div>
                             </div>
                           </div>
@@ -448,9 +448,9 @@ export default function Reports() {
               })()}
               <div className="rpt-chart-card" style={{ marginBottom: 20 }}>
                 <div className="rpt-chart-header">
-                  <h4>Orders by Zone</h4>
+                  <h4>{t('reports.chart.orders_by_zone')}</h4>
                   <button className="btn-outline-action" onClick={() => exportCSV(data?.by_zone, 'orders-by-zone')}>
-                    <Download width={13} height={13} /> Export CSV
+                    <Download width={13} height={13} /> {t('reports.export_csv')}
                   </button>
                 </div>
                 {zoneSeries.length > 0 ? (
@@ -465,12 +465,12 @@ export default function Reports() {
                       grid: { borderColor: '#f1f5f9' },
                     }}
                   />
-                ) : <p className="od-empty-tab">No zone data yet.</p>}
+                ) : <p className="od-empty-tab">{t('reports.no_zone_data')}</p>}
               </div>
               {data?.by_zone?.length > 0 && (
                 <div className="rpt-table-card">
                   <table className="od-items-table">
-                    <thead><tr><th>Zone</th><th>Total</th><th>Delivered</th><th>Success Rate</th><th>Revenue</th></tr></thead>
+                    <thead><tr><th>{t('reports.col.zone')}</th><th>{t('reports.col.total')}</th><th>{t('reports.col.delivered')}</th><th>{t('reports.col.success_rate')}</th><th>{t('reports.col.revenue')}</th></tr></thead>
                     <tbody>
                       {data.by_zone.map((row, i) => (
                         <tr key={i}>
@@ -494,15 +494,15 @@ export default function Reports() {
               {data?.driver_performance?.length > 0 && (
                 <div className="rpt-chart-card" style={{ marginBottom: 20 }}>
                   <div className="rpt-chart-header">
-                    <h4>Top Drivers by Deliveries</h4>
+                    <h4>{t('reports.chart.top_drivers')}</h4>
                     <button className="btn-outline-action" onClick={() => exportCSV(data?.driver_performance, 'driver-performance')}>
-                      <Download width={13} height={13} /> Export CSV
+                      <Download width={13} height={13} /> {t('reports.export_csv')}
                     </button>
                   </div>
                   <ReactApexChart type="bar" height={300}
                     series={[
-                      { name: 'Delivered', data: data.driver_performance.slice(0,10).map(d => d.delivered || 0) },
-                      { name: 'Failed',    data: data.driver_performance.slice(0,10).map(d => d.failed || 0) },
+                      { name: t('reports.chart.delivered_label'), data: data.driver_performance.slice(0,10).map(d => d.delivered || 0) },
+                      { name: t('reports.chart.failed_label'),    data: data.driver_performance.slice(0,10).map(d => d.failed || 0) },
                     ]}
                     options={{
                       chart: { ...CHART_BASE, stacked: true },
@@ -518,7 +518,7 @@ export default function Reports() {
               )}
               <div className="rpt-table-card">
                 <table className="od-items-table">
-                  <thead><tr><th>Driver</th><th>Vehicle</th><th>Total</th><th>Delivered</th><th>Failed</th><th>Success Rate</th><th>Revenue</th><th>Rating</th></tr></thead>
+                  <thead><tr><th>{t('reports.col.driver')}</th><th>{t('reports.col.vehicle')}</th><th>{t('reports.col.total')}</th><th>{t('reports.col.delivered')}</th><th>{t('reports.col.failed')}</th><th>{t('reports.col.success_rate')}</th><th>{t('reports.col.revenue')}</th><th>{t('reports.col.rating')}</th></tr></thead>
                   <tbody>
                     {data?.driver_performance?.length ? data.driver_performance.map((row, i) => (
                       <tr key={i}>
@@ -532,7 +532,7 @@ export default function Reports() {
                         <td>{row.rating ? `⭐ ${parseFloat(row.rating).toFixed(1)}` : '—'}</td>
                       </tr>
                     )) : (
-                      <tr><td colSpan={8} style={{ textAlign:'center', padding:40, color:'#94a3b8' }}>No driver data yet</td></tr>
+                      <tr><td colSpan={8} style={{ textAlign:'center', padding:40, color:'#94a3b8' }}>{t('reports.no_driver_data_text')}</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -545,7 +545,7 @@ export default function Reports() {
             <div className="rpt-chart-row">
               {paymentSeries.length > 0 && (
                 <div className="rpt-chart-card">
-                  <div className="rpt-chart-header"><h4>Payment Method Distribution</h4></div>
+                  <div className="rpt-chart-header"><h4>{t('reports.chart.payment_distribution')}</h4></div>
                   <ReactApexChart type="pie" height={300} series={paymentSeries}
                     options={{
                       chart: CHART_BASE,
@@ -558,9 +558,9 @@ export default function Reports() {
                 </div>
               )}
               <div className="rpt-table-card" style={{ flex: 1 }}>
-                <h4 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600 }}>Payment Breakdown</h4>
+                <h4 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600 }}>{t('reports.chart.payment_breakdown')}</h4>
                 <table className="od-items-table">
-                  <thead><tr><th>Method</th><th>Orders</th><th>Revenue</th></tr></thead>
+                  <thead><tr><th>{t('reports.col.method')}</th><th>{t('reports.col.orders')}</th><th>{t('reports.col.revenue')}</th></tr></thead>
                   <tbody>
                     {data?.by_payment_method?.length ? data.by_payment_method.map((row, i) => (
                       <tr key={i}>
@@ -569,7 +569,7 @@ export default function Reports() {
                         <td>{fmtAED(row.revenue)}</td>
                       </tr>
                     )) : (
-                      <tr><td colSpan={3} style={{ textAlign:'center', padding:40, color:'#94a3b8' }}>No payment data</td></tr>
+                      <tr><td colSpan={3} style={{ textAlign:'center', padding:40, color:'#94a3b8' }}>{t('reports.no_payment_data')}</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -584,11 +584,11 @@ export default function Reports() {
                 <>
                   <div className="rpt-chart-row" style={{ marginBottom: 20 }}>
                     <div className="rpt-chart-card">
-                      <div className="rpt-chart-header"><h4>Top Clients by Orders</h4></div>
+                      <div className="rpt-chart-header"><h4>{t('reports.chart.top_clients')}</h4></div>
                       <ReactApexChart type="bar" height={320}
                         series={[
-                          { name: 'Orders', data: data.top_clients.slice(0,10).map(c => c.orders || 0) },
-                          { name: 'Delivered', data: data.top_clients.slice(0,10).map(c => c.delivered || 0) },
+                          { name: t('reports.chart.orders_series'), data: data.top_clients.slice(0,10).map(c => c.orders || 0) },
+                          { name: t('reports.chart.delivered_label'), data: data.top_clients.slice(0,10).map(c => c.delivered || 0) },
                         ]}
                         options={{
                           chart: { ...CHART_BASE, stacked: false },
@@ -602,7 +602,7 @@ export default function Reports() {
                       />
                     </div>
                     <div className="rpt-chart-card">
-                      <div className="rpt-chart-header"><h4>Revenue by Client</h4></div>
+                      <div className="rpt-chart-header"><h4>{t('reports.chart.revenue_by_client')}</h4></div>
                       <ReactApexChart type="donut" height={320}
                         series={data.top_clients.slice(0,8).map(c => parseFloat(c.revenue) || 0)}
                         options={{
@@ -620,11 +620,11 @@ export default function Reports() {
                     <div className="rpt-chart-header" style={{ marginBottom: 16 }}>
                       <h4>{t("reports.client_analytics")}</h4>
                       <button className="btn-outline-action" onClick={() => exportCSV(data?.top_clients, 'client-analytics')}>
-                        <Download width={13} height={13} /> Export CSV
+                        <Download width={13} height={13} /> {t('reports.export_csv')}
                       </button>
                     </div>
                     <table className="od-items-table">
-                      <thead><tr><th>Client</th><th>Company</th><th>Orders</th><th>Delivered</th><th>Failed</th><th>Success %</th><th>Revenue</th><th>Avg Value</th><th>{t("reports.cod_total")}</th></tr></thead>
+                      <thead><tr><th>{t('reports.col.client')}</th><th>{t('reports.col.company')}</th><th>{t('reports.col.orders')}</th><th>{t('reports.col.delivered')}</th><th>{t('reports.col.failed')}</th><th>{t('reports.col.success_pct')}</th><th>{t('reports.col.revenue')}</th><th>{t('reports.col.avg_value')}</th><th>{t('reports.cod_total')}</th></tr></thead>
                       <tbody>
                         {data.top_clients.map((row, i) => (
                           <tr key={i}>
@@ -647,8 +647,8 @@ export default function Reports() {
               {(!data?.top_clients || data.top_clients.length === 0) && (
                 <div className="ord-empty">
                   <User width={48} height={48} />
-                  <h3>No client data</h3>
-                  <p>No client-linked orders found for the selected period</p>
+                  <h3>{t('reports.no_client_data')}</h3>
+                  <p>{t('reports.no_client_orders')}</p>
                 </div>
               )}
             </div>
@@ -660,7 +660,7 @@ export default function Reports() {
               {data?.by_order_type?.length > 0 ? (
                 <>
                   <div className="rpt-chart-card">
-                    <div className="rpt-chart-header"><h4>Order Types Distribution</h4></div>
+                    <div className="rpt-chart-header"><h4>{t('reports.chart.order_types_dist')}</h4></div>
                     <ReactApexChart type="donut" height={300}
                       series={data.by_order_type.map(d => d.count || 0)}
                       options={{
@@ -674,9 +674,9 @@ export default function Reports() {
                     />
                   </div>
                   <div className="rpt-table-card" style={{ flex: 1 }}>
-                    <h4 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600 }}>Order Type Breakdown</h4>
+                    <h4 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600 }}>{t('reports.chart.order_type_breakdown')}</h4>
                     <table className="od-items-table">
-                      <thead><tr><th>Type</th><th>Count</th><th>% of Total</th></tr></thead>
+                      <thead><tr><th>{t('reports.col.type')}</th><th>{t('reports.col.count')}</th><th>{t('reports.col.pct_total')}</th></tr></thead>
                       <tbody>
                         {data.by_order_type.map((row, i) => (
                           <tr key={i}>
@@ -692,8 +692,8 @@ export default function Reports() {
               ) : (
                 <div className="ord-empty" style={{ gridColumn: '1 / -1' }}>
                   <Package width={48} height={48} />
-                  <h3>No order type data</h3>
-                  <p>Order types not recorded for this period</p>
+                  <h3>{t('reports.no_order_type_data')}</h3>
+                  <p>{t('reports.no_order_type_sub')}</p>
                 </div>
               )}
             </div>
@@ -708,12 +708,12 @@ export default function Reports() {
                     <div className="rpt-chart-header">
                       <h4>{t("reports.avg_delivery_time")}</h4>
                       <button className="btn-outline-action" onClick={() => exportCSV(data?.delivery_time_by_zone, 'delivery-time-by-zone')}>
-                        <Download width={13} height={13} /> Export CSV
+                        <Download width={13} height={13} /> {t('reports.export_csv')}
                       </button>
                     </div>
                     <ReactApexChart type="bar" height={340}
                       series={[
-                        { name: 'Avg Minutes', data: data.delivery_time_by_zone.map(d => d.avg_minutes || 0) },
+                        { name: t('reports.chart.avg_minutes_series'), data: data.delivery_time_by_zone.map(d => d.avg_minutes || 0) },
                       ]}
                       options={{
                         chart: CHART_BASE,
@@ -722,13 +722,13 @@ export default function Reports() {
                         plotOptions: { bar: { borderRadius: 6, columnWidth: '50%' } },
                         dataLabels: { enabled: true, formatter: v => v > 60 ? `${(v/60).toFixed(1)}h` : `${v}m` },
                         grid: { borderColor: '#f1f5f9' },
-                        yaxis: { title: { text: 'Minutes' } },
+                        yaxis: { title: { text: t('reports.yaxis_minutes') } },
                       }}
                     />
                   </div>
                   <div className="rpt-table-card">
                     <table className="od-items-table">
-                      <thead><tr><th>Zone</th><th>{t("reports.deliveries")}</th><th>Avg Time</th><th>{t("reports.fastest")}</th><th>Slowest</th></tr></thead>
+                      <thead><tr><th>{t('reports.col.zone')}</th><th>{t('reports.deliveries')}</th><th>{t('reports.col.avg_time')}</th><th>{t('reports.fastest')}</th><th>{t('reports.col.slowest')}</th></tr></thead>
                       <tbody>
                         {data.delivery_time_by_zone.map((row, i) => {
                           const fmtM = m => { if (!m) return '—'; return m >= 60 ? `${(m/60).toFixed(1)}h` : `${m}m`; };
@@ -749,8 +749,8 @@ export default function Reports() {
               ) : (
                 <div className="ord-empty">
                   <Timer width={48} height={48} />
-                  <h3>No delivery time data</h3>
-                  <p>No delivered orders with timing data for this period</p>
+                  <h3>{t('reports.no_delivery_time')}</h3>
+                  <p>{t('reports.no_delivery_time_sub')}</p>
                 </div>
               )}
             </div>
@@ -765,27 +765,27 @@ export default function Reports() {
                   <>
                     {/* Financial KPI Cards */}
                     <div className="rpt-kpi-grid">
-                      <KPI icon={DollarCircle} label="Gross Fees"     value={fmtAED(fk.gross_delivery_fees)} color="#244066" />
-                      <KPI icon={Xmark}        label="Discounts"      value={fmtAED(fk.total_discounts)}     color="#ef4444" />
-                      <KPI icon={Wallet}       label="Net Revenue"    value={fmtAED(fk.net_revenue)}         color="#16a34a" sub={`${fk.delivered || 0} delivered orders`} />
-                      <KPI icon={CreditCard}   label="COD Collected"  value={fmtAED(fk.cod_collected)}       color="#f97316" />
-                      <KPI icon={Bank}         label="COD Settled"    value={fmtAED(fk.cod_settled)}         color="#22c55e" />
-                      <KPI icon={Clock}        label="COD Pending"    value={fmtAED(fk.cod_unsettled)}       color="#dc2626" sub={`Outstanding: ${fmtAED(fk.cod_outstanding)}`} />
+                      <KPI icon={DollarCircle} label={t('reports.financial.gross_fees')}     value={fmtAED(fk.gross_delivery_fees)} color="#244066" />
+                      <KPI icon={Xmark}        label={t('reports.financial.discounts')}      value={fmtAED(fk.total_discounts)}     color="#ef4444" />
+                      <KPI icon={Wallet}       label={t('reports.financial.net_revenue')}    value={fmtAED(fk.net_revenue)}         color="#16a34a" sub={t('reports.financial.delivered_orders_sub', { count: fk.delivered || 0 })} />
+                      <KPI icon={CreditCard}   label={t('reports.financial.cod_collected')}  value={fmtAED(fk.cod_collected)}       color="#f97316" />
+                      <KPI icon={Bank}         label={t('reports.financial.cod_settled')}    value={fmtAED(fk.cod_settled)}         color="#22c55e" />
+                      <KPI icon={Clock}        label={t('reports.financial.cod_pending')}    value={fmtAED(fk.cod_unsettled)}       color="#dc2626" sub={t('reports.financial.outstanding_sub', { amount: fmtAED(fk.cod_outstanding) })} />
                     </div>
 
                     {/* Revenue Trend Chart */}
                     {finData.revenue_by_day?.length > 0 && (
                       <div className="rpt-chart-card" style={{ marginBottom: 20 }}>
                         <div className="rpt-chart-header">
-                          <h4>Revenue Trend</h4>
+                          <h4>{t('reports.chart.revenue_trend')}</h4>
                           <button className="btn-outline-action" onClick={() => exportCSV(finData.revenue_by_day, 'revenue-by-day')}>
-                            <Download width={13} height={13} /> Export CSV
+                            <Download width={13} height={13} /> {t('reports.export_csv')}
                           </button>
                         </div>
                         <ReactApexChart type="area" height={320}
                           series={[
-                            { name: 'Revenue', data: finData.revenue_by_day.map(d => parseFloat(d.revenue) || 0) },
-                            { name: 'COD',     data: finData.revenue_by_day.map(d => parseFloat(d.cod) || 0) },
+                            { name: t('reports.chart.revenue_series'), data: finData.revenue_by_day.map(d => parseFloat(d.revenue) || 0) },
+                            { name: t('reports.chart.cod_series'),     data: finData.revenue_by_day.map(d => parseFloat(d.cod) || 0) },
                           ]}
                           options={{
                             chart: { ...CHART_BASE, stacked: false },
@@ -795,7 +795,7 @@ export default function Reports() {
                             fill: { type: 'gradient', gradient: { opacityFrom: 0.35, opacityTo: 0.05 } },
                             dataLabels: { enabled: false },
                             grid: { borderColor: '#f1f5f9' },
-                            yaxis: { title: { text: 'AED' }, labels: { formatter: v => v >= 1000 ? (v/1000).toFixed(1) + 'K' : v.toFixed(0) } },
+                            yaxis: { title: { text: t('reports.yaxis_aed') }, labels: { formatter: v => v >= 1000 ? (v/1000).toFixed(1) + 'K' : v.toFixed(0) } },
                             legend: { position: 'top' },
                             tooltip: { y: { formatter: v => fmtAED(v) } },
                           }}
@@ -807,7 +807,7 @@ export default function Reports() {
                     <div className="rpt-chart-row" style={{ marginBottom: 20 }}>
                       {finData.by_payment_method?.length > 0 && (
                         <div className="rpt-chart-card">
-                          <div className="rpt-chart-header"><h4>Revenue by Payment Method</h4></div>
+                          <div className="rpt-chart-header"><h4>{t('reports.chart.revenue_by_payment')}</h4></div>
                           <ReactApexChart type="donut" height={280}
                             series={finData.by_payment_method.map(d => parseFloat(d.revenue) || 0)}
                             options={{
@@ -824,9 +824,9 @@ export default function Reports() {
                       )}
                       {finData.revenue_by_zone?.length > 0 && (
                         <div className="rpt-chart-card">
-                          <div className="rpt-chart-header"><h4>Revenue by Zone</h4></div>
+                          <div className="rpt-chart-header"><h4>{t('reports.chart.revenue_by_zone')}</h4></div>
                           <ReactApexChart type="bar" height={280}
-                            series={[{ name: 'Revenue', data: finData.revenue_by_zone.map(d => parseFloat(d.revenue) || 0) }]}
+                            series={[{ name: t('reports.chart.revenue_series'), data: finData.revenue_by_zone.map(d => parseFloat(d.revenue) || 0) }]}
                             options={{
                               chart: CHART_BASE,
                               colors: ['#244066'],
@@ -845,13 +845,13 @@ export default function Reports() {
                     {finData.top_clients?.length > 0 && (
                       <div className="rpt-table-card" style={{ marginBottom: 20 }}>
                         <div className="rpt-chart-header" style={{ marginBottom: 16 }}>
-                          <h4>Top Clients by Revenue</h4>
+                          <h4>{t('reports.chart.top_clients_revenue')}</h4>
                           <button className="btn-outline-action" onClick={() => exportCSV(finData.top_clients, 'top-clients-revenue')}>
-                            <Download width={13} height={13} /> Export CSV
+                            <Download width={13} height={13} /> {t('reports.export_csv')}
                           </button>
                         </div>
                         <table className="od-items-table">
-                          <thead><tr><th>Client</th><th>Company</th><th>Orders</th><th>Revenue</th><th>COD</th></tr></thead>
+                          <thead><tr><th>{t('reports.col.client')}</th><th>{t('reports.col.company')}</th><th>{t('reports.col.orders')}</th><th>{t('reports.col.revenue')}</th><th>{t('reports.col.cod')}</th></tr></thead>
                           <tbody>
                             {finData.top_clients.map((row, i) => (
                               <tr key={i}>
@@ -871,13 +871,13 @@ export default function Reports() {
                     {finData.driver_settlements?.length > 0 && (
                       <div className="rpt-table-card">
                         <div className="rpt-chart-header" style={{ marginBottom: 16 }}>
-                          <h4>Driver Settlements</h4>
+                          <h4>{t('reports.chart.driver_settlements')}</h4>
                           <button className="btn-outline-action" onClick={() => exportCSV(finData.driver_settlements, 'driver-settlements')}>
-                            <Download width={13} height={13} /> Export CSV
+                            <Download width={13} height={13} /> {t('reports.export_csv')}
                           </button>
                         </div>
                         <table className="od-items-table">
-                          <thead><tr><th>Driver</th><th>{t("reports.deliveries")}</th><th>Revenue Generated</th><th>{t("reports.cod_collected")}</th><th>{t("reports.cod_settled")}</th><th>{t("reports.cod_pending")}</th></tr></thead>
+                          <thead><tr><th>{t('reports.col.driver')}</th><th>{t('reports.deliveries')}</th><th>{t('reports.col.revenue_generated')}</th><th>{t('reports.cod_collected')}</th><th>{t('reports.cod_settled')}</th><th>{t('reports.cod_pending')}</th></tr></thead>
                           <tbody>
                             {finData.driver_settlements.map((row, i) => (
                               <tr key={i}>
@@ -910,14 +910,14 @@ export default function Reports() {
             <div>
               <div className="rpt-chart-card" style={{ marginBottom: 20 }}>
                 <div className="rpt-chart-header">
-                  <h4><Mail width={18} height={18} /> Scheduled Email Reports</h4>
+                  <h4><Mail width={18} height={18} /> {t('reports.schedules.title')}</h4>
                   <button className="btn-outline-action" onClick={() => setShowScheduleForm(v => !v)}
                     style={{ background: '#244066', color: '#fff', border: 'none' }}>
-                    <Plus width={14} height={14} /> New Schedule
+                    <Plus width={14} height={14} /> {t('reports.schedules.new')}
                   </button>
                 </div>
                 <p style={{ color: '#64748b', fontSize: 14, margin: '8px 0 0' }}>
-                  Configure automated daily or weekly delivery reports sent to your email.
+                  {t('reports.schedules.desc')}
                 </p>
               </div>
 
@@ -929,22 +929,22 @@ export default function Reports() {
                       <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: '#475569' }}>{t("reports.frequency")}</label>
                       <select className="rpt-period-select" value={scheduleForm.frequency}
                         onChange={e => setScheduleForm(f => ({ ...f, frequency: e.target.value }))}>
-                        <option value="daily">Daily (7:00 AM)</option>
-                        <option value="weekly">Weekly (Monday 7:00 AM)</option>
+                        <option value="daily">{t('reports.schedules.daily')}</option>
+                        <option value="weekly">{t('reports.schedules.weekly')}</option>
                       </select>
                     </div>
                     <div style={{ flex: 1, minWidth: 280 }}>
                       <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: '#475569' }}>
-                        Recipients (comma-separated emails)
+                        {t('reports.schedules.recipients_label')}
                       </label>
                       <input type="text" className="filter-date" style={{ width: '100%' }}
-                        placeholder="admin@company.com, manager@company.com"
+                        placeholder={t('reports.schedules.recipients_placeholder')}
                         value={scheduleForm.recipients}
                         onChange={e => setScheduleForm(f => ({ ...f, recipients: e.target.value }))} />
                     </div>
                     <button className="btn-outline-action" onClick={createSchedule}
                       style={{ background: '#16a34a', color: '#fff', border: 'none', height: 40 }}>
-                      <Check width={14} height={14} /> Create
+                      <Check width={14} height={14} /> {t('reports.schedules.create_btn')}
                     </button>
                   </div>
                 </div>
@@ -956,11 +956,11 @@ export default function Reports() {
                     <thead>
                       <tr>
                         <th>{t("reports.frequency")}</th>
-                        <th>Recipients</th>
-                        <th>Schedule</th>
-                        <th>{t("reports.last_sent")}</th>
-                        <th>Status</th>
-                        <th>Actions</th>
+                        <th>{t('reports.schedules.col.recipients')}</th>
+                        <th>{t('reports.schedules.col.schedule')}</th>
+                        <th>{t('reports.last_sent')}</th>
+                        <th>{t('reports.col.status')}</th>
+                        <th>{t('reports.col.actions')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -968,7 +968,7 @@ export default function Reports() {
                         const recipients = typeof s.recipients === 'string' ? JSON.parse(s.recipients) : (s.recipients || []);
                         return (
                           <tr key={s.id}>
-                            <td><strong>{s.frequency === 'weekly' ? 'Weekly' : 'Daily'}</strong></td>
+                            <td><strong>{s.frequency === 'weekly' ? t('reports.schedules.freq.weekly') : t('reports.schedules.freq.daily')}</strong></td>
                             <td style={{ maxWidth: 260, wordBreak: 'break-all' }}>
                               {recipients.join(', ')}
                             </td>
@@ -980,20 +980,20 @@ export default function Reports() {
                                 background: s.is_active ? '#dcfce7' : '#fee2e2',
                                 color: s.is_active ? '#16a34a' : '#dc2626',
                               }}>
-                                {s.is_active ? 'Active' : 'Paused'}
+                                {s.is_active ? t('common.active') : t('reports.schedules.paused')}
                               </span>
                             </td>
                             <td>
                               <div style={{ display: 'flex', gap: 6 }}>
-                                <button className="btn-outline-action" onClick={() => toggleSchedule(s)} title={s.is_active ? 'Pause' : 'Activate'}>
-                                  {s.is_active ? 'Pause' : 'Activate'}
+                                <button className="btn-outline-action" onClick={() => toggleSchedule(s)} title={s.is_active ? t('reports.schedules.pause') : t('reports.schedules.activate')}>
+                                  {s.is_active ? t('reports.schedules.pause') : t('reports.schedules.activate')}
                                 </button>
                                 <button className="btn-outline-action" onClick={() => sendNow(s.id)}
-                                  title="Send report now" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                  <SendMail width={13} height={13} /> Send Now
+                                  title={t('reports.schedules.send_now')} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  <SendMail width={13} height={13} /> {t('reports.schedules.send_now')}
                                 </button>
                                 <button className="btn-outline-action" onClick={() => deleteSchedule(s.id)}
-                                  style={{ color: '#dc2626', borderColor: '#fecaca' }} title="Delete">
+                                  style={{ color: '#dc2626', borderColor: '#fecaca' }} title={t('common.delete')}>
                                   <Trash width={13} height={13} />
                                 </button>
                               </div>
@@ -1007,8 +1007,8 @@ export default function Reports() {
               ) : !showScheduleForm ? (
                 <div className="ord-empty">
                   <Mail width={48} height={48} />
-                  <h3>No scheduled reports</h3>
-                  <p>Create a schedule to receive automated daily or weekly delivery reports by email.</p>
+                  <h3>{t('reports.schedules.empty_title')}</h3>
+                  <p>{t('reports.schedules.empty_sub')}</p>
                 </div>
               ) : null}
             </div>

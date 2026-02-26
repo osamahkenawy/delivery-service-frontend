@@ -8,8 +8,8 @@ import { api } from '../lib/api';
 import './CODReconciliation.css';
 import { useTranslation } from 'react-i18next';
 
-function formatCurrency(amount) {
-  return `AED ${parseFloat(amount || 0).toFixed(2)}`;
+function formatCurrency(amount, currency = 'AED') {
+  return `${currency} ${parseFloat(amount || 0).toFixed(2)}`;
 }
 function formatDate(d) {
   if (!d) return '—';
@@ -126,9 +126,9 @@ export default function CODReconciliation() {
   };
 
   const exportCSV = () => {
-    const headers = ['Order #','Recipient','Driver','COD Amount','Status','Date'];
+    const headers = [t('cod.col.order'), t('cod.col.recipient'), t('cod.col.driver'), t('cod.col.amount'), t('cod.col.status'), t('cod.col.date')];
     const rows = filtered.map(o => [
-      o.order_number, o.recipient_name, o.driver_name || 'Unassigned',
+      o.order_number, o.recipient_name, o.driver_name || t('cod.unassigned'),
       parseFloat(o.cod_amount || 0).toFixed(2), o.status,
       o.created_at ? new Date(o.created_at).toLocaleDateString() : ''
     ]);
@@ -140,11 +140,12 @@ export default function CODReconciliation() {
     URL.revokeObjectURL(url);
   };
 
+  const curr = t('cod.currency');
   const statCards = [
-    { label: 'TOTAL COD', value: formatCurrency(stats.total_cod), color: 'primary', bg: '#fff7ed', iconColor: '#f97316', icon: CreditCard },
-    { label: 'COLLECTED', value: formatCurrency(stats.collected), color: 'success', bg: '#dcfce7', iconColor: '#16a34a', icon: Check },
-    { label: 'PENDING', value: formatCurrency(stats.pending), color: 'warning', bg: '#fef3c7', iconColor: '#d97706', icon: Clock },
-    { label: 'COD ORDERS', value: stats.total_orders, color: 'info', bg: '#eff6ff', iconColor: '#2563eb', icon: Package },
+    { label: t('cod.stats.total'), value: formatCurrency(stats.total_cod, curr), color: 'primary', bg: '#fff7ed', iconColor: '#f97316', icon: CreditCard },
+    { label: t('cod.stats.collected'), value: formatCurrency(stats.collected, curr), color: 'success', bg: '#dcfce7', iconColor: '#16a34a', icon: Check },
+    { label: t('cod.stats.pending'), value: formatCurrency(stats.pending, curr), color: 'warning', bg: '#fef3c7', iconColor: '#d97706', icon: Clock },
+    { label: t('cod.stats.orders'), value: stats.total_orders, color: 'info', bg: '#eff6ff', iconColor: '#2563eb', icon: Package },
   ];
 
   return (
@@ -155,15 +156,15 @@ export default function CODReconciliation() {
           <div className="module-hero-icon"><CreditCard size={26} /></div>
           <div>
             <h1 className="module-hero-title">{t("cod.title")}</h1>
-            <p className="module-hero-sub">Track cash collections, driver settlements, and COD payments</p>
+            <p className="module-hero-sub">{t('cod.subtitle')}</p>
           </div>
         </div>
         <div className="module-hero-actions">
           <button className="module-btn module-btn-outline" onClick={exportCSV}>
-            <Download size={16} /> Export Report
+            <Download size={16} /> {t('cod.export_report')}
           </button>
           <button className="module-btn module-btn-outline" onClick={loadData}>
-            <RefreshDouble size={16} /> Refresh
+            <RefreshDouble size={16} /> {t('cod.refresh')}
           </button>
         </div>
       </div>
@@ -188,11 +189,11 @@ export default function CODReconciliation() {
       {/* Tabs */}
       <div className="cod-tabs">
         {[
-          { key: 'overview', label: 'Driver Overview' },
-          { key: 'orders', label: 'COD Orders' },
-        ].map(t => (
-          <button key={t.key} className={`cod-tab ${activeTab === t.key ? 'active' : ''}`}
-                  onClick={() => setActiveTab(t.key)}>{t.label}</button>
+          { key: 'overview', label: t('cod.tabs.overview') },
+          { key: 'orders', label: t('cod.tabs.orders') },
+        ].map(tab => (
+          <button key={tab.key} className={`cod-tab ${activeTab === tab.key ? 'active' : ''}`}
+                  onClick={() => setActiveTab(tab.key)}>{tab.label}</button>
         ))}
       </div>
 
@@ -200,7 +201,7 @@ export default function CODReconciliation() {
       <div className="cod-filters">
         <div className="cod-search-wrap">
           <Search size={16} className="cod-search-icon" />
-          <input className="cod-search-input" placeholder="Search orders or drivers..."
+          <input className="cod-search-input" placeholder={t('cod.search_placeholder')}
                  value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         <select className="cod-filter-select" value={driverFilter} onChange={e => setDriverFilter(e.target.value)}>
@@ -208,9 +209,9 @@ export default function CODReconciliation() {
           {drivers.map(d => <option key={d.id} value={d.id}>{d.full_name}</option>)}
         </select>
         <input type="date" className="cod-date-input" value={dateFrom}
-               onChange={e => setDateFrom(e.target.value)} placeholder="From" />
+               onChange={e => setDateFrom(e.target.value)} placeholder={t('cod.from')} />
         <input type="date" className="cod-date-input" value={dateTo}
-               onChange={e => setDateTo(e.target.value)} placeholder="To" />
+               onChange={e => setDateTo(e.target.value)} placeholder={t('cod.to')} />
       </div>
 
       {loading ? <div className="cod-spinner" /> : (
@@ -220,8 +221,8 @@ export default function CODReconciliation() {
             driverCOD.length === 0 ? (
               <div className="cod-empty">
                 <div className="cod-empty-icon"><DeliveryTruck size={28} /></div>
-                <h3>No COD Data</h3>
-                <p>No drivers with COD collections found</p>
+                <h3>{t('cod.no_data')}</h3>
+                <p>{t('cod.no_drivers')}</p>
               </div>
             ) : (
               <div className="cod-driver-grid">
@@ -238,38 +239,38 @@ export default function CODReconciliation() {
                           </div>
                           <div>
                             <div className="cod-driver-name">{d.driver_name}</div>
-                            <div className="cod-driver-phone">{d.driver_phone || 'No phone'}</div>
+                            <div className="cod-driver-phone">{d.driver_phone || t('cod.no_phone')}</div>
                           </div>
                         </div>
                         <div className="cod-driver-stats">
                           <div className="cod-driver-stat">
-                            <div className="cod-driver-stat-label">COLLECTED</div>
+                            <div className="cod-driver-stat-label">{t('cod.driver.collected')}</div>
                             <div className="cod-driver-stat-value" style={{ color: '#16a34a' }}>
-                              {formatCurrency(d.total_collected)}
+                              {formatCurrency(d.total_collected, curr)}
                             </div>
                           </div>
                           <div className="cod-driver-stat">
-                            <div className="cod-driver-stat-label">PENDING</div>
+                            <div className="cod-driver-stat-label">{t('cod.driver.pending')}</div>
                             <div className="cod-driver-stat-value" style={{ color: '#d97706' }}>
-                              {formatCurrency(d.total_pending)}
+                              {formatCurrency(d.total_pending, curr)}
                             </div>
                           </div>
                           <div className="cod-driver-stat">
-                            <div className="cod-driver-stat-label">ORDERS</div>
+                            <div className="cod-driver-stat-label">{t('cod.driver.orders')}</div>
                             <div className="cod-driver-stat-value">{d.order_count}</div>
                           </div>
                           <div className="cod-driver-stat">
-                            <div className="cod-driver-stat-label">DELIVERED</div>
+                            <div className="cod-driver-stat-label">{t('cod.driver.delivered')}</div>
                             <div className="cod-driver-stat-value">{d.delivered_count}</div>
                           </div>
                         </div>
                         <div className="cod-driver-actions">
                           <button className="cod-driver-btn" onClick={() => { setDriverFilter(String(d.driver_id)); setActiveTab('orders'); }}>
-                            <Eye size={14} /> View Orders
+                            <Eye size={14} /> {t('cod.view_orders')}
                           </button>
                           {d.total_collected > 0 && (
                             <button className="cod-driver-btn settle" onClick={() => setShowSettleModal(d)}>
-                              <Check size={14} /> Settle
+                              <Check size={14} /> {t('cod.settle')}
                             </button>
                           )}
                         </div>
@@ -286,21 +287,21 @@ export default function CODReconciliation() {
             filtered.length === 0 ? (
               <div className="cod-empty">
                 <div className="cod-empty-icon"><Package size={28} /></div>
-                <h3>No COD Orders</h3>
-                <p>No cash-on-delivery orders match your filters</p>
+                <h3>{t('cod.no_orders')}</h3>
+                <p>{t('cod.no_orders_sub')}</p>
               </div>
             ) : (
               <div className="cod-table-wrap">
                 <table className="cod-table">
                   <thead>
                     <tr>
-                      <th>Order #</th>
-                      <th>Recipient</th>
-                      <th>Driver</th>
-                      <th>COD Amount</th>
-                      <th>Delivery Fee</th>
-                      <th>Status</th>
-                      <th>Date</th>
+                      <th>{t('cod.col.order')}</th>
+                      <th>{t('cod.col.recipient')}</th>
+                      <th>{t('cod.col.driver')}</th>
+                      <th>{t('cod.col.amount')}</th>
+                      <th>{t('cod.col.delivery_fee')}</th>
+                      <th>{t('cod.col.status')}</th>
+                      <th>{t('cod.col.date')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -311,18 +312,18 @@ export default function CODReconciliation() {
                         </td>
                         <td style={{ fontWeight: 600 }}>{order.recipient_name}</td>
                         <td style={{ color: order.driver_name ? '#1e293b' : '#94a3b8' }}>
-                          {order.driver_name || 'Unassigned'}
+                          {order.driver_name || t('cod.unassigned')}
                         </td>
                         <td>
                           <span className={`cod-amount ${order.status === 'delivered' ? 'collected' : 'pending'}`}>
-                            {formatCurrency(order.cod_amount)}
+                            {formatCurrency(order.cod_amount, curr)}
                           </span>
                         </td>
-                        <td style={{ color: '#64748b' }}>{formatCurrency(order.delivery_fee)}</td>
+                        <td style={{ color: '#64748b' }}>{formatCurrency(order.delivery_fee, curr)}</td>
                         <td>
                           <span className={`cod-settlement-status ${order.status === 'delivered' ? 'collected' : 'pending'}`}>
                             <span className="cod-settlement-dot" />
-                            {order.status === 'delivered' ? 'Collected' : 'Pending'}
+                            {order.status === 'delivered' ? t('cod.status.collected') : t('cod.status.pending')}
                           </span>
                         </td>
                         <td style={{ fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>
@@ -343,34 +344,34 @@ export default function CODReconciliation() {
         <div className="cod-modal-overlay" onClick={() => setShowSettleModal(null)}>
           <div className="cod-modal" onClick={e => e.stopPropagation()}>
             <div className="cod-modal-header">
-              <h3><Wallet size={18} /> Settle COD — {showSettleModal.driver_name}</h3>
+              <h3><Wallet size={18} /> {t('cod.modal.title', { driverName: showSettleModal.driver_name })}</h3>
               <button className="cod-modal-close" onClick={() => setShowSettleModal(null)}><Xmark size={16} /></button>
             </div>
             <div className="cod-modal-body">
               <div className="cod-summary-row">
-                <span className="cod-summary-label">Total Collected</span>
+                <span className="cod-summary-label">{t('cod.modal.total_collected')}</span>
                 <span className="cod-summary-value" style={{ color: '#16a34a' }}>
-                  {formatCurrency(showSettleModal.total_collected)}
+                  {formatCurrency(showSettleModal.total_collected, curr)}
                 </span>
               </div>
               <div className="cod-summary-row">
-                <span className="cod-summary-label">Delivered Orders</span>
+                <span className="cod-summary-label">{t('cod.modal.delivered_orders')}</span>
                 <span className="cod-summary-value">{showSettleModal.delivered_count}</span>
               </div>
               <div className="cod-summary-row" style={{ background: '#fff7ed', borderColor: '#fed7aa' }}>
-                <span className="cod-summary-label" style={{ fontWeight: 700, color: '#1e293b' }}>Amount to Settle</span>
+                <span className="cod-summary-label" style={{ fontWeight: 700, color: '#1e293b' }}>{t('cod.modal.amount_to_settle')}</span>
                 <span className="cod-summary-value" style={{ color: '#f97316', fontSize: 22 }}>
-                  {formatCurrency(showSettleModal.total_collected)}
+                  {formatCurrency(showSettleModal.total_collected, curr)}
                 </span>
               </div>
               <p style={{ fontSize: 12, color: '#94a3b8', marginTop: 12, textAlign: 'center' }}>
-                This will mark all collected COD amounts for {showSettleModal.driver_name} as settled.
+                {t('cod.modal.confirm_text', { driverName: showSettleModal.driver_name })}
               </p>
             </div>
             <div className="cod-modal-footer">
-              <button className="cod-btn-secondary" onClick={() => setShowSettleModal(null)}>Cancel</button>
+              <button className="cod-btn-secondary" onClick={() => setShowSettleModal(null)}>{t('cod.cancel')}</button>
               <button className="cod-btn-success" onClick={() => handleSettle(showSettleModal.driver_id)} disabled={settling}>
-                {settling ? 'Settling...' : <><Check size={14} /> Confirm Settlement</>}
+                {settling ? t('cod.settling') : <><Check size={14} /> {t('cod.confirm_settlement')}</>}
               </button>
             </div>
           </div>

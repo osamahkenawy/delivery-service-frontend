@@ -58,7 +58,7 @@ export default function SuperAdminLogin() {
             <span style={{ fontSize: 28 }}>🛡️</span>
           </div>
           <h1 style={{ color: '#fff', fontSize: '1.75rem', fontWeight: 700, margin: 0 }}>
-            Trasealla Delivery
+            Trasealla Solutions
           </h1>
           <p style={{ color: '#94a3b8', marginTop: 6, fontSize: '0.95rem' }}>
             Delivery Platform Administration

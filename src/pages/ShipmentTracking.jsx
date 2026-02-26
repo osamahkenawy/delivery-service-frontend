@@ -59,14 +59,14 @@ export default function ShipmentTracking() {
 
   const showToast = useCallback((msg, type = 'success') => {
     const id = Date.now() + Math.random();
-    setToasts(t => [...t, { id, msg, type }]);
-    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 3000);
+    setToasts(prev => [...prev, { id, msg, type }]);
+    setTimeout(() => setToasts(prev => prev.filter(x => x.id !== id)), 3000);
   }, []);
 
   const copyPublicLink = (token) => {
     const url = `${window.location.origin}/track/${token}`;
     navigator.clipboard.writeText(url);
-    showToast('Public tracking link copied!');
+    showToast(t('shipmentTracking.link_copied'));
   };
 
   const openPublicTracking = (token) => {
@@ -80,8 +80,8 @@ export default function ShipmentTracking() {
     try {
       const res = await api.get(`/tracking/${quickTrack.trim()}`);
       if (res.success) setQuickResult(res.data);
-      else showToast('Shipment not found', 'error');
-    } catch { showToast('Tracking token not found', 'error'); }
+      else showToast(t('shipmentTracking.not_found'), 'error');
+    } catch { showToast(t('shipmentTracking.token_not_found'), 'error'); }
     finally { setQuickLoading(false); }
   };
 
@@ -141,33 +141,33 @@ export default function ShipmentTracking() {
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
-    showToast('Copied to clipboard!');
+    showToast(t('shipmentTracking.copied_clipboard'));
   };
 
   const totalPages = Math.ceil(total / limit);
 
   const statCards = [
-    { label: 'TOTAL SHIPMENTS', value: stats.total || 0, color: 'primary', bg: '#fff7ed', iconColor: '#f97316', icon: Package },
-    { label: 'IN TRANSIT', value: parseInt(stats.in_transit || 0) + parseInt(stats.picked_up || 0), color: 'warning', bg: '#fef3c7', iconColor: '#d97706', icon: DeliveryTruck },
-    { label: 'DELIVERED', value: stats.delivered || 0, color: 'success', bg: '#dcfce7', iconColor: '#16a34a', icon: Check },
-    { label: 'FAILED / RETURNED', value: parseInt(stats.failed || 0) + parseInt(stats.returned || 0), color: 'danger', bg: '#fee2e2', iconColor: '#ef4444', icon: WarningCircle },
-    { label: 'TODAY', value: stats.today || 0, color: 'info', bg: '#eff6ff', iconColor: '#2563eb', icon: Calendar },
+    { label: t('shipmentTracking.stats.total'), value: stats.total || 0, color: 'primary', bg: '#fff7ed', iconColor: '#f97316', icon: Package },
+    { label: t('shipmentTracking.stats.in_transit'), value: parseInt(stats.in_transit || 0) + parseInt(stats.picked_up || 0), color: 'warning', bg: '#fef3c7', iconColor: '#d97706', icon: DeliveryTruck },
+    { label: t('shipmentTracking.stats.delivered'), value: stats.delivered || 0, color: 'success', bg: '#dcfce7', iconColor: '#16a34a', icon: Check },
+    { label: t('shipmentTracking.stats.failed_returned'), value: parseInt(stats.failed || 0) + parseInt(stats.returned || 0), color: 'danger', bg: '#fee2e2', iconColor: '#ef4444', icon: WarningCircle },
+    { label: t('shipmentTracking.stats.today'), value: stats.today || 0, color: 'info', bg: '#eff6ff', iconColor: '#2563eb', icon: Calendar },
   ];
 
   return (
     <div className="trk-page">
       {/* Toast Notifications */}
       <div style={{ position: 'fixed', top: 24, right: 24, zIndex: 9999, display: 'flex', flexDirection: 'column', gap: 10, pointerEvents: 'none' }}>
-        {toasts.map(t => (
-          <div key={t.id} style={{
+        {toasts.map(toast => (
+          <div key={toast.id} style={{
             display: 'flex', alignItems: 'center', gap: 10, padding: '12px 18px',
             borderRadius: 12, fontWeight: 600, fontSize: 14, minWidth: 260,
             boxShadow: '0 8px 30px rgba(0,0,0,0.15)',
-            background: t.type === 'success' ? '#16a34a' : '#dc2626',
+            background: toast.type === 'success' ? '#16a34a' : '#dc2626',
             color: '#fff', animation: 'slideInRight 0.3s ease',
           }}>
-            {t.type === 'success' ? <Check width={16} height={16} /> : <WarningCircle width={16} height={16} />}
-            {t.msg}
+            {toast.type === 'success' ? <Check width={16} height={16} /> : <WarningCircle width={16} height={16} />}
+            {toast.msg}
           </div>
         ))}
       </div>
@@ -179,15 +179,15 @@ export default function ShipmentTracking() {
           <div className="module-hero-icon"><MapPin size={26} /></div>
           <div>
             <h1 className="module-hero-title">{t("shipmentTracking.title")}</h1>
-            <p className="module-hero-sub">Track, monitor and manage all shipments in real-time</p>
+            <p className="module-hero-sub">{t('shipmentTracking.subtitle')}</p>
           </div>
         </div>
         <div className="module-hero-actions">
           <button className="module-btn module-btn-outline" onClick={() => navigate('/dispatch')}>
-            <Map size={16} /> Dispatch Map
+            <Map size={16} /> {t('shipmentTracking.dispatch_map')}
           </button>
           <button className="module-btn module-btn-outline" onClick={loadOrders}>
-            <RefreshDouble size={16} /> Refresh
+            <RefreshDouble size={16} /> {t('shipmentTracking.refresh')}
           </button>
         </div>
       </div>
@@ -218,7 +218,7 @@ export default function ShipmentTracking() {
               background: '#f97316', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer',
               display: 'flex', alignItems: 'center', gap: 6,
             }}>
-            {quickLoading ? 'Tracking...' : <><Search width={14} height={14} /> Track</>}
+            {quickLoading ? t('shipmentTracking.tracking_loading') : <><Search width={14} height={14} /> {t('shipmentTracking.track_btn')}</>}
           </button>
         </div>
 
@@ -237,31 +237,31 @@ export default function ShipmentTracking() {
                   background: STATUS_COLORS[quickResult.status] + '30',
                   color: STATUS_COLORS[quickResult.status] || '#fff',
                 }}>
-                  {STATUS_LABELS[quickResult.status]}
+                          {t('shipmentTracking.status.' + quickResult.status)}
                 </span>
               </div>
               <div style={{ display: 'flex', gap: 6 }}>
                 <button onClick={() => copyPublicLink(quickResult.tracking_token)}
                   style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600 }}>
-                  <Copy width={12} height={12} /> Copy Link
+                  <Copy width={12} height={12} /> {t('shipmentTracking.copy_link')}
                 </button>
                 <button onClick={() => openPublicTracking(quickResult.tracking_token)}
                   style={{ background: '#f97316', border: 'none', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600 }}>
-                  <OpenNewWindow width={12} height={12} /> Live Track
+                  <OpenNewWindow width={12} height={12} /> {t('shipmentTracking.live_track')}
                 </button>
               </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
               <div style={{ fontSize: 12, color: '#94a3b8' }}>
-                <div style={{ fontWeight: 600, marginBottom: 2 }}>Recipient</div>
+                <div style={{ fontWeight: 600, marginBottom: 2 }}>{t('shipmentTracking.recipient')}</div>
                 <div style={{ color: '#fff', fontWeight: 700 }}>{quickResult.recipient_name}</div>
               </div>
               <div style={{ fontSize: 12, color: '#94a3b8' }}>
-                <div style={{ fontWeight: 600, marginBottom: 2 }}>Driver</div>
-                <div style={{ color: '#fff', fontWeight: 700 }}>{quickResult.driver_name || 'Unassigned'}</div>
+                <div style={{ fontWeight: 600, marginBottom: 2 }}>{t('shipmentTracking.driver_label')}</div>
+                <div style={{ color: '#fff', fontWeight: 700 }}>{quickResult.driver_name || t('shipmentTracking.unassigned')}</div>
               </div>
               <div style={{ fontSize: 12, color: '#94a3b8' }}>
-                <div style={{ fontWeight: 600, marginBottom: 2 }}>Area</div>
+                <div style={{ fontWeight: 600, marginBottom: 2 }}>{t('shipmentTracking.area')}</div>
                 <div style={{ color: '#fff', fontWeight: 700 }}>{quickResult.recipient_area || quickResult.recipient_emirate || '—'}</div>
               </div>
             </div>
@@ -297,15 +297,15 @@ export default function ShipmentTracking() {
       {/* Tabs */}
       <div className="trk-tabs">
         {[
-          { key: 'all', label: 'All Shipments', count: tabCounts.all },
-          { key: 'active', label: 'Active', count: tabCounts.active },
-          { key: 'delivered', label: 'Delivered', count: tabCounts.delivered },
-          { key: 'failed', label: 'Failed', count: tabCounts.failed },
-          { key: 'pending', label: 'Pending', count: tabCounts.pending },
-        ].map(t => (
-          <button key={t.key} className={`trk-tab ${activeTab === t.key ? 'active' : ''}`} onClick={() => handleTabChange(t.key)}>
-            {t.label}
-            <span className="trk-tab-badge">{t.count}</span>
+          { key: 'all', label: t('shipmentTracking.tabs.all'), count: tabCounts.all },
+          { key: 'active', label: t('shipmentTracking.tabs.active'), count: tabCounts.active },
+          { key: 'delivered', label: t('shipmentTracking.tabs.delivered'), count: tabCounts.delivered },
+          { key: 'failed', label: t('shipmentTracking.tabs.failed'), count: tabCounts.failed },
+          { key: 'pending', label: t('shipmentTracking.tabs.pending'), count: tabCounts.pending },
+        ].map(tab => (
+          <button key={tab.key} className={`trk-tab ${activeTab === tab.key ? 'active' : ''}`} onClick={() => handleTabChange(tab.key)}>
+            {tab.label}
+            <span className="trk-tab-badge">{tab.count}</span>
           </button>
         ))}
       </div>
@@ -314,7 +314,7 @@ export default function ShipmentTracking() {
       <div className="trk-filters">
         <div className="trk-search-wrap">
           <Search size={16} className="trk-search-icon" />
-          <input className="trk-search-input" placeholder="Search by order #, name, phone, tracking..."
+          <input className="trk-search-input" placeholder={t('shipmentTracking.search_placeholder')}
                  value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
         </div>
       </div>
@@ -326,7 +326,7 @@ export default function ShipmentTracking() {
         <div className="trk-empty">
           <div className="trk-empty-icon"><Package size={28} /></div>
           <h3>{t("shipmentTracking.no_shipments")}</h3>
-          <p>Try adjusting your search or filters</p>
+          <p>{t('shipmentTracking.try_adjusting')}</p>
         </div>
       ) : (
         <>
@@ -335,16 +335,16 @@ export default function ShipmentTracking() {
             <table className="trk-table">
               <thead>
                 <tr>
-                  <th>Order #</th>
-                  <th>Tracking</th>
-                  <th>Recipient</th>
-                  <th>Status</th>
+                  <th>{t('shipmentTracking.col.order_num')}</th>
+                  <th>{t('shipmentTracking.col.tracking')}</th>
+                  <th>{t('shipmentTracking.col.recipient')}</th>
+                  <th>{t('shipmentTracking.col.status')}</th>
                   <th>{t("shipmentTracking.progress")}</th>
-                  <th>Driver</th>
-                  <th>Zone</th>
-                  <th>Payment</th>
-                  <th>Created</th>
-                  <th>Actions</th>
+                  <th>{t('shipmentTracking.col.driver')}</th>
+                  <th>{t('shipmentTracking.col.zone')}</th>
+                  <th>{t('shipmentTracking.col.payment')}</th>
+                  <th>{t('shipmentTracking.col.created')}</th>
+                  <th>{t('shipmentTracking.col.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -362,7 +362,7 @@ export default function ShipmentTracking() {
                           <span style={{ fontSize: 12, color: '#64748b', fontFamily: 'monospace' }}>
                             {order.tracking_token?.substring(0, 8)}...
                           </span>
-                          <button className="trk-copy-btn" onClick={e => { e.stopPropagation(); copyToClipboard(order.tracking_token); }} title="Copy tracking token">
+                          <button className="trk-copy-btn" onClick={e => { e.stopPropagation(); copyToClipboard(order.tracking_token); }} title={t('shipmentTracking.copy_token')}>
                             <Copy size={12} />
                           </button>
                         </div>
@@ -376,7 +376,7 @@ export default function ShipmentTracking() {
                       <td>
                         <span className={`trk-status ${order.status}`}>
                           <span className="trk-status-dot" />
-                          {STATUS_LABELS[order.status] || order.status}
+                          {t('shipmentTracking.status.' + order.status) || order.status}
                         </span>
                       </td>
                       <td>
@@ -385,12 +385,12 @@ export default function ShipmentTracking() {
                         </div>
                       </td>
                       <td style={{ fontSize: 12, color: order.driver_name ? '#1e293b' : '#94a3b8' }}>
-                        {order.driver_name || 'Unassigned'}
+                        {order.driver_name || t('shipmentTracking.unassigned')}
                       </td>
                       <td style={{ fontSize: 12, color: '#64748b' }}>{order.zone_name || '—'}</td>
                       <td>
                         <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', color: order.payment_method === 'cod' ? '#d97706' : '#2563eb' }}>
-                          {order.payment_method || 'N/A'}
+                          {order.payment_method || t('shipmentTracking.na')}
                         </span>
                       </td>
                       <td style={{ fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>
@@ -398,14 +398,14 @@ export default function ShipmentTracking() {
                       </td>
                       <td>
                         <div className="trk-actions" onClick={e => e.stopPropagation()}>
-                          <button className="trk-action-btn view" onClick={() => openDrawer(order)} title="View details">
+                          <button className="trk-action-btn view" onClick={() => openDrawer(order)} title={t('shipmentTracking.view_details')}>
                             <Eye size={14} />
                           </button>
-                          <button className="trk-action-btn" onClick={() => copyPublicLink(order.tracking_token)} title="Copy public tracking link"
+                          <button className="trk-action-btn" onClick={() => copyPublicLink(order.tracking_token)} title={t('shipmentTracking.copy_public_link')}
                             style={{ background: '#f0fdf4', color: '#16a34a' }}>
                             <ShareAndroid size={14} />
                           </button>
-                          <button className="trk-action-btn" onClick={() => openPublicTracking(order.tracking_token)} title="Open live tracking"
+                          <button className="trk-action-btn" onClick={() => openPublicTracking(order.tracking_token)} title={t('shipmentTracking.open_tracking')}
                             style={{ background: '#eff6ff', color: '#2563eb' }}>
                             <OpenNewWindow size={14} />
                           </button>
@@ -421,8 +421,8 @@ export default function ShipmentTracking() {
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="trk-pagination">
-              <button className="trk-page-btn" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Previous</button>
-              <span className="trk-page-info">Page {page} of {totalPages} ({total} shipments)</span>
+              <button className="trk-page-btn" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>{t('shipmentTracking.previous')}</button>
+              <span className="trk-page-info">{t('shipmentTracking.page_info', { page, totalPages, total })}</span>
               <button className="trk-page-btn" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>{t("common.next")}</button>
             </div>
           )}
@@ -435,17 +435,17 @@ export default function ShipmentTracking() {
           <div className="trk-drawer-overlay" onClick={closeDrawer} />
           <div className="trk-drawer">
             <div className="trk-drawer-header">
-              <h3><Package size={20} /> Shipment Details</h3>
+              <h3><Package size={20} /> {t('shipmentTracking.drawer.title')}</h3>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 {selectedOrder.tracking_token && (
                   <>
                     <button onClick={() => copyPublicLink(selectedOrder.tracking_token)}
                       style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: '#16a34a' }}>
-                      <Copy size={12} /> Copy Link
+                      <Copy size={12} /> {t('shipmentTracking.copy_link')}
                     </button>
                     <button onClick={() => openPublicTracking(selectedOrder.tracking_token)}
                       style={{ background: '#f97316', border: 'none', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: '#fff' }}>
-                      <OpenNewWindow size={12} /> Live Track
+                      <OpenNewWindow size={12} /> {t('shipmentTracking.live_track')}
                     </button>
                   </>
                 )}
@@ -459,7 +459,7 @@ export default function ShipmentTracking() {
                 <>
                   {/* Order Info */}
                   <div className="trk-detail-section">
-                    <div className="trk-detail-section-title"><Package size={14} /> Order Information</div>
+                    <div className="trk-detail-section-title"><Package size={14} /> {t('shipmentTracking.section.order_info')}</div>
                     <div className="trk-detail-grid">
                       <div className="trk-detail-item">
                         <div className="trk-detail-label">{t("shipmentTracking.order_number")}</div>
@@ -468,27 +468,27 @@ export default function ShipmentTracking() {
                         </div>
                       </div>
                       <div className="trk-detail-item">
-                        <div className="trk-detail-label">Status</div>
+                        <div className="trk-detail-label">{t('shipmentTracking.status_label')}</div>
                         <div className="trk-detail-value">
                           <span className={`trk-status ${orderDetail.status}`}>
                             <span className="trk-status-dot" />
-                            {STATUS_LABELS[orderDetail.status]}
+                            {t('shipmentTracking.status.' + orderDetail.status)}
                           </span>
                         </div>
                       </div>
                       <div className="trk-detail-item">
-                        <div className="trk-detail-label">Tracking Token</div>
+                        <div className="trk-detail-label">{t('shipmentTracking.tracking_token')}</div>
                         <div className="trk-detail-value" style={{ fontSize: 12, fontFamily: 'monospace', display: 'flex', alignItems: 'center', gap: 6 }}>
                           {orderDetail.tracking_token}
                           <button className="trk-copy-btn" onClick={() => copyToClipboard(orderDetail.tracking_token)}><Copy size={12} /></button>
                         </div>
                       </div>
                       <div className="trk-detail-item">
-                        <div className="trk-detail-label">Type</div>
+                        <div className="trk-detail-label">{t('shipmentTracking.type_label')}</div>
                         <div className="trk-detail-value" style={{ textTransform: 'capitalize' }}>{orderDetail.order_type}</div>
                       </div>
                       <div className="trk-detail-item">
-                        <div className="trk-detail-label">Payment</div>
+                        <div className="trk-detail-label">{t('shipmentTracking.payment')}</div>
                         <div className="trk-detail-value" style={{ textTransform: 'uppercase' }}>{orderDetail.payment_method}</div>
                       </div>
                       <div className="trk-detail-item">
@@ -500,7 +500,7 @@ export default function ShipmentTracking() {
 
                   {/* Progress Bar */}
                   <div className="trk-detail-section">
-                    <div className="trk-detail-section-title"><Timer size={14} /> Delivery Progress</div>
+                    <div className="trk-detail-section-title"><Timer size={14} /> {t('shipmentTracking.section.progress')}</div>
                     <div style={{ background: '#f8fafc', borderRadius: 12, padding: 16, border: '1px solid #f1f5f9' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                         {STATUS_FLOW.map((s, i) => {
@@ -519,7 +519,7 @@ export default function ShipmentTracking() {
                                 <Icon size={14} />
                               </div>
                               <span style={{ fontSize: 9, color: isActive ? '#f97316' : '#94a3b8', fontWeight: 600, textTransform: 'uppercase' }}>
-                                {STATUS_LABELS[s]?.split(' ')[0]}
+                                {t('shipmentTracking.status_short.' + s)}
                               </span>
                             </div>
                           );
@@ -536,18 +536,18 @@ export default function ShipmentTracking() {
 
                   {/* Recipient */}
                   <div className="trk-detail-section">
-                    <div className="trk-detail-section-title"><User size={14} /> Recipient</div>
+                    <div className="trk-detail-section-title"><User size={14} /> {t('shipmentTracking.recipient')}</div>
                     <div className="trk-detail-grid">
                       <div className="trk-detail-item">
-                        <div className="trk-detail-label">Name</div>
+                        <div className="trk-detail-label">{t('shipmentTracking.name_label')}</div>
                         <div className="trk-detail-value">{orderDetail.recipient_name}</div>
                       </div>
                       <div className="trk-detail-item">
-                        <div className="trk-detail-label">Phone</div>
+                        <div className="trk-detail-label">{t('shipmentTracking.phone_label')}</div>
                         <div className="trk-detail-value">{orderDetail.recipient_phone}</div>
                       </div>
                       <div className="trk-detail-item trk-detail-wide">
-                        <div className="trk-detail-label">Address</div>
+                        <div className="trk-detail-label">{t('shipmentTracking.address_label')}</div>
                         <div className="trk-detail-value" style={{ fontSize: 13 }}>
                           {orderDetail.recipient_address}
                           {orderDetail.recipient_area && `, ${orderDetail.recipient_area}`}
@@ -560,22 +560,22 @@ export default function ShipmentTracking() {
                   {/* Driver */}
                   {orderDetail.driver_name && (
                     <div className="trk-detail-section">
-                      <div className="trk-detail-section-title"><DeliveryTruck size={14} /> Assigned Driver</div>
+                      <div className="trk-detail-section-title"><DeliveryTruck size={14} /> {t('shipmentTracking.section.driver')}</div>
                       <div className="trk-detail-grid">
                         <div className="trk-detail-item">
-                          <div className="trk-detail-label">Name</div>
+                          <div className="trk-detail-label">{t('shipmentTracking.name_label')}</div>
                           <div className="trk-detail-value">{orderDetail.driver_name}</div>
                         </div>
                         <div className="trk-detail-item">
-                          <div className="trk-detail-label">Phone</div>
+                          <div className="trk-detail-label">{t('shipmentTracking.phone_label')}</div>
                           <div className="trk-detail-value">{orderDetail.driver_phone || '—'}</div>
                         </div>
                         <div className="trk-detail-item">
-                          <div className="trk-detail-label">Vehicle</div>
+                          <div className="trk-detail-label">{t('shipmentTracking.vehicle_label')}</div>
                           <div className="trk-detail-value" style={{ textTransform: 'capitalize' }}>{orderDetail.vehicle_type || '—'}</div>
                         </div>
                         <div className="trk-detail-item">
-                          <div className="trk-detail-label">Plate</div>
+                          <div className="trk-detail-label">{t('shipmentTracking.plate')}</div>
                           <div className="trk-detail-value">{orderDetail.vehicle_plate || '—'}</div>
                         </div>
                       </div>
@@ -584,39 +584,39 @@ export default function ShipmentTracking() {
 
                   {/* Timestamps */}
                   <div className="trk-detail-section">
-                    <div className="trk-detail-section-title"><Clock size={14} /> Timestamps</div>
+                    <div className="trk-detail-section-title"><Clock size={14} /> {t('shipmentTracking.section.timestamps')}</div>
                     <div className="trk-detail-grid">
                       <div className="trk-detail-item">
-                        <div className="trk-detail-label">Created</div>
+                        <div className="trk-detail-label">{t('shipmentTracking.created_label')}</div>
                         <div className="trk-detail-value" style={{ fontSize: 12 }}>{formatDate(orderDetail.created_at)}</div>
                       </div>
                       {orderDetail.picked_up_at && (
                         <div className="trk-detail-item">
-                          <div className="trk-detail-label">Picked Up</div>
+                          <div className="trk-detail-label">{t('shipmentTracking.timestamp.picked_up')}</div>
                           <div className="trk-detail-value" style={{ fontSize: 12 }}>{formatDate(orderDetail.picked_up_at)}</div>
                         </div>
                       )}
                       {orderDetail.in_transit_at && (
                         <div className="trk-detail-item">
-                          <div className="trk-detail-label">In Transit</div>
+                          <div className="trk-detail-label">{t('shipmentTracking.timestamp.in_transit')}</div>
                           <div className="trk-detail-value" style={{ fontSize: 12 }}>{formatDate(orderDetail.in_transit_at)}</div>
                         </div>
                       )}
                       {orderDetail.delivered_at && (
                         <div className="trk-detail-item">
-                          <div className="trk-detail-label">Delivered</div>
+                          <div className="trk-detail-label">{t('shipmentTracking.timestamp.delivered')}</div>
                           <div className="trk-detail-value" style={{ fontSize: 12, color: '#16a34a' }}>{formatDate(orderDetail.delivered_at)}</div>
                         </div>
                       )}
                       {orderDetail.failed_at && (
                         <div className="trk-detail-item">
-                          <div className="trk-detail-label">Failed</div>
+                          <div className="trk-detail-label">{t('shipmentTracking.timestamp.failed')}</div>
                           <div className="trk-detail-value" style={{ fontSize: 12, color: '#ef4444' }}>{formatDate(orderDetail.failed_at)}</div>
                         </div>
                       )}
                       {orderDetail.returned_at && (
                         <div className="trk-detail-item">
-                          <div className="trk-detail-label">Returned</div>
+                          <div className="trk-detail-label">{t('shipmentTracking.timestamp.returned')}</div>
                           <div className="trk-detail-value" style={{ fontSize: 12, color: '#c62828' }}>{formatDate(orderDetail.returned_at)}</div>
                         </div>
                       )}
@@ -626,7 +626,7 @@ export default function ShipmentTracking() {
                   {/* Status Timeline */}
                   {orderDetail.status_logs?.length > 0 && (
                     <div className="trk-detail-section">
-                      <div className="trk-detail-section-title"><Clock size={14} /> Tracking Timeline</div>
+                      <div className="trk-detail-section-title"><Clock size={14} /> {t('shipmentTracking.section.timeline')}</div>
                       <div className="trk-timeline">
                         {orderDetail.status_logs.map((log, i) => {
                           const LogIcon = STATUS_ICONS[log.status] || Clock;
@@ -637,7 +637,7 @@ export default function ShipmentTracking() {
                                 <LogIcon size={16} />
                               </div>
                               <div className="trk-timeline-content">
-                                <div className="trk-timeline-title">{STATUS_LABELS[log.status] || log.status}</div>
+                                <div className="trk-timeline-title">{t('shipmentTracking.status.' + log.status) || log.status}</div>
                                 {log.note && <div className="trk-timeline-note">{log.note}</div>}
                                 <div className="trk-timeline-meta">
                                   <span><Clock size={10} /> {formatDate(log.created_at)}</span>
@@ -655,7 +655,7 @@ export default function ShipmentTracking() {
                   {/* Proof of Delivery */}
                   {orderDetail.status === 'delivered' && (
                     <div className="trk-pod-section">
-                      <div className="trk-pod-title"><Check size={16} /> Proof of Delivery</div>
+                      <div className="trk-pod-title"><Check size={16} /> {t('shipmentTracking.section.pod')}</div>
                       {orderDetail.pod_photos?.length > 0 ? (
                         <div className="trk-pod-photos">
                           {orderDetail.pod_photos.map((photo, i) => (
@@ -667,7 +667,7 @@ export default function ShipmentTracking() {
                       )}
                       <div className="trk-pod-sig">
                         <div>
-                          <div className="trk-pod-sig-label">Signed by</div>
+                          <div className="trk-pod-sig-label">{t('shipmentTracking.pod.signed_by')}</div>
                           <div className="trk-pod-sig-name">{orderDetail.pod_signer || orderDetail.recipient_name}</div>
                         </div>
                         <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 'auto' }}>
@@ -680,11 +680,11 @@ export default function ShipmentTracking() {
                   {/* Items */}
                   {orderDetail.items?.length > 0 && (
                     <div className="trk-detail-section" style={{ marginTop: 20 }}>
-                      <div className="trk-detail-section-title"><Cube size={14} /> Order Items ({orderDetail.items.length})</div>
+                      <div className="trk-detail-section-title"><Cube size={14} /> {t('shipmentTracking.section.items', { count: orderDetail.items.length })}</div>
                       <div className="trk-table-wrap">
                         <table className="trk-table">
                           <thead>
-                            <tr><th>Item</th><th>Qty</th><th>Weight</th><th>Price</th></tr>
+                            <tr><th>{t('shipmentTracking.items_col.item')}</th><th>{t('shipmentTracking.items_col.qty')}</th><th>{t('shipmentTracking.items_col.weight')}</th><th>{t('shipmentTracking.items_col.price')}</th></tr>
                           </thead>
                           <tbody>
                             {orderDetail.items.map((item, i) => (
@@ -704,7 +704,7 @@ export default function ShipmentTracking() {
                   {/* Special Instructions */}
                   {orderDetail.special_instructions && (
                     <div className="trk-detail-section" style={{ marginTop: 16 }}>
-                      <div className="trk-detail-section-title"><WarningCircle size={14} /> Special Instructions</div>
+                      <div className="trk-detail-section-title"><WarningCircle size={14} /> {t('shipmentTracking.section.instructions')}</div>
                       <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: 14, fontSize: 13, color: '#92400e' }}>
                         {orderDetail.special_instructions}
                       </div>
@@ -719,7 +719,7 @@ export default function ShipmentTracking() {
                         background: '#fff', color: '#475569', fontWeight: 700, fontSize: 13,
                         cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                       }}>
-                      <EditPencil size={14} /> Edit Order
+                      <EditPencil size={14} /> {t('shipmentTracking.edit_order')}
                     </button>
                     <button onClick={() => { closeDrawer(); navigate('/dispatch'); }}
                       style={{
@@ -727,14 +727,14 @@ export default function ShipmentTracking() {
                         background: '#f97316', color: '#fff', fontWeight: 700, fontSize: 13,
                         cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                       }}>
-                      <Map size={14} /> View on Map
+                      <Map size={14} /> {t('shipmentTracking.view_on_map')}
                     </button>
                   </div>
                 </>
               ) : (
                 <div className="trk-empty">
-                  <h3>Unable to load details</h3>
-                  <p>Please try again</p>
+                  <h3>{t('shipmentTracking.unable_to_load')}</h3>
+                  <p>{t('shipmentTracking.please_try_again')}</p>
                 </div>
               )}
             </div>

@@ -10,17 +10,17 @@ import { useTranslation } from 'react-i18next';
 
 /* ── Channel config with icons ────────────────────────────────── */
 const CH = {
-  sms:      { Icon: Phone,       label: 'SMS',      bg: '#dbeafe', color: '#1d4ed8' },
-  email:    { Icon: Mail,        label: 'Email',    bg: '#fce7f3', color: '#be185d' },
-  push:     { Icon: Bell,        label: 'Push',     bg: '#f3e8ff', color: '#7c3aed' },
-  whatsapp: { Icon: MessageText, label: 'WhatsApp', bg: '#dcfce7', color: '#16a34a' },
+  sms:      { Icon: Phone,       label: 'notifications.channel_sms',      bg: '#dbeafe', color: '#1d4ed8' },
+  email:    { Icon: Mail,        label: 'notifications.channel_email',    bg: '#fce7f3', color: '#be185d' },
+  push:     { Icon: Bell,        label: 'notifications.channel_push',     bg: '#f3e8ff', color: '#7c3aed' },
+  whatsapp: { Icon: MessageText, label: 'notifications.channel_whatsapp', bg: '#dcfce7', color: '#16a34a' },
 };
 
 const SB = {
-  sent:      { bg: '#ecfdf5', color: '#16a34a', label: 'Sent',      Icon: CheckCircle },
-  failed:    { bg: '#fee2e2', color: '#dc2626', label: 'Failed',    Icon: Xmark },
-  pending:   { bg: '#f1f5f9', color: '#64748b', label: 'Pending',   Icon: Clock },
-  delivered: { bg: '#dbeafe', color: '#1d4ed8', label: 'Delivered', Icon: Check },
+  sent:      { bg: '#ecfdf5', color: '#16a34a', label: 'notifications.status_sent',      Icon: CheckCircle },
+  failed:    { bg: '#fee2e2', color: '#dc2626', label: 'notifications.status_failed',    Icon: Xmark },
+  pending:   { bg: '#f1f5f9', color: '#64748b', label: 'notifications.status_pending',   Icon: Clock },
+  delivered: { bg: '#dbeafe', color: '#1d4ed8', label: 'notifications.status_delivered', Icon: Check },
 };
 
 export default function Notifications() {
@@ -78,7 +78,7 @@ export default function Notifications() {
       setResult(res);
       setSendForm({ channels: ['sms'], phone: '', email: '', message: '', subject: '', order_id: '', user_id: '' });
       fetchAll();
-    } else { setError(res.message || 'Failed'); }
+    } else { setError(res.message || t('common.failed')); }
     setSaving(false);
   };
   const handleSmsTest = async (e) => {
@@ -116,19 +116,19 @@ export default function Notifications() {
 
   /* ── stat cards config ─────────────────────────────────────── */
   const statCards = [
-    { label: 'Total Sent',  value: stats.sent || 0,         Icon: SendDiagonal,  variant: 'sent',   sub: `of ${stats.total || 0}` },
-    { label: 'SMS',          value: stats.sms_count || 0,    Icon: Phone,         variant: 'sms' },
-    { label: 'Email',        value: stats.email_count || 0,  Icon: Mail,          variant: 'email' },
-    { label: 'Push',         value: stats.push_count || 0,   Icon: Bell,          variant: 'push' },
-    { label: 'Failed',       value: stats.failed || 0,       Icon: WarningTriangle, variant: 'failed' },
-    { label: 'Today',        value: stats.today || 0,        Icon: Calendar,      variant: 'today' },
+    { label: t('notifications.stats.total_sent'),  value: stats.sent || 0,         Icon: SendDiagonal,  variant: 'sent',   sub: t('notifications.stats.of_total', { total: stats.total || 0 }) },
+    { label: t('notifications.stats.sms'),          value: stats.sms_count || 0,    Icon: Phone,         variant: 'sms' },
+    { label: t('notifications.stats.email'),        value: stats.email_count || 0,  Icon: Mail,          variant: 'email' },
+    { label: t('notifications.stats.push'),         value: stats.push_count || 0,   Icon: Bell,          variant: 'push' },
+    { label: t('notifications.stats.failed'),       value: stats.failed || 0,       Icon: WarningTriangle, variant: 'failed' },
+    { label: t('notifications.stats.today'),        value: stats.today || 0,        Icon: Calendar,      variant: 'today' },
   ];
 
   const tabs = [
-    { key: 'all',       label: 'All',       Icon: BellNotification, count: notifications.length },
-    { key: 'sms',       label: 'SMS',       Icon: Phone,            count: smsLogs.length },
-    { key: 'email',     label: 'Email',     Icon: Mail,             count: emailLogs.length },
-    { key: 'templates', label: 'Templates', Icon: Package,          count: templates.length },
+    { key: 'all',       label: t('notifications.tabs.all'),       Icon: BellNotification, count: notifications.length },
+    { key: 'sms',       label: t('notifications.tabs.sms'),       Icon: Phone,            count: smsLogs.length },
+    { key: 'email',     label: t('notifications.tabs.email'),     Icon: Mail,             count: emailLogs.length },
+    { key: 'templates', label: t('notifications.tabs.templates'), Icon: Package,          count: templates.length },
   ];
 
   /* ── render ────────────────────────────────────────────────── */
@@ -140,19 +140,19 @@ export default function Notifications() {
         <div className="notif-header-left">
           <h1>
             <BellNotification width={24} height={24} />
-            Notifications
+            {t('notifications.title')}
           </h1>
-          <p>{stats.total || 0} total &middot; {stats.sent || 0} sent &middot; {stats.failed || 0} failed</p>
+          <p>{t('notifications.header_stats', { total: stats.total || 0, sent: stats.sent || 0, failed: stats.failed || 0 })}</p>
         </div>
         <div className="notif-header-actions">
           <button className="notif-btn outline" onClick={() => { setResult(null); setShowSmsTest(true); }}>
-            <Phone width={14} height={14} /> SMS Test
+            <Phone width={14} height={14} /> {t('notifications.sms_test')}
           </button>
           <button className="notif-btn outline" onClick={() => { setResult(null); setShowEmailTest(true); }}>
-            <Mail width={14} height={14} /> Email Test
+            <Mail width={14} height={14} /> {t('notifications.email_test')}
           </button>
           <button className="notif-btn primary" onClick={() => { setResult(null); setError(''); setShowSend(true); }}>
-            <SendDiagonal width={14} height={14} /> Send Notification
+            <SendDiagonal width={14} height={14} /> {t('notifications.send')}
           </button>
         </div>
       </div>
@@ -175,15 +175,15 @@ export default function Notifications() {
 
       {/* ── Tabs ──────────────────────────────────────────── */}
       <div className="notif-tab-bar">
-        {tabs.map(t => (
+        {tabs.map(tb => (
           <button
-            key={t.key}
-            className={`notif-tab ${tab === t.key ? 'active' : ''}`}
-            onClick={() => { setTab(t.key); setPage(1); setSearch(''); }}
+            key={tb.key}
+            className={`notif-tab ${tab === tb.key ? 'active' : ''}`}
+            onClick={() => { setTab(tb.key); setPage(1); setSearch(''); }}
           >
-            <t.Icon width={15} height={15} />
-            {t.label}
-            {t.count > 0 && <span className="notif-tab-badge">{t.count}</span>}
+            <tb.Icon width={15} height={15} />
+            {tb.label}
+            {tb.count > 0 && <span className="notif-tab-badge">{tb.count}</span>}
           </button>
         ))}
       </div>
@@ -207,7 +207,7 @@ export default function Notifications() {
                       const c = CH[ch] || CH.sms;
                       return (
                         <span key={ch} className="notif-channel-badge" style={{ background: c.bg, color: c.color }}>
-                          <c.Icon width={12} height={12} /> {c.label}
+                          <c.Icon width={12} height={12} /> {t(c.label)}
                         </span>
                       );
                     })}
@@ -217,7 +217,7 @@ export default function Notifications() {
                   className="notif-template-use-btn"
                   onClick={() => { setSendForm(f => ({ ...f, message: tmpl.message, channels: tmpl.channels || ['sms'] })); setShowSend(true); }}
                 >
-                  Use
+                  {t('notifications.use_template')}
                 </button>
               </div>
               <p className="notif-template-body">{tmpl.message}</p>
@@ -243,12 +243,12 @@ export default function Notifications() {
           <div className="notif-list">
             <div className="notif-list-header">
               <h3>
-                {tab === 'sms' ? 'SMS Logs' : tab === 'email' ? 'Email Logs' : 'All Notifications'}
+                {tab === 'sms' ? t('notifications.list.sms_logs') : tab === 'email' ? t('notifications.list.email_logs') : t('notifications.list.all')}
                 {search && ` — "${search}"`}
               </h3>
               <div className="notif-list-actions">
                 <button className="notif-btn ghost" onClick={() => fetchAll()}>
-                  <RefreshDouble width={14} height={14} /> Refresh
+                  <RefreshDouble width={14} height={14} /> {t('notifications.refresh')}
                 </button>
               </div>
             </div>
@@ -258,10 +258,10 @@ export default function Notifications() {
                 <tr>
                   <th>{t("notifications.channel")}</th>
                   <th>{t("notifications.recipient")}</th>
-                  <th>Message</th>
-                  <th>Order</th>
-                  <th>Status</th>
-                  <th>Date</th>
+                  <th>{t('notifications.col.message')}</th>
+                  <th>{t('notifications.col.order')}</th>
+                  <th>{t('notifications.col.status')}</th>
+                  <th>{t('notifications.col.date')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -274,7 +274,7 @@ export default function Notifications() {
                         </div>
                         <h3>{t("notifications.no_notifications")}</h3>
                         <p>
-                          {tab === 'sms' ? 'No SMS logs found.' : tab === 'email' ? 'No email logs found.' : 'Notifications will appear here when sent.'}
+                          {tab === 'sms' ? t('notifications.no_sms') : tab === 'email' ? t('notifications.no_email') : t('notifications.empty_hint')}
                         </p>
                       </div>
                     </td>
@@ -286,7 +286,7 @@ export default function Notifications() {
                     <tr key={n.id}>
                       <td>
                         <span className="notif-channel-badge" style={{ background: ch.bg, color: ch.color }}>
-                          <ch.Icon width={12} height={12} /> {ch.label}
+                          <ch.Icon width={12} height={12} /> {t(ch.label)}
                         </span>
                       </td>
                       <td className="notif-recipient-cell">
@@ -296,7 +296,7 @@ export default function Notifications() {
                       <td className="notif-order-cell">{n.order_number || '—'}</td>
                       <td>
                         <span className="notif-status-badge" style={{ background: sb.bg, color: sb.color }}>
-                          <sb.Icon width={11} height={11} /> {sb.label}
+                          <sb.Icon width={11} height={11} /> {t(sb.label)}
                         </span>
                       </td>
                       <td className="notif-date-cell">
@@ -313,7 +313,7 @@ export default function Notifications() {
             {totalPages > 1 && (
               <div className="notif-pagination">
                 <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
-                  Prev
+                  {t('notifications.prev')}
                 </button>
                 {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
                   const p = i + 1;
@@ -325,7 +325,7 @@ export default function Notifications() {
                 })}
                 {totalPages > 7 && <span className="notif-page-info">...</span>}
                 <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
-                  Next
+                  {t('notifications.next')}
                 </button>
               </div>
             )}
@@ -342,7 +342,7 @@ export default function Notifications() {
         <div className="notif-overlay" onClick={() => setShowSend(false)}>
           <div className="notif-modal" onClick={e => e.stopPropagation()}>
             <h3 className="notif-modal-title">
-              <SendDiagonal width={20} height={20} /> Send Notification
+              <SendDiagonal width={20} height={20} /> {t('notifications.modal.send_title')}
             </h3>
             <p className="notif-modal-subtitle">{t("notifications.subtitle")}</p>
 
@@ -353,7 +353,7 @@ export default function Notifications() {
             )}
             {result?.success && (
               <div className="notif-alert success">
-                <CheckCircle width={16} height={16} /> Notification sent successfully!
+                <CheckCircle width={16} height={16} /> {t('notifications.sent_success')}
               </div>
             )}
 
@@ -370,7 +370,7 @@ export default function Notifications() {
                         background: sendForm.channels.includes(key) ? val.bg : 'transparent',
                         color: sendForm.channels.includes(key) ? val.color : 'var(--text-muted)',
                       }}>
-                      <val.Icon width={14} height={14} /> {val.label}
+                      <val.Icon width={14} height={14} /> {t(val.label)}
                     </button>
                   ))}
                 </div>
@@ -386,7 +386,7 @@ export default function Notifications() {
                 )}
                 {sendForm.channels.includes('email') && (
                   <div>
-                    <label className="notif-form-label">Email</label>
+                    <label className="notif-form-label">{t('notifications.form.email_label')}</label>
                     <input type="email" placeholder="recipient@email.com" value={sendForm.email}
                       onChange={e => setSendForm(f => ({ ...f, email: e.target.value }))} className="notif-form-input" />
                   </div>
@@ -399,28 +399,28 @@ export default function Notifications() {
                   </div>
                 )}
                 <div>
-                  <label className="notif-form-label">Order ID (optional)</label>
-                  <input value={sendForm.order_id} placeholder="e.g. 42"
+                  <label className="notif-form-label">{t('notifications.form.order_id')}</label>
+                  <input value={sendForm.order_id} placeholder={t('notifications.form.order_id_placeholder')}
                     onChange={e => setSendForm(f => ({ ...f, order_id: e.target.value }))} className="notif-form-input" />
                 </div>
                 {sendForm.channels.includes('push') && (
                   <div>
-                    <label className="notif-form-label">User ID (push target)</label>
-                    <input value={sendForm.user_id} placeholder="e.g. 5"
+                    <label className="notif-form-label">{t('notifications.form.user_id')}</label>
+                    <input value={sendForm.user_id} placeholder={t('notifications.form.user_id_placeholder')}
                       onChange={e => setSendForm(f => ({ ...f, user_id: e.target.value }))} className="notif-form-input" />
                   </div>
                 )}
               </div>
 
               <div className="notif-form-group" style={{ marginTop: 14 }}>
-                <label className="notif-form-label">Message *</label>
+                <label className="notif-form-label">{t('notifications.form.message')}</label>
                 <textarea required value={sendForm.message} rows={4} placeholder={t("notifications.message_placeholder")}
                   onChange={e => setSendForm(f => ({ ...f, message: e.target.value }))}
                   className="notif-form-textarea" />
                 <div className="notif-char-count">
-                  <span>{sendForm.message.length} characters</span>
-                  <span style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                    Sending via: {sendForm.channels.map(c => { const C = CH[c]; return C ? <C.Icon key={c} width={12} height={12} style={{ color: C.color }} /> : null; })}
+                    <span>{sendForm.message.length} {t('notifications.form.characters')}</span>
+                    <span style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                    {t('notifications.form.sending_via')} {sendForm.channels.map(c => { const C = CH[c]; return C ? <C.Icon key={c} width={12} height={12} style={{ color: C.color }} /> : null; })}
                   </span>
                 </div>
               </div>
@@ -428,7 +428,7 @@ export default function Notifications() {
               <div className="notif-form-footer">
                 <button type="button" onClick={() => setShowSend(false)} className="notif-btn outline">{t("common.cancel")}</button>
                 <button type="submit" disabled={saving} className="notif-btn primary" style={{ opacity: saving ? .6 : 1 }}>
-                  {saving ? 'Sending...' : 'Send Notification'}
+                  {saving ? t('notifications.form.sending') : t('notifications.form.submit')}
                 </button>
               </div>
             </form>
@@ -441,39 +441,39 @@ export default function Notifications() {
         <div className="notif-overlay" onClick={() => { setShowSmsTest(false); setResult(null); }}>
           <div className="notif-modal" style={{ maxWidth: 440 }} onClick={e => e.stopPropagation()}>
             <h3 className="notif-modal-title">
-              <Phone width={20} height={20} /> SMS Test
+              <Phone width={20} height={20} /> {t('notifications.sms_modal.title')}
             </h3>
-            <p className="notif-modal-subtitle">Send a test SMS via Twilio</p>
+            <p className="notif-modal-subtitle">{t('notifications.sms_modal.sub')}</p>
             {result && (
               <div className={`notif-alert ${result.success ? 'success' : 'error'}`}>
                 {result.success
-                  ? <><CheckCircle width={16} height={16} /> Sent! SID: {result.sid}</>
+                  ? <><CheckCircle width={16} height={16} /> {t('notifications.sms_modal.sent')} {result.sid}</>
                   : <><WarningTriangle width={16} height={16} /> {result.message}</>
                 }
               </div>
             )}
             <form onSubmit={handleSmsTest}>
               <div className="notif-form-group">
-                <label className="notif-form-label">Phone (E.164) *</label>
+                <label className="notif-form-label">{t('notifications.sms_modal.phone')}</label>
                 <input type="tel" required placeholder="+971501234567" value={smsForm.phone}
                   onChange={e => setSmsForm(f => ({ ...f, phone: e.target.value }))} className="notif-form-input" />
               </div>
               <div className="notif-form-group">
-                <label className="notif-form-label">Message *</label>
+                <label className="notif-form-label">{t('notifications.sms_modal.message')}</label>
                 <textarea required rows={3} value={smsForm.message}
                   onChange={e => setSmsForm(f => ({ ...f, message: e.target.value }))} className="notif-form-textarea" />
                 <div className="notif-char-count">
-                  <span>{smsForm.message.length} / 160</span>
+                  <span>{t('notifications.sms_modal.char_count', { count: smsForm.message.length })}</span>
                 </div>
               </div>
               <div className="notif-form-group">
-                <label className="notif-form-label">Order ID (optional)</label>
+                <label className="notif-form-label">{t('notifications.sms_modal.order_id')}</label>
                 <input value={smsForm.order_id} onChange={e => setSmsForm(f => ({ ...f, order_id: e.target.value }))} className="notif-form-input" />
               </div>
               <div className="notif-form-footer">
                 <button type="button" onClick={() => { setShowSmsTest(false); setResult(null); }} className="notif-btn outline">{t("common.close")}</button>
                 <button type="submit" disabled={saving} className="notif-btn primary" style={{ opacity: saving ? .6 : 1 }}>
-                  {saving ? 'Sending...' : 'Send SMS'}
+                  {saving ? t('notifications.sms_modal.sending') : t('notifications.sms_modal.submit')}
                 </button>
               </div>
             </form>
@@ -486,41 +486,41 @@ export default function Notifications() {
         <div className="notif-overlay" onClick={() => { setShowEmailTest(false); setResult(null); }}>
           <div className="notif-modal" style={{ maxWidth: 460 }} onClick={e => e.stopPropagation()}>
             <h3 className="notif-modal-title">
-              <SendMail width={20} height={20} /> Email Test
+              <SendMail width={20} height={20} /> {t('notifications.email_modal.title')}
             </h3>
-            <p className="notif-modal-subtitle">Send a test email via Office 365</p>
+            <p className="notif-modal-subtitle">{t('notifications.email_modal.sub')}</p>
             {result && (
               <div className={`notif-alert ${result.success ? 'success' : 'error'}`}>
                 {result.success
-                  ? <><CheckCircle width={16} height={16} /> Email sent! ID: {result.messageId}</>
+                  ? <><CheckCircle width={16} height={16} /> {t('notifications.email_modal.sent')} {result.messageId}</>
                   : <><WarningTriangle width={16} height={16} /> {result.message}</>
                 }
               </div>
             )}
             <form onSubmit={handleEmailTest}>
               <div className="notif-form-group">
-                <label className="notif-form-label">To (email) *</label>
+                <label className="notif-form-label">{t('notifications.email_modal.to')}</label>
                 <input type="email" required placeholder="test@example.com" value={emailForm.to}
                   onChange={e => setEmailForm(f => ({ ...f, to: e.target.value }))} className="notif-form-input" />
               </div>
               <div className="notif-form-group">
                 <label className="notif-form-label">{t("notifications.subject")}</label>
-                <input value={emailForm.subject} placeholder="Test Email from Trasealla"
+                <input value={emailForm.subject} placeholder={t('notifications.email_modal.subject_placeholder')}
                   onChange={e => setEmailForm(f => ({ ...f, subject: e.target.value }))} className="notif-form-input" />
               </div>
               <div className="notif-form-group">
-                <label className="notif-form-label">Message *</label>
+                <label className="notif-form-label">{t('notifications.email_modal.message')}</label>
                 <textarea required rows={3} value={emailForm.message}
                   onChange={e => setEmailForm(f => ({ ...f, message: e.target.value }))} className="notif-form-textarea" />
               </div>
               <div className="notif-form-group">
-                <label className="notif-form-label">Order ID (optional)</label>
+                <label className="notif-form-label">{t('notifications.email_modal.order_id')}</label>
                 <input value={emailForm.order_id} onChange={e => setEmailForm(f => ({ ...f, order_id: e.target.value }))} className="notif-form-input" />
               </div>
               <div className="notif-form-footer">
                 <button type="button" onClick={() => { setShowEmailTest(false); setResult(null); }} className="notif-btn outline">{t("common.close")}</button>
                 <button type="submit" disabled={saving} className="notif-btn primary" style={{ opacity: saving ? .6 : 1 }}>
-                  {saving ? 'Sending...' : 'Send Email'}
+                  {saving ? t('notifications.email_modal.sending') : t('notifications.email_modal.submit')}
                 </button>
               </div>
             </form>

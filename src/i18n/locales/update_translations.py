@@ -569,7 +569,7 @@ data['superAdmin'] = {
         "never_login": "Never"
     },
     "login": {
-        "brand": "Trasealla Delivery",
+        "brand": "Trasealla Solutions",
         "brand_sub": "Delivery Platform Administration",
         "title": "Super Admin Access",
         "subtitle": "Restricted to platform administrators only",

@@ -154,7 +154,7 @@ export default function Layout({ children }) {
     if (item) {
       return t(`common.${item.labelKey}`);
     }
-    return 'Trasealla Delivery';
+    return 'Trasealla Solutions';
   };
 
   const renderIcon = (iconKey) => {
@@ -174,7 +174,7 @@ export default function Layout({ children }) {
           <Link to="/dashboard">
             <img
               src="/assets/images/logos/full_logo_white.png"
-              alt="Trasealla Delivery"
+              alt="Trasealla Solutions"
               style={{ height: '100px' }}
               onError={e => {
                 e.target.style.display = 'none';
@@ -290,7 +290,7 @@ export default function Layout({ children }) {
       </main>
 
       <footer className={`custom-footer ${!sidebarOpen ? 'sidebar-closed' : ''}`}>
-        &copy; {new Date().getFullYear()} Trasealla Delivery &mdash; All rights reserved
+        &copy; {new Date().getFullYear()} Trasealla Solutions &mdash; All rights reserved
       </footer>
     </div>
   );

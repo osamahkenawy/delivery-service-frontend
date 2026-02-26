@@ -88,11 +88,12 @@ function pickupIcon() {
 
 /* ── Route Info Modal ────────────────────────────────────────── */
 function RouteInfoModal({ info, onClose }) {
+  const { t } = useTranslation();
   if (!info) return null;
   const mins = info.duration ?? Math.ceil((info.dist / 40) * 60);
   const hrs  = Math.floor(mins / 60);
   const rem  = mins % 60;
-  const timeStr = hrs > 0 ? `${hrs}h ${rem}m` : `${mins} min`;
+  const timeStr = hrs > 0 ? t('liveMap.time_hours_minutes', { hours: hrs, minutes: rem }) : t('liveMap.time_minutes', { minutes: mins });
   const isRoad = info.isRoad;
 
   return (
@@ -141,8 +142,8 @@ function RouteInfoModal({ info, onClose }) {
               <MapPin width={22} color="#f97316" />
             </div>
             <div style={{ fontSize: 32, fontWeight: 900, color: '#1e293b', lineHeight: 1 }}>{info.dist.toFixed(1)}</div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#f97316', marginTop: 2 }}>kilometers</div>
-            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>{isRoad ? 'road distance' : 'straight-line distance'}</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#f97316', marginTop: 2 }}>{t('liveMap.kilometers')}</div>
+            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>{isRoad ? t('liveMap.road_distance') : t('liveMap.straight_line_distance')}</div>
           </div>
           {/* ETA */}
           <div style={{ background: '#fff', padding: '22px 24px', textAlign: 'center' }}>
@@ -153,8 +154,8 @@ function RouteInfoModal({ info, onClose }) {
               <Clock width={22} color="#22c55e" />
             </div>
             <div style={{ fontSize: 32, fontWeight: 900, color: '#1e293b', lineHeight: 1 }}>{timeStr}</div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#22c55e', marginTop: 2 }}>estimated</div>
-            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>{isRoad ? 'OSRM routing' : 'at avg 40 km/h'}</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#22c55e', marginTop: 2 }}>{t('liveMap.estimated')}</div>
+            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>{isRoad ? t('liveMap.osrm_routing') : t('liveMap.avg_speed_estimate')}</div>
           </div>
         </div>
 
@@ -174,7 +175,7 @@ function RouteInfoModal({ info, onClose }) {
               </div>
               <div>
                 <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.05em' }}>{t("liveMap.delivery_to")}</div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b', marginTop: 1 }}>{info.recipientName || 'Unknown Recipient'}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b', marginTop: 1 }}>{info.recipientName || t('liveMap.unknown_recipient')}</div>
                 {info.recipientAddress && <div style={{ fontSize: 11, color: '#64748b', marginTop: 1 }}>{info.recipientAddress}</div>}
               </div>
             </div>
@@ -191,7 +192,7 @@ function RouteInfoModal({ info, onClose }) {
                 marginLeft: 'auto', fontSize: 11, fontWeight: 600, color: '#fff',
                 padding: '2px 8px', borderRadius: 99,
                 background: STATUS_COLOR[info.status] || '#f97316',
-              }}>{STATUS_LABELS[info.status] || info.status}</span>
+              }}>{t('liveMap.status_' + info.status)}</span>
             </div>
           )}
         </div>
@@ -236,12 +237,12 @@ function haversineKm(lat1, lng1, lat2, lng2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function timeAgo(dateStr) {
+function timeAgo(dateStr, t) {
   if (!dateStr) return '\u2014';
   const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
-  if (diff < 60) return Math.floor(diff) + 's ago';
-  if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
-  return Math.floor(diff / 3600) + 'h ago';
+  if (diff < 60) return t('liveMap.seconds_ago', { count: Math.floor(diff) });
+  if (diff < 3600) return t('liveMap.minutes_ago', { count: Math.floor(diff / 60) });
+  return t('liveMap.hours_ago', { count: Math.floor(diff / 3600) });
 }
 
 /* ══════════════════════════════════════════════════════════════ */
@@ -396,10 +397,10 @@ export default function LiveMap() {
           </div>
         </div>
         {[
-          { key: 'available', label: 'Available', value: counts.available || 0, icon: <Check width={18} height={18} />, bg: '#dcfce7', color: '#16a34a' },
-          { key: 'busy',      label: 'Busy',      value: counts.busy || 0,      icon: <Truck width={18} height={18} />, bg: '#fce7f3', color: '#be185d' },
-          { key: 'on_break',  label: 'On Break',  value: counts.on_break || 0,  icon: <Clock width={18} height={18} />, bg: '#fef3c7', color: '#d97706' },
-          { key: 'offline',   label: 'Offline',   value: offlineCount,          icon: <Prohibition width={18} height={18} />, bg: '#f1f5f9', color: '#94a3b8' },
+          { key: 'available', label: t('liveMap.stat_available'), value: counts.available || 0, icon: <Check width={18} height={18} />, bg: '#dcfce7', color: '#16a34a' },
+          { key: 'busy',      label: t('liveMap.stat_busy'),      value: counts.busy || 0,      icon: <Truck width={18} height={18} />, bg: '#fce7f3', color: '#be185d' },
+          { key: 'on_break',  label: t('liveMap.stat_on_break'),  value: counts.on_break || 0,  icon: <Clock width={18} height={18} />, bg: '#fef3c7', color: '#d97706' },
+          { key: 'offline',   label: t('liveMap.stat_offline'),   value: offlineCount,          icon: <Prohibition width={18} height={18} />, bg: '#f1f5f9', color: '#94a3b8' },
         ].map(s => (
           <div key={s.key} className="ord-stat-card drv-stat-clickable"
             onClick={() => setFilter(f => f === s.key ? 'all' : s.key)}>
@@ -431,11 +432,11 @@ export default function LiveMap() {
               display: 'inline-block',
               animation: connected ? 'pulse 2s infinite' : 'none',
             }} />
-            {connected ? 'Live' : 'Polling'}
+            {connected ? t('liveMap.live_status') : t('liveMap.polling_status')}
           </span>
           {lastUpdate && (
             <span style={{ fontSize: '.72rem', color: 'var(--text-muted)' }}>
-              Updated {lastUpdate.toLocaleTimeString()}
+              {t('liveMap.updated_time', { time: lastUpdate.toLocaleTimeString() })}
             </span>
           )}
         </div>
@@ -447,7 +448,7 @@ export default function LiveMap() {
                 background: mapStyle === key ? '#244066' : 'transparent',
                 color: mapStyle === key ? '#fff' : 'var(--text-muted)',
                 textTransform: 'capitalize', transition: 'all .2s',
-              }}>{key}</button>
+              }}>{t('liveMap.map_' + key)}</button>
             ))}
           </div>
           <button onClick={() => setShowRoutes(!showRoutes)} style={{
@@ -456,16 +457,16 @@ export default function LiveMap() {
             background: showRoutes ? '#f970161a' : 'var(--bg-hover)',
             color: showRoutes ? '#f97316' : 'var(--text-muted)',
           }}>
-            <NavArrowRight width={14} /> Routes
+            <NavArrowRight width={14} /> {t('liveMap.routes_btn')}
           </button>
-          <button onClick={fetchLocations} title="Refresh" style={{
+          <button onClick={fetchLocations} title={t('liveMap.refresh')} style={{
             display: 'flex', alignItems: 'center', padding: '5px 10px', borderRadius: 8,
             border: '1px solid var(--border)', cursor: 'pointer',
             background: 'var(--bg-hover)', color: 'var(--text-muted)',
           }}>
             <Refresh width={14} />
           </button>
-          <button onClick={toggleFullscreen} title="Fullscreen" style={{
+          <button onClick={toggleFullscreen} title={t('liveMap.fullscreen')} style={{
             display: 'flex', alignItems: 'center', padding: '5px 10px', borderRadius: 8,
             border: '1px solid var(--border)', cursor: 'pointer',
             background: 'var(--bg-hover)', color: 'var(--text-muted)',
@@ -479,12 +480,12 @@ export default function LiveMap() {
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
         <button onClick={() => setFilter('all')}
           style={{ padding: '4px 12px', borderRadius: 99, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '.75rem', background: filter === 'all' ? '#244066' : 'var(--bg-hover)', color: filter === 'all' ? '#fff' : 'var(--text-secondary)', transition: 'all .2s' }}>
-          All ({allDrivers.length})
+          {t('liveMap.all_filter', { count: allDrivers.length })}
         </button>
         {Object.entries(STATUS_COLOR).filter(([s]) => s !== 'offline').map(([s, c]) => (
           <button key={s} onClick={() => setFilter(s)}
             style={{ padding: '4px 12px', borderRadius: 99, border: '2px solid ' + (filter === s ? c : 'transparent'), cursor: 'pointer', fontWeight: 600, fontSize: '.75rem', background: filter === s ? c + '20' : 'var(--bg-hover)', color: filter === s ? c : 'var(--text-secondary)', transition: 'all .2s' }}>
-            {STATUS_LABELS[s]} ({counts[s] || 0})
+            {t('liveMap.status_' + s)} ({counts[s] || 0})
           </button>
         ))}
       </div>
@@ -510,7 +511,7 @@ export default function LiveMap() {
               const mins = cached ? Math.ceil(cached.duration) : Math.ceil((dist / 40) * 60);
               const hrs  = Math.floor(mins / 60);
               const rem  = mins % 60;
-              const etaStr = hrs > 0 ? `${hrs}h ${rem}m` : `${mins} min`;
+              const etaStr = hrs > 0 ? t('liveMap.time_hours_minutes', { hours: hrs, minutes: rem }) : t('liveMap.time_minutes', { minutes: mins });
 
               elems.push(
                 <Polyline key={'route-' + d.id} positions={routePositions}
@@ -529,12 +530,12 @@ export default function LiveMap() {
                   }}>
                   <Tooltip sticky direction="top">
                     <div style={{ fontSize: '.75rem', fontWeight: 600, padding: '4px 2px' }}>
-                      <div style={{ marginBottom: 4 }}>{d.full_name} → {d.recipient_name || 'Delivery'}</div>
+                      <div style={{ marginBottom: 4 }}>{d.full_name} → {d.recipient_name || t('liveMap.delivery_fallback')}</div>
                       <div style={{ display: 'flex', gap: 12, color: '#374151' }}>
-                        <span>📍 {dist.toFixed(1)} km</span>
+                        <span>📍 {t('liveMap.distance_km', { distance: dist.toFixed(1) })}</span>
                         <span>⏱ ~{etaStr}</span>
                       </div>
-                      <div style={{ fontSize: '.65rem', color: '#9ca3af', marginTop: 3 }}>{cached ? '🛣 Road route' : '→ Straight line'} · Click for details</div>
+                      <div style={{ fontSize: '.65rem', color: '#9ca3af', marginTop: 3 }}>{cached ? '🛣 ' + t('liveMap.road_route_info') : '→ ' + t('liveMap.straight_line_info')} · {t('liveMap.click_for_details')}</div>
                     </div>
                   </Tooltip>
                 </Polyline>
@@ -546,7 +547,7 @@ export default function LiveMap() {
                   <Polyline key={'pickup-rt-' + d.id} positions={[dP, pP]}
                     pathOptions={{ color: '#3b82f6', weight: 2, opacity: 0.5, dashArray: '4 6' }} />,
                   <Marker key={'pickup-' + d.id} position={pP} icon={pickupIcon()}>
-                    <Popup><div style={{ fontSize: '.8rem', fontWeight: 600 }}>Pickup &mdash; {d.current_order}</div></Popup>
+                    <Popup><div style={{ fontSize: '.8rem', fontWeight: 600 }}>{t('liveMap.pickup_label')} &mdash; {d.current_order}</div></Popup>
                   </Marker>
                 );
               }
@@ -556,7 +557,7 @@ export default function LiveMap() {
               const destMins = cachedRoute ? Math.ceil(cachedRoute.duration) : Math.ceil((dist / 40) * 60);
               const destHrs  = Math.floor(destMins / 60);
               const destRem  = destMins % 60;
-              const destEta  = destHrs > 0 ? `${destHrs}h ${destRem}m` : `${destMins} min`;
+              const destEta  = destHrs > 0 ? t('liveMap.time_hours_minutes', { hours: destHrs, minutes: destRem }) : t('liveMap.time_minutes', { minutes: destMins });
 
               elems.push(
                 <Marker key={'dest-' + d.id} position={delP} icon={deliveryIcon()}>
@@ -604,11 +605,11 @@ export default function LiveMap() {
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 2 }}>
                           <div style={{ background: '#fff7ed', borderRadius: 8, padding: '8px 10px', textAlign: 'center', border: '1px solid #fed7aa' }}>
                             <div style={{ fontSize: 16, fontWeight: 900, color: '#ea580c' }}>{popupDist.toFixed(1)}</div>
-                            <div style={{ fontSize: 10, fontWeight: 700, color: '#f97316', textTransform: 'uppercase', letterSpacing: '.04em' }}>{cachedRoute ? 'km road' : 'km away'}</div>
+                            <div style={{ fontSize: 10, fontWeight: 700, color: '#f97316', textTransform: 'uppercase', letterSpacing: '.04em' }}>{cachedRoute ? t('liveMap.km_road') : t('liveMap.km_away')}</div>
                           </div>
                           <div style={{ background: '#f0fdf4', borderRadius: 8, padding: '8px 10px', textAlign: 'center', border: '1px solid #bbf7d0' }}>
                             <div style={{ fontSize: 16, fontWeight: 900, color: '#16a34a' }}>{destEta}</div>
-                            <div style={{ fontSize: 10, fontWeight: 700, color: '#22c55e', textTransform: 'uppercase', letterSpacing: '.04em' }}>est. ETA</div>
+                            <div style={{ fontSize: 10, fontWeight: 700, color: '#22c55e', textTransform: 'uppercase', letterSpacing: '.04em' }}>{t('liveMap.est_eta')}</div>
                           </div>
                         </div>
 
@@ -668,11 +669,11 @@ export default function LiveMap() {
                           </div>
                           <div>
                             <div style={{ fontWeight: 700, fontSize: '.88rem' }}>{d.full_name}</div>
-                            <div style={{ fontSize: '.68rem', opacity: 0.85 }}>{d.vehicle_type?.replace('_', ' ') || 'Driver'}</div>
+                            <div style={{ fontSize: '.68rem', opacity: 0.85 }}>{d.vehicle_type?.replace('_', ' ') || t('liveMap.driver_type_fallback')}</div>
                           </div>
                         </div>
                         <span style={{ padding: '2px 8px', borderRadius: 10, fontSize: '.66rem', fontWeight: 700, background: 'rgba(255,255,255,0.2)' }}>
-                          {STATUS_LABELS[d.status] || d.status}
+                          {t('liveMap.status_' + d.status)}
                         </span>
                       </div>
                       <div style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -692,25 +693,25 @@ export default function LiveMap() {
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', background: '#fff7ed', borderRadius: 6, border: '1px solid #fed7aa' }}>
                               <Package width={13} color="#ea580c" />
                               <span style={{ fontWeight: 700, color: '#ea580c', fontSize: '.82rem' }}>{d.current_order}</span>
-                              {dist != null && <span style={{ marginLeft: 'auto', fontSize: '.7rem', color: '#6b7280' }}>{dist.toFixed(1)} km</span>}
+                              {dist != null && <span style={{ marginLeft: 'auto', fontSize: '.7rem', color: '#6b7280' }}>{t('liveMap.distance_km', { distance: dist.toFixed(1) })}</span>}
                             </div>
                           </>
                         )}
                         <div style={{ display: 'flex', gap: 12, marginTop: 2 }}>
                           {d.speed != null && (
                             <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#6b7280', fontSize: '.74rem' }}>
-                              <Clock width={12} /> {parseFloat(d.speed).toFixed(0)} km/h
+                              <Clock width={12} /> {t('liveMap.speed_kmh', { speed: parseFloat(d.speed).toFixed(0) })}
                             </div>
                           )}
                           {eta != null && (
                             <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#f97316', fontSize: '.74rem', fontWeight: 600 }}>
-                              <Clock width={12} /> ~{eta} min ETA
+                              <Clock width={12} /> {t('liveMap.eta_minutes_display', { minutes: eta })}
                             </div>
                           )}
                         </div>
                         {d.last_ping && (
                           <div style={{ color: '#9ca3af', fontSize: '.7rem', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <Gps width={11} /> {timeAgo(d.last_ping)}
+                            <Gps width={11} /> {timeAgo(d.last_ping, t)}
                           </div>
                         )}
                       </div>
@@ -729,19 +730,19 @@ export default function LiveMap() {
             boxShadow: '0 2px 8px rgba(0,0,0,.15)', display: 'flex', gap: 12, flexWrap: 'wrap',
           }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#22c55e', border: '2px solid #fff', boxShadow: '0 1px 3px rgba(0,0,0,.2)' }} /> Available
+              <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#22c55e', border: '2px solid #fff', boxShadow: '0 1px 3px rgba(0,0,0,.2)' }} /> {t('liveMap.status_available')}
             </span>
             <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#f97316', border: '2px solid #fff', boxShadow: '0 1px 3px rgba(0,0,0,.2)' }} /> On Delivery
+              <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#f97316', border: '2px solid #fff', boxShadow: '0 1px 3px rgba(0,0,0,.2)' }} /> {t('liveMap.status_busy')}
             </span>
             <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#8b5cf6', border: '2px solid #fff', boxShadow: '0 1px 3px rgba(0,0,0,.2)' }} /> Returning
+              <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#8b5cf6', border: '2px solid #fff', boxShadow: '0 1px 3px rgba(0,0,0,.2)' }} /> {t('liveMap.status_returning')}
             </span>
             <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <span style={{ width: 20, height: 0, borderTop: '2px dashed #f97316' }} /> Route
+              <span style={{ width: 20, height: 0, borderTop: '2px dashed #f97316' }} /> {t('liveMap.legend_route')}
             </span>
             <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <span style={{ width: 10, height: 14, borderRadius: '50% 50% 50% 0', background: '#ef4444', border: '1px solid #fff', transform: 'rotate(-45deg)', display: 'inline-block' }} /> Delivery
+              <span style={{ width: 10, height: 14, borderRadius: '50% 50% 50% 0', background: '#ef4444', border: '1px solid #fff', transform: 'rotate(-45deg)', display: 'inline-block' }} /> {t('liveMap.legend_delivery')}
             </span>
           </div>
         </div>
@@ -762,7 +763,7 @@ export default function LiveMap() {
 
           <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontWeight: 700, fontSize: '.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.06em' }}>
-              Drivers ({filtered.length})
+              {t('liveMap.drivers_sidebar_title', { count: filtered.length })}
             </span>
           </div>
 
@@ -798,17 +799,17 @@ export default function LiveMap() {
                       {d.full_name}
                     </div>
                     <div style={{ fontSize: '.7rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                      {d.zone_name || 'No zone'}
+                      {d.zone_name || t('liveMap.no_zone')}
                       {d.last_ping && (
-                        <><span style={{ color: '#d1d5db' }}>&middot;</span><span>{timeAgo(d.last_ping)}</span></>
+                        <><span style={{ color: '#d1d5db' }}>&middot;</span><span>{timeAgo(d.last_ping, t)}</span></>
                       )}
                     </div>
                     {d.current_order && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2, fontSize: '.68rem' }}>
                         <Package width={11} color="#ea580c" />
                         <span style={{ fontWeight: 600, color: '#ea580c' }}>{d.current_order}</span>
-                        {dist != null && <span style={{ color: '#6b7280', marginLeft: 4 }}>{dist.toFixed(1)} km</span>}
-                        {eta != null && <span style={{ color: '#f97316', fontWeight: 600, marginLeft: 4 }}>~{eta}m</span>}
+                        {dist != null && <span style={{ color: '#6b7280', marginLeft: 4 }}>{t('liveMap.distance_km', { distance: dist.toFixed(1) })}</span>}
+                        {eta != null && <span style={{ color: '#f97316', fontWeight: 600, marginLeft: 4 }}>{t('liveMap.eta_short_minutes', { minutes: eta })}</span>}
                       </div>
                     )}
                   </div>
@@ -818,10 +819,10 @@ export default function LiveMap() {
                       fontWeight: 700, background: (STATUS_COLOR[d.status] || '#94a3b8') + '20',
                       color: STATUS_COLOR[d.status] || '#94a3b8',
                     }}>
-                      {STATUS_LABELS[d.status] || d.status}
+                      {t('liveMap.status_' + d.status)}
                     </span>
                     {d.speed != null && d.speed > 0 && (
-                      <div style={{ fontSize: '.62rem', color: '#6b7280', marginTop: 2 }}>{parseFloat(d.speed).toFixed(0)} km/h</div>
+                      <div style={{ fontSize: '.62rem', color: '#6b7280', marginTop: 2 }}>{t('liveMap.speed_kmh', { speed: parseFloat(d.speed).toFixed(0) })}</div>
                     )}
                     {!d.last_lat && <div style={{ fontSize: '.62rem', color: '#94a3b8', marginTop: 2 }}>{t("liveMap.no_gps")}</div>}
                   </div>

@@ -4,7 +4,7 @@ import {
   Group, User, Search, EditPencil, Trash, Plus,
   Mail, Phone, Building, MapPin, Download, NavArrowRight, NavArrowLeft,
   WarningTriangle, Xmark, CheckCircle, Package, DeliveryTruck,
-  StatsUpSquare, Wallet, Filter, Eye,
+  StatsUpSquare, Wallet, Filter, Eye, Clock,
 } from 'iconoir-react';
 import api from '../lib/api';
 import Toast, { useToast } from '../components/Toast';
@@ -64,57 +64,59 @@ function KPICard({ icon: Icon, label, value, sub, color }) {
 }
 
 function StatusPill({ active }) {
+  const { t } = useTranslation();
   return (
     <span style={{ display:'inline-flex', alignItems:'center', gap:5,
       background:active?'#dcfce7':'#fee2e2', color:active?'#16a34a':'#dc2626',
       padding:'3px 10px', borderRadius:20, fontSize:12, fontWeight:700 }}>
       <span style={{ width:7, height:7, borderRadius:'50%', background:active?'#16a34a':'#dc2626', display:'inline-block' }} />
-      {active ? 'Active' : 'Inactive'}
+      {active ? t('clients.status.active') : t('clients.status.inactive')}
     </span>
   );
 }
 
 /* ── Step indicator ── */
-const STEPS = [
-  { num:1, title:'Basic Info',     desc:'Name & contact details' },
-  { num:2, title:'Business Info',  desc:'Type, category & emirate' },
-  { num:3, title:'Address & Limit', desc:'Location, credit & notes' },
-];
-
-function StepBar({ current }) {
+function StepBar({ current, steps }) {
   return (
-    <div style={{ display:'flex', alignItems:'flex-start', padding:'22px 28px 0', position:'relative' }}>
-      {STEPS.map((s, i) => {
+    <div style={{ display:'flex', alignItems:'center', padding:'22px 28px 0', position:'relative' }}>
+      {/* Connector lines background */}
+      {steps.map((s, i) => {
         const done   = current > s.num;
-        const active = current === s.num;
-        const last   = i === STEPS.length - 1;
+        const last   = i === steps.length - 1;
+        if (last) return null;
         return (
-          <div key={s.num} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', position:'relative' }}>
-            {/* connector line to next step */}
-            {!last && (
-              <div style={{
-                position:'absolute', top:18, left:'50%', width:'100%', height:2,
-                background: done ? '#16a34a' : '#e2e8f0',
-                transition:'background 0.3s', zIndex:0
-              }} />
-            )}
-            <div style={{ position:'relative', zIndex:1,
-              width:36, height:36, borderRadius:'50%', fontWeight:800, fontSize:15,
-              display:'flex', alignItems:'center', justifyContent:'center',
-              background: done?'#16a34a' : active?'#f97316':'#f1f5f9',
-              color: done||active?'#fff':'#94a3b8',
-              boxShadow: active?'0 0 0 4px rgba(249,115,22,0.18)':'none',
-              transition:'all 0.25s' }}>
-              {done ? <CheckCircle width={18} height={18} /> : s.num}
-            </div>
-            <div style={{ marginTop:6, fontSize:11, fontWeight:active?700:500,
-              color:active?'#f97316':done?'#16a34a':'#94a3b8',
-              whiteSpace:'nowrap', textAlign:'center' }}>
-              {s.title}
-            </div>
-          </div>
+          <div key={`line-${s.num}`} style={{
+            flex:1, height:2, background: done ? '#16a34a' : '#e2e8f0',
+            transition:'background 0.3s', position:'relative', top:16, zIndex:0
+          }} />
         );
       })}
+      
+      {/* Reset flex for steps container */}
+      <div style={{ display:'flex', width:'100%', position:'absolute', top:0, left:0, right:0 }}>
+        {steps.map((s, i) => {
+          const done   = current > s.num;
+          const active = current === s.num;
+          return (
+            <div key={s.num} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', position:'relative', zIndex:1 }}>
+              <div style={{
+                width:36, height:36, borderRadius:'50%', fontWeight:800, fontSize:15,
+                display:'flex', alignItems:'center', justifyContent:'center',
+                background: done?'#16a34a' : active?'#f97316':'#f1f5f9',
+                color: done||active?'#fff':'#94a3b8',
+                boxShadow: active?'0 0 0 4px rgba(249,115,22,0.18)':'none',
+                transition:'all 0.25s' }}>
+                {done ? <CheckCircle width={18} height={18} /> : s.num}
+              </div>
+              <div style={{ marginTop:6, fontSize:11, fontWeight:active?700:500,
+                color:active?'#f97316':done?'#16a34a':'#94a3b8',
+                whiteSpace:'nowrap', textAlign:'center' }}>
+                {s.title}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -123,6 +125,7 @@ function StepBar({ current }) {
 
 /* ── Nominatim address search dropdown ── */
 function AddressSearch({ onSelect }) {
+  const { t } = useTranslation();
   const [q, setQ] = React.useState('');
   const [results, setResults] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
@@ -166,7 +169,7 @@ function AddressSearch({ onSelect }) {
   return (
     <div ref={wrapRef} style={{ position:'relative', gridColumn:'1/-1', marginBottom:4 }}>
       <label style={{ display:'block', fontSize:12, fontWeight:700, color:'#374151', marginBottom:6, textTransform:'uppercase', letterSpacing:'0.04em' }}>
-        Search Location
+        {t('clients.search_location')}
       </label>
       <div style={{ position:'relative' }}>
         <input
@@ -177,7 +180,7 @@ function AddressSearch({ onSelect }) {
           style={{ width:'100%', padding:'10px 36px 10px 13px', borderRadius:9, border:'1px solid #e2e8f0', fontSize:14, boxSizing:'border-box', outline:'none' }}
         />
         <div style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', color:'#94a3b8', pointerEvents:'none' }}>
-          {loading ? '⏳' : '🔍'}
+          {loading ? <Clock width={14} height={14} strokeWidth={2} /> : <Search width={14} height={14} strokeWidth={2} />}
         </div>
         {q && (
           <button type="button" onClick={() => { setQ(''); setResults([]); setOpen(false); }}
@@ -262,7 +265,8 @@ function LocationPickerMap({ lat, lng, onPick }) {
 
 /* ── Main component ── */
 export default function Clients() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
   const navigate = useNavigate();
   const [clients,       setClients]       = useState([]);
   const [loading,       setLoading]       = useState(true);
@@ -294,6 +298,13 @@ export default function Clients() {
 
   /* ── Toast ── */
   const { toasts, showToast } = useToast();
+
+  /* ── Steps with translations ── */
+  const STEPS = [
+    { num:1, title: t('clients.steps.step_1_title'),     desc: t('clients.steps.step_1_desc') },
+    { num:2, title: t('clients.steps.step_2_title'),  desc: t('clients.steps.step_2_desc') },
+    { num:3, title: t('clients.steps.step_3_title'), desc: t('clients.steps.step_3_desc') },
+  ];
 
   /* ── Zones ── */
   const [zones, setZones] = useState([]);
@@ -345,8 +356,8 @@ export default function Clients() {
   /* validate current step before going next */
   const validateStep = () => {
     if (step === 1) {
-      if (!form.full_name.trim()) { setFormError('Full name is required'); return false; }
-      if (!form.phone.trim())     { setFormError('Phone number is required'); return false; }
+      if (!form.full_name.trim()) { setFormError(t('clients.validation.full_name_required')); return false; }
+      if (!form.phone.trim())     { setFormError(t('clients.validation.phone_required')); return false; }
     }
     setFormError('');
     return true;
@@ -364,11 +375,11 @@ export default function Clients() {
       ? await api.put(`/clients/${selected.id}`, form)
       : await api.post('/clients', form);
     if (res.success) {
-      showToast(selected ? 'Client updated successfully!' : 'Client created successfully!');
+      showToast(selected ? t('clients.toast.updated') : t('clients.toast.created'));
       setShowForm(false); setSelected(null);
       fetchClients();
       if (drawer && drawer.id === selected?.id) setDrawer(res.data);
-    } else { setFormError(res.message || 'Failed to save'); }
+    } else { setFormError(res.message || t('clients.toast.save_failed')); }
     setSaving(false);
   };
 
@@ -377,11 +388,11 @@ export default function Clients() {
     const newActive = !c.is_active;
     const res = await api.put(`/clients/${c.id}`, { ...c, is_active: newActive });
     if (res.success) {
-      showToast(newActive ? `${c.full_name} activated` : `${c.full_name} deactivated`);
+      showToast(newActive ? t('clients.toast.activated', { name: c.full_name }) : t('clients.toast.deactivated', { name: c.full_name }));
       fetchClients();
       if (drawer?.id === c.id) setDrawer(d => ({ ...d, is_active: newActive }));
     } else {
-      showToast('Failed to update status', 'error');
+      showToast(t('clients.toast.status_update_failed'), 'error');
     }
   };
 
@@ -391,11 +402,11 @@ export default function Clients() {
     const res = await api.delete(`/clients/${id}`);
     setDeleteConfirm(null);
     if (res.success !== false) {
-      showToast(`${name} has been deactivated`);
+      showToast(t('clients.toast.deactivated', { name }));
       if (drawer?.id === id) setDrawer(null);
       fetchClients();
     } else {
-      showToast('Failed to deactivate client', 'error');
+      showToast(t('clients.toast.deactivate_failed'), 'error');
     }
   };
 
@@ -407,7 +418,7 @@ export default function Clients() {
     if (emirateFilter) params.set('emirate', emirateFilter);
     const res = await api.get(`/clients?${params}`);
     setExporting(false);
-    if (!res.success) { showToast('Failed to export', 'error'); return; }
+    if (!res.success) { showToast(t('clients.toast.export_failed'), 'error'); return; }
     const data = res.data || [];
     let filtered = data;
     if (statusFilter === 'active')   filtered = filtered.filter(c => !!c.is_active);
@@ -439,10 +450,10 @@ export default function Clients() {
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:24, flexWrap:'wrap', gap:12 }}>
         <div>
           <h2 style={{ margin:0, fontSize:26, fontWeight:900, color:'#1e293b', display:'flex', alignItems:'center', gap:10 }}>
-            <Group width={28} height={28} color="#f97316" /> Clients
+            <Group width={28} height={28} color="#f97316" /> {t('clients.page.title')}
           </h2>
           <p style={{ margin:'5px 0 0', color:'#64748b', fontSize:14 }}>
-            {total} registered · {activeCount} active
+            {t('clients.page.subtitle', { total, activeCount })}
           </p>
         </div>
         <div style={{ display:'flex', gap:10 }}>
@@ -450,24 +461,24 @@ export default function Clients() {
             style={{ padding:'10px 18px', borderRadius:10, border:'1px solid #e2e8f0', background:'#fff',
               cursor:exporting?'not-allowed':'pointer', fontWeight:600, fontSize:13, color:'#475569',
               display:'flex', alignItems:'center', gap:7, opacity:exporting?0.6:1 }}>
-            <Download width={15} height={15} /> {exporting ? 'Exporting…' : 'Export CSV'}
+            <Download width={15} height={15} /> {exporting ? t('clients.button.exporting') : t('clients.button.export_csv')}
           </button>
           <button onClick={openCreate}
             style={{ padding:'10px 22px', borderRadius:10, border:'none',
               background:'linear-gradient(135deg,#f97316,#ea580c)', color:'#fff',
               cursor:'pointer', fontWeight:700, fontSize:14, display:'flex', alignItems:'center', gap:7,
               boxShadow:'0 4px 14px rgba(249,115,22,0.38)' }}>
-            <Plus width={16} height={16} /> New Client
+            <Plus width={16} height={16} /> {t('clients.button.new_client')}
           </button>
         </div>
       </div>
 
       {/* KPI Cards */}
       <div style={{ display:'flex', gap:14, marginBottom:24, flexWrap:'wrap' }}>
-        <KPICard icon={Group}          label="Total Clients" value={clients.length}                      sub={`${activeCount} active`}        color="#f97316" />
-        <KPICard icon={Package}        label="Total Orders"  value={totalOrders}                        sub="all time"                       color="#3b82f6" />
-        <KPICard icon={Building}       label="Corporate B2B" value={clients.filter(c=>c.type==='corporate').length} sub="business accounts" color="#8b5cf6" />
-        <KPICard icon={DeliveryTruck}  label="E-Commerce"    value={clients.filter(c=>c.type==='ecommerce').length} sub="online stores"    color="#10b981" />
+        <KPICard icon={Group}          label={t('clients.kpi.total_clients')} value={clients.length}                      sub={t('clients.kpi.active_count', { count: activeCount })}        color="#f97316" />
+        <KPICard icon={Package}        label={t('clients.kpi.total_orders')}  value={totalOrders}                        sub={t('clients.kpi.all_time')}                       color="#3b82f6" />
+        <KPICard icon={Building}       label={t('clients.kpi.corporate_b2b')} value={clients.filter(c=>c.type==='corporate').length} sub={t('clients.kpi.business_accounts')} color="#8b5cf6" />
+        <KPICard icon={DeliveryTruck}  label={t('clients.kpi.ecommerce')}    value={clients.filter(c=>c.type==='ecommerce').length} sub={t('clients.kpi.online_stores')}    color="#10b981" />
       </div>
 
       {/* Filter Bar */}
@@ -476,10 +487,10 @@ export default function Clients() {
         display:'flex', gap:10, flexWrap:'wrap', alignItems:'center' }}>
         <div style={{ position:'relative', flex:1, minWidth:220 }}>
           <Search width={15} height={15} color="#9ca3af"
-            style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }} />
+            style={{ position:'absolute', [isRTL?'right':'left']:11, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }} />
           <input placeholder={t("clients.search_placeholder")}
             value={search} onChange={e=>{ setSearch(e.target.value); setPage(1); }}
-            style={{ ...INPUT, paddingLeft:33 }} />
+            style={{ ...INPUT, [isRTL?'paddingRight':'paddingLeft']:33 }} />
         </div>
         <select value={typeFilter} onChange={e=>{ setTypeFilter(e.target.value); setPage(1); }}
           style={{ ...INPUT, width:148 }}>
@@ -494,15 +505,15 @@ export default function Clients() {
         <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}
           style={{ ...INPUT, width:128 }}>
           <option value="">{t("common.all_status")}</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
+          <option value="active">{t('clients.status.active')}</option>
+          <option value="inactive">{t('clients.status.inactive')}</option>
         </select>
         {hasFilters && (
           <button onClick={clearFilters}
             style={{ padding:'9px 13px', borderRadius:8, border:'1px solid #fecaca', background:'#fff5f5',
               color:'#dc2626', cursor:'pointer', fontSize:13, fontWeight:600,
               display:'flex', alignItems:'center', gap:5 }}>
-            <Xmark width={13} height={13} /> Clear
+            <Xmark width={13} height={13} /> {t('clients.button.clear')}
           </button>
         )}
       </div>
@@ -512,7 +523,7 @@ export default function Clients() {
         {/* Segment pills */}
         <div style={{ padding:'12px 18px', borderBottom:'1px solid #f1f5f9',
           display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>
-          <span style={{ fontSize:11, color:'#94a3b8', fontWeight:700, marginRight:4, letterSpacing:'0.06em' }}>SEGMENT</span>
+          <span style={{ fontSize:11, color:'#94a3b8', fontWeight:700, [isRTL?'marginLeft':'marginRight']:4, letterSpacing:'0.06em' }}>{t('clients.segment_label')}</span>
           {Object.entries(TYPE_META).map(([t,m]) => {
             const cnt    = clients.filter(c => c.type === t).length;
             const active = typeFilter === t;
@@ -525,7 +536,7 @@ export default function Clients() {
               </button>
             );
           })}
-          <span style={{ marginLeft:'auto', color:'#94a3b8', fontSize:13 }}>{clients.length} shown</span>
+          <span style={{ [isRTL?'marginRight':'marginLeft']:'auto', color:'#94a3b8', fontSize:13 }}>{clients.length} {t('clients.shown')}</span>
         </div>
 
         {loading ? (
@@ -534,14 +545,14 @@ export default function Clients() {
           <div style={{ textAlign:'center', padding:70 }}>
             <Group width={56} height={56} color="#e2e8f0" style={{ marginBottom:14 }} />
             <div style={{ fontWeight:800, fontSize:20, marginBottom:6 }}>
-              {hasFilters ? 'No clients match your filters' : 'No clients yet'}
+              {hasFilters ? t('clients.empty.filter_mismatch') : t('clients.empty.no_clients')}
             </div>
             <div style={{ color:'#94a3b8', marginBottom:24, fontSize:14 }}>
-              {hasFilters ? 'Try adjusting your search or filters' : 'Add your first client to get started'}
+              {hasFilters ? t('clients.empty.filter_help') : t('clients.empty.first_client_help')}
             </div>
             {hasFilters
               ? <button onClick={clearFilters} style={{ padding:'10px 24px', borderRadius:10, border:'1px solid #e2e8f0', background:'#fff', cursor:'pointer', fontWeight:600 }}>{t("common.clear_filters")}</button>
-              : <button onClick={openCreate}   style={{ padding:'11px 28px', borderRadius:10, border:'none', background:'#f97316', color:'#fff', cursor:'pointer', fontWeight:700, fontSize:15 }}>+ Add First Client</button>
+              : <button onClick={openCreate}   style={{ padding:'11px 28px', borderRadius:10, border:'none', background:'#f97316', color:'#fff', cursor:'pointer', fontWeight:700, fontSize:15 }}>{t('clients.button.add_first')}</button>
             }
           </div>
         ) : (
@@ -550,7 +561,7 @@ export default function Clients() {
               <table style={{ width:'100%', borderCollapse:'collapse', minWidth:860 }}>
                 <thead>
                   <tr style={{ background:'#f8fafc', borderBottom:'2px solid #f1f5f9' }}>
-                    {['Client','Type','Contact','Emirate','Orders','Credit Limit','Status',''].map(h => (
+                    {[t('clients.table.client'), t('clients.table.type'), t('clients.table.contact'), t('clients.table.emirate'), t('clients.table.orders'), t('clients.table.credit_limit'), t('clients.table.status'), ''].map(h => (
                       <th key={h} style={{ padding:'10px 16px', textAlign:'left', fontSize:11,
                         fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:'0.06em' }}>{h}</th>
                     ))}
@@ -603,7 +614,7 @@ export default function Clients() {
                           <div style={{ fontSize:17, fontWeight:800, color:'#1e293b' }}>{client.total_orders||0}</div>
                           {parseInt(client.delivered_orders)>0 && (
                             <div style={{ fontSize:11, color:'#16a34a', fontWeight:600, display:'flex', alignItems:'center', gap:3 }}>
-                              <CheckCircle width={11} height={11} /> {client.delivered_orders} done
+                              <CheckCircle width={11} height={11} /> {t('clients.table.done', { count: client.delivered_orders })}
                             </div>
                           )}
                         </td>
@@ -618,7 +629,7 @@ export default function Clients() {
                                   background:creditPct>80?'#dc2626':creditPct>50?'#f59e0b':'#16a34a', transition:'width 0.4s' }} />
                               </div>
                             </>
-                          ) : <span style={{ color:'#cbd5e1', fontSize:13 }}>No limit</span>}
+                          ) : <span style={{ color:'#cbd5e1', fontSize:13 }}>{t('clients.status.no_limit')}</span>}
                         </td>
                         <td style={{ padding:'13px 16px' }}><StatusPill active={isActive} /></td>
                         <td style={{ padding:'13px 16px' }} onClick={e=>e.stopPropagation()}>
@@ -627,7 +638,7 @@ export default function Clients() {
                               style={{ padding:'6px 11px', borderRadius:8, border:'1px solid #e2e8f0', background:'#fff',
                                 cursor:'pointer', fontSize:13, fontWeight:600, color:'#374151',
                                 display:'flex', alignItems:'center', gap:5 }}>
-                              <EditPencil width={13} height={13} /> Edit
+                              <EditPencil width={13} height={13} /> {t('clients.button.edit')}
                             </button>
                             <button onClick={e=>{ e.stopPropagation(); setDeleteConfirm(client); }}
                               style={{ padding:'6px 10px', borderRadius:8, border:'1px solid #fecaca',
@@ -665,14 +676,14 @@ export default function Clients() {
                 <div style={{ padding:'13px 18px', borderTop:'1px solid #f1f5f9',
                   display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                   <span style={{ fontSize:13, color:'#64748b' }}>
-                    Showing {(page-1)*LIMIT+1}–{Math.min(page*LIMIT,total)} of <strong>{total}</strong> clients
+                    {t('clients.pagination.showing', { start: (page-1)*LIMIT+1, end: Math.min(page*LIMIT,total), total })}
                   </span>
                   <div style={{ display:'flex', gap:6, alignItems:'center' }}>
                     <button disabled={page===1} onClick={()=>setPage(p=>p-1)}
                       style={{ padding:'7px 11px', borderRadius:8, border:'1px solid #e2e8f0',
                         background:page===1?'#f8fafc':'#fff', cursor:page===1?'not-allowed':'pointer',
                         fontSize:12, fontWeight:600, opacity:page===1?0.5:1, display:'flex', alignItems:'center', gap:4 }}>
-                      <NavArrowLeft width={13} height={13} /> Prev
+                      <NavArrowLeft width={13} height={13} /> {t('common.prev')}
                     </button>
                     {pageNumbers.map((p, i) => p === '...' ? (
                       <span key={i} style={{ padding:'4px 8px', color:'#94a3b8', fontSize:12 }}>…</span>
@@ -689,7 +700,7 @@ export default function Clients() {
                       style={{ padding:'7px 11px', borderRadius:8, border:'1px solid #e2e8f0',
                         background:page*LIMIT>=total?'#f8fafc':'#fff', cursor:page*LIMIT>=total?'not-allowed':'pointer',
                         fontSize:12, fontWeight:600, opacity:page*LIMIT>=total?0.5:1, display:'flex', alignItems:'center', gap:4 }}>
-                      Next <NavArrowRight width={13} height={13} />
+                      {t('common.next')} <NavArrowRight width={13} height={13} />
                     </button>
                   </div>
                 </div>
@@ -704,13 +715,13 @@ export default function Clients() {
         <>
           <div onClick={() => setDrawer(null)}
             style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.35)', zIndex:9990 }} />
-          <div style={{ position:'fixed', top:0, right:0, bottom:0, width:510, maxWidth:'96vw',
+          <div style={{ position:'fixed', top:0, [isRTL?'left':'right']:0, bottom:0, width:510, maxWidth:'96vw',
             background:'#f8fafc', zIndex:9991, overflowY:'auto',
-            boxShadow:'-8px 0 40px rgba(0,0,0,0.14)', display:'flex', flexDirection:'column' }}>
+            boxShadow: isRTL?'8px 0 40px rgba(0,0,0,0.14)':'-8px 0 40px rgba(0,0,0,0.14)', display:'flex', flexDirection:'column' }}>
 
             <div style={{ background:'linear-gradient(135deg,#1e293b,#334155)', padding:'26px 26px 22px', position:'relative' }}>
               <button onClick={() => setDrawer(null)}
-                style={{ position:'absolute', top:14, right:14, background:'rgba(255,255,255,0.1)',
+                style={{ position:'absolute', top:14, [i18n.language === 'ar' ? 'left' : 'right']:14, background:'rgba(255,255,255,0.1)',
                   border:'none', color:'#fff', width:30, height:30, borderRadius:'50%',
                   cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
                 <Xmark width={15} height={15} />
@@ -740,20 +751,20 @@ export default function Clients() {
                   style={{ flex:1, padding:'10px', borderRadius:10, border:'none',
                     background:'#f97316', color:'#fff', cursor:'pointer', fontWeight:700, fontSize:14,
                     display:'flex', alignItems:'center', justifyContent:'center', gap:7 }}>
-                  <EditPencil width={15} height={15} /> Edit Client
+                  <EditPencil width={15} height={15} /> {t('clients.button.edit_client')}
                 </button>
                 <button onClick={() => navigate(`/orders?client_id=${drawer.id}`)}
                   style={{ flex:1, padding:'10px', borderRadius:10, border:'none',
                     background:'#16a34a', color:'#fff', cursor:'pointer', fontWeight:700, fontSize:14,
                     display:'flex', alignItems:'center', justifyContent:'center', gap:7 }}>
-                  <Package width={15} height={15} /> New Order
+                  <Package width={15} height={15} /> {t('clients.button.new_order')}
                 </button>
                 <button onClick={e=>handleToggle(drawer,e)}
                   style={{ flex:1, padding:'10px', borderRadius:10, border:'1px solid rgba(255,255,255,0.2)',
                     background:'rgba(255,255,255,0.08)', color:'#fff', cursor:'pointer', fontWeight:600, fontSize:14,
                     display:'flex', alignItems:'center', justifyContent:'center', gap:7 }}>
                   {!!drawer.is_active ? <Xmark width={14} height={14} /> : <CheckCircle width={14} height={14} />}
-                  {!!drawer.is_active ? 'Deactivate' : 'Activate'}
+                  {!!drawer.is_active ? t('clients.button.deactivate') : t('clients.button.activate')}
                 </button>
               </div>
             </div>
@@ -764,48 +775,54 @@ export default function Clients() {
               ) : (
                 <>
                   <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:20 }}>
-                    {[
-                      { label:'Total Orders',  value:drawer.total_orders||0,    Icon:Package,       color:'#3b82f6' },
-                      { label:'Delivered',     value:drawer.delivered_orders||0, Icon:CheckCircle,   color:'#16a34a' },
-                      { label:'Credit Limit',  value:drawer.credit_limit ? 'AED '+parseFloat(drawer.credit_limit).toFixed(0) : 'No limit', Icon:Wallet, color:'#8b5cf6' },
-                      { label:'Emirate',       value:drawer.emirate||'—',        Icon:MapPin,        color:'#f97316' },
-                    ].map(s => (
-                      <div key={s.label} style={{ background:'#fff', borderRadius:12, padding:'13px 15px',
-                        borderLeft:`4px solid ${s.color}`, boxShadow:'0 1px 3px rgba(0,0,0,0.07)' }}>
-                        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                          <s.Icon width={22} height={22} color={s.color} />
-                          <div>
-                            <div style={{ fontWeight:800, fontSize:17, color:'#1e293b' }}>{s.value}</div>
-                            <div style={{ fontSize:11, color:'#94a3b8', fontWeight:600, marginTop:1 }}>{s.label}</div>
+                    {(() => {
+                      const drawerKpiStats = [
+                        { label: t('clients.drawer.total_orders'), Icon: Package, value: drawer.total_orders || 0, color: '#3b82f6' },
+                        { label: t('clients.drawer.delivered'), Icon: CheckCircle, value: drawer.delivered_orders || 0, color: '#16a34a' },
+                        { label: t('clients.drawer.credit_limit'), Icon: Wallet, value: drawer.credit_limit > 0 ? `AED ${drawer.credit_limit.toFixed(0)}` : t('clients.drawer.no_limit'), color: '#8b5cf6' },
+                        { label: t('clients.profile.emirate'), Icon: MapPin, value: drawer.emirate || '—', color: '#f97316' },
+                      ];
+                      return drawerKpiStats.map(s => (
+                        <div key={s.label} style={{ background:'#fff', borderRadius:12, padding:'13px 15px',
+                          [isRTL?'borderRight':'borderLeft']:`4px solid ${s.color}`, boxShadow:'0 1px 3px rgba(0,0,0,0.07)' }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                            <s.Icon width={22} height={22} color={s.color} />
+                            <div>
+                              <div style={{ fontWeight:800, fontSize:17, color:'#1e293b' }}>{s.value}</div>
+                              <div style={{ fontSize:11, color:'#94a3b8', fontWeight:600, marginTop:1 }}>{s.label}</div>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ));
+                    })()}
                   </div>
 
                   <div style={{ background:'#fff', borderRadius:14, padding:18,
                     boxShadow:'0 1px 3px rgba(0,0,0,0.07)', marginBottom:16 }}>
                     <div style={{ fontWeight:700, fontSize:13, marginBottom:13, color:'#374151',
                       display:'flex', alignItems:'center', gap:7, textTransform:'uppercase', letterSpacing:'0.05em' }}>
-                      <User width={15} height={15} color="#f97316" /> Profile Information
+                      <User width={15} height={15} color="#f97316" /> {t('clients.drawer.profile_information')}
                     </div>
-                    {[
-                      { label:'Phone',    Icon:Phone,   value:drawer.phone },
-                      { label:'Alt Phone',Icon:Phone,   value:drawer.phone_alt },
-                      { label:'Email',    Icon:Mail,    value:drawer.email },
-                      { label:'Emirate',  Icon:MapPin,  value:drawer.emirate },
-                      { label:'Zone',     Icon:MapPin,  value:drawer.zone_name },
-                      { label:'Address',  Icon:MapPin,  value:[drawer.address_line1,drawer.area,drawer.city].filter(Boolean).join(', ') },
-                      { label:'Notes',    Icon:Eye,     value:drawer.notes },
-                      { label:'Joined',   Icon:StatsUpSquare, value:drawer.created_at ? new Date(drawer.created_at).toLocaleDateString() : null },
-                    ].filter(r => r.value).map(row => (
-                      <div key={row.label} style={{ display:'flex', alignItems:'flex-start', padding:'8px 0', borderBottom:'1px solid #f8fafc', fontSize:13 }}>
-                        <div style={{ width:105, display:'flex', alignItems:'center', gap:5, color:'#94a3b8', fontSize:11, fontWeight:700, flexShrink:0, paddingTop:2 }}>
-                          <row.Icon width={12} height={12} /> {row.label}
+                    {(() => {
+                      const profileLabels = [
+                        { label: t('clients.profile.phone'),    Icon: Phone,   value: drawer.phone},
+                        { label: t('clients.profile.alt_phone'), Icon: Phone,   value: drawer.phone_alt},
+                        { label: t('clients.profile.email'),    Icon: Mail,    value: drawer.email},
+                        { label: t('clients.profile.emirate'),  Icon: MapPin,  value: drawer.emirate},
+                        { label: t('clients.profile.zone'),     Icon: MapPin,  value: drawer.zone_name},
+                        { label: t('clients.profile.address'),  Icon: MapPin,  value: [drawer.address_line1, drawer.area, drawer.city].filter(Boolean).join(', ')},
+                        { label: t('clients.profile.notes'),    Icon: Eye,     value: drawer.notes},
+                        { label: t('clients.profile.joined'),   Icon: StatsUpSquare, value: drawer.created_at ? new Date(drawer.created_at).toLocaleDateString() : null},
+                      ];
+                      return profileLabels.filter(r => r.value).map(row => (
+                        <div key={row.label} style={{ display:'flex', alignItems:'flex-start', padding:'8px 0', borderBottom:'1px solid #f8fafc', fontSize:13 }}>
+                          <div style={{ width:105, display:'flex', alignItems:'center', gap:5, color:'#94a3b8', fontSize:11, fontWeight:700, flexShrink:0, paddingTop:2 }}>
+                            <row.Icon width={12} height={12} /> {row.label}
+                          </div>
+                          <span style={{ color:'#1e293b', fontWeight:500, flex:1 }}>{row.value}</span>
                         </div>
-                        <span style={{ color:'#1e293b', fontWeight:500, flex:1 }}>{row.value}</span>
-                      </div>
-                    ))}
+                      ));
+                    })()}
                   </div>
 
                   {drawerOrders.length > 0 && (
@@ -815,9 +832,9 @@ export default function Clients() {
                         display:'flex', justifyContent:'space-between', alignItems:'center',
                         textTransform:'uppercase', letterSpacing:'0.05em' }}>
                         <span style={{ display:'flex', alignItems:'center', gap:7 }}>
-                          <DeliveryTruck width={15} height={15} color="#f97316" /> Recent Orders
+                          <DeliveryTruck width={15} height={15} color="#f97316" /> {t('clients.drawer.recent_orders')}
                         </span>
-                        <span style={{ color:'#94a3b8', fontSize:12, fontWeight:400, textTransform:'none' }}>{drawerOrders.length} total</span>
+                        <span style={{ color:'#94a3b8', fontSize:12, fontWeight:400, textTransform:'none' }}>{drawerOrders.length} {t('clients.total_label')}</span>
                       </div>
                       {drawerOrders.slice(0,8).map(o => {
                         const sc = STATUS_COLORS[o.status]||'#94a3b8';
@@ -853,7 +870,7 @@ export default function Clients() {
 
       {/* ── Multi-Step Form Modal ── */}
       {showForm && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:1000,
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:9999,
           display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
           <div style={{ background:'#fff', borderRadius:20, width:'100%', maxWidth:600,
             maxHeight:'92vh', display:'flex', flexDirection:'column', overflow:'hidden', boxShadow:'0 24px 70px rgba(0,0,0,0.2)' }}>
@@ -862,21 +879,22 @@ export default function Clients() {
             <div style={{ padding:'22px 28px 0', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
               <div>
                 <h3 style={{ margin:0, fontSize:20, fontWeight:800, color:'#1e293b' }}>
-                  {selected ? 'Edit Client' : 'New Client'}
+                  {selected ? t('clients.modal.edit_title') : t('clients.modal.new_title')}
                 </h3>
                 <p style={{ margin:'3px 0 0', color:'#94a3b8', fontSize:13 }}>
-                  Step {step} of {STEPS.length} — {STEPS[step-1].desc}
+                  {t('clients.modal.step_info', { step, total: STEPS.length, desc: STEPS[step-1]?.desc })}
                 </p>
               </div>
               <button type="button" onClick={() => setShowForm(false)}
                 style={{ background:'#f1f5f9', border:'none', cursor:'pointer', color:'#64748b',
-                  width:34, height:34, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  width:34, height:34, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center',
+                  position:'absolute', [i18n.language === 'ar' ? 'left' : 'right']:28, top:22 }}>
                 <Xmark width={16} height={16} />
               </button>
             </div>
 
             {/* Step Bar */}
-            <StepBar current={step} />
+            <StepBar current={step} steps={STEPS} />
 
             {/* Divider */}
             <div style={{ margin:'20px 0 0', height:1, background:'#f1f5f9' }} />
@@ -895,24 +913,24 @@ export default function Clients() {
                 {step === 1 && (
                   <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
                     <div style={{ gridColumn:'1/-1' }}>
-                      <label style={LABEL}>Full Name *</label>
+                      <label style={LABEL}>{t('clients.form.full_name')}</label>
                       <input required value={form.full_name} onChange={e=>set('full_name',e.target.value)}
-                        style={INPUT} placeholder="e.g. Ahmed Al Mansouri" autoFocus />
+                        style={INPUT} placeholder={t('clients.form.full_name_placeholder')} autoFocus />
                     </div>
                     <div>
-                      <label style={LABEL}>Phone *</label>
+                      <label style={LABEL}>{t('clients.form.phone')}</label>
                       <input required value={form.phone} onChange={e=>set('phone',e.target.value)}
-                        style={INPUT} placeholder="+971 50 123 4567" />
+                        style={INPUT} placeholder={t('clients.form.phone_placeholder')} />
                     </div>
                     <div>
-                      <label style={LABEL}>{t("clients.alternate_phone")}</label>
+                      <label style={LABEL}>{t("clients.form.alternate_phone")}</label>
                       <input value={form.phone_alt} onChange={e=>set('phone_alt',e.target.value)}
-                        style={INPUT} placeholder="Optional" />
+                        style={INPUT} placeholder={t('clients.form.optional')} />
                     </div>
                     <div style={{ gridColumn:'1/-1' }}>
-                      <label style={LABEL}>Email Address</label>
+                      <label style={LABEL}>{t('clients.form.email')}</label>
                       <input type="email" value={form.email} onChange={e=>set('email',e.target.value)}
-                        style={INPUT} placeholder="client@company.com" />
+                        style={INPUT} placeholder={t('clients.form.email_placeholder')} />
                     </div>
                   </div>
                 )}
@@ -936,7 +954,7 @@ export default function Clients() {
                       <div style={{ gridColumn:'1/-1' }}>
                         <label style={LABEL}>{t("clients.company_name")}</label>
                         <input value={form.company_name} onChange={e=>set('company_name',e.target.value)}
-                          style={INPUT} placeholder="Acme LLC" />
+                          style={INPUT} placeholder={t('clients.form.company_placeholder')} />
                       </div>
                     )}
                     <div style={{ gridColumn:'1/-1' }}>
@@ -948,7 +966,7 @@ export default function Clients() {
                     <div style={{ gridColumn:'1/-1' }}>
                       <label style={LABEL}>{t("clients.delivery_zone")}</label>
                       <select value={form.zone_id} onChange={e=>set('zone_id',e.target.value)} style={INPUT}>
-                        <option value="">— Select a zone (optional) —</option>
+                        <option value="">{t('clients.form.select_zone')}</option>
                         {zones
                           .filter(z => !form.emirate || z.emirate === form.emirate)
                           .map(z => (
@@ -961,9 +979,9 @@ export default function Clients() {
                         const z = zones.find(zz => String(zz.id) === String(form.zone_id));
                         return z ? (
                           <div style={{ marginTop:6, fontSize:12, color:'#64748b', display:'flex', gap:12 }}>
-                            <span>📐 Radius: {z.radius ? `${(z.radius/1000).toFixed(1)} km` : 'N/A'}</span>
-                            <span>🚚 Base fee: AED {z.base_delivery_fee || 0}</span>
-                            <span>⏱ Est. {z.estimated_minutes || '—'} min</span>
+                            <span>{t('clients.form.zone_radius', { radius: z.radius ? `${(z.radius/1000).toFixed(1)}` : 'N/A' })}</span>
+                            <span>{t('clients.form.base_fee', { fee: z.base_delivery_fee || 0 })}</span>
+                            <span>{t('clients.form.estimated_time', { time: z.estimated_minutes || '—' })}</span>
                           </div>
                         ) : null;
                       })()}
@@ -1004,16 +1022,16 @@ export default function Clients() {
 
                       {/* Latitude & Longitude - Side by Side */}
                       <div>
-                        <label style={{ ...LABEL, marginBottom:4 }}>Latitude</label>
+                        <label style={{ ...LABEL, marginBottom:4 }}>{t('clients.form.latitude')}</label>
                         <input type="number" step="any" value={form.latitude}
                           onChange={e=>set('latitude',e.target.value)}
-                          style={INPUT} placeholder="e.g. 25.2048" />
+                          style={INPUT} placeholder={t('clients.form.latitude_placeholder')} />
                       </div>
                       <div>
-                        <label style={{ ...LABEL, marginBottom:4 }}>Longitude</label>
+                        <label style={{ ...LABEL, marginBottom:4 }}>{t('clients.form.longitude')}</label>
                         <input type="number" step="any" value={form.longitude}
                           onChange={e=>set('longitude',e.target.value)}
-                          style={INPUT} placeholder="e.g. 55.2708" />
+                          style={INPUT} placeholder={t('clients.form.longitude_placeholder')} />
                       </div>
 
                       {/* Zone Helper Buttons */}
@@ -1023,7 +1041,7 @@ export default function Clients() {
                             onClick={() => { set('latitude', String(zoneData.center_lat)); set('longitude', String(zoneData.center_lng)); }}
                             style={{ padding:'7px 12px', fontSize:12, borderRadius:7, border:'1px solid #f97316',
                               background:'#fff7ed', color:'#f97316', cursor:'pointer', fontWeight:600 }}>
-                            Use Zone Center
+                            {t('clients.button.use_zone_center')}
                           </button>
                         )}
                         <button type="button"
@@ -1032,40 +1050,40 @@ export default function Clients() {
                             () => {}
                           )}
                           style={{ padding:'7px 12px', fontSize:12, borderRadius:7, border:'1px solid #6366f1',
-                            background:'#eef2ff', color:'#6366f1', cursor:'pointer', fontWeight:600 }}>
-                          📍 My GPS
+                            background:'#eef2ff', color:'#6366f1', cursor:'pointer', fontWeight:600, display:'flex', alignItems:'center', gap:5 }}>
+                          <MapPin width={13} height={13} /> {t('clients.button.my_gps')}
                         </button>
                       </div>
 
                       {/* Street Address */}
                       <div style={{ gridColumn:'1/-1' }}>
-                        <label style={LABEL}>Street Address</label>
+                        <label style={LABEL}>{t('clients.form.street_address')}</label>
                         <input value={form.address_line1} onChange={e=>set('address_line1',e.target.value)}
-                          style={INPUT} placeholder="Building, Street, Floor, Flat" />
+                          style={INPUT} placeholder={t('clients.form.street_address_placeholder')} />
                       </div>
 
                       {/* Area & City - Auto-fetch from Zone */}
                       <div>
-                        <label style={LABEL}>{t("clients.area")}</label>
+                        <label style={LABEL}>{t("clients.form.area")}</label>
                         <input value={form.area} onChange={e=>set('area',e.target.value)}
-                          style={INPUT} placeholder={zoneData?.name ? `e.g. ${zoneData.name}` : "Downtown, JVC, Business Bay…"}
+                          style={INPUT} placeholder={zoneData?.name ? `e.g. ${zoneData.name}` : t('clients.form.area_placeholder')}
                           disabled={!!zoneData} />
-                        {zoneData && <div style={{ fontSize:11, color:'#16a34a', marginTop:4, display:'flex', alignItems:'center', gap:3 }}><CheckCircle width={12} height={12} /> Auto-populated from zone</div>}
+                        {zoneData && <div style={{ fontSize:11, color:'#16a34a', marginTop:4, display:'flex', alignItems:'center', gap:3 }}><CheckCircle width={12} height={12} /> {t('clients.form.auto_populated')}</div>}
                       </div>
                       <div>
-                        <label style={LABEL}>City</label>
+                        <label style={LABEL}>{t('clients.form.city')}</label>
                         <input value={form.city} onChange={e=>set('city',e.target.value)}
-                          style={INPUT} placeholder={zoneData?.city ? zoneData.city : "Dubai"}
+                          style={INPUT} placeholder={zoneData?.city ? zoneData.city : t('clients.form.city_placeholder')}
                           disabled={!!zoneData} />
-                        {zoneData && <div style={{ fontSize:11, color:'#16a34a', marginTop:4, display:'flex', alignItems:'center', gap:3 }}><CheckCircle width={12} height={12} /> Auto-populated from zone</div>}
+                        {zoneData && <div style={{ fontSize:11, color:'#16a34a', marginTop:4, display:'flex', alignItems:'center', gap:3 }}><CheckCircle width={12} height={12} /> {t('clients.form.auto_populated')}</div>}
                       </div>
 
                       {/* Credit Limit */}
                       <div style={{ gridColumn:'1/-1' }}>
-                        <label style={LABEL}>Credit Limit (AED)</label>
+                        <label style={LABEL}>{t('clients.form.credit_limit')}</label>
                         <input type="number" min="0" value={form.credit_limit}
                           onChange={e=>set('credit_limit',e.target.value)}
-                          style={INPUT} placeholder="0 = No limit" />
+                          style={INPUT} placeholder={t('clients.form.credit_limit_placeholder')} />
                       </div>
 
                       {/* Map */}
@@ -1097,7 +1115,7 @@ export default function Clients() {
                     background:'#fff', cursor:'pointer', fontWeight:600, fontSize:14,
                     display:'flex', alignItems:'center', gap:7, color:'#475569' }}>
                   <NavArrowLeft width={15} height={15} />
-                  {step > 1 ? 'Back' : 'Cancel'}
+                  {step > 1 ? t('clients.button.back') : t('common.cancel')}
                 </button>
 
                 {step < STEPS.length ? (
@@ -1107,7 +1125,7 @@ export default function Clients() {
                       cursor:'pointer', fontWeight:700, fontSize:14,
                       display:'flex', alignItems:'center', gap:7,
                       boxShadow:'0 4px 14px rgba(249,115,22,0.35)' }}>
-                    Next <NavArrowRight width={15} height={15} />
+                    {t('common.next')} <NavArrowRight width={15} height={15} />
                   </button>
                 ) : (
                   <button type="submit" disabled={saving}
@@ -1117,7 +1135,7 @@ export default function Clients() {
                       opacity:saving?0.7:1, display:'flex', alignItems:'center', gap:7,
                       boxShadow:'0 4px 14px rgba(22,163,74,0.35)' }}>
                     <CheckCircle width={15} height={15} />
-                    {saving ? 'Saving…' : selected ? 'Update Client' : 'Create Client'}
+                    {saving ? t('clients.button.saving') : selected ? t('clients.button.update_client') : t('clients.button.create_client')}
                   </button>
                 )}
               </div>
@@ -1136,9 +1154,9 @@ export default function Clients() {
               display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 16px' }}>
               <WarningTriangle width={28} height={28} color="#dc2626" />
             </div>
-            <h3 style={{ margin:'0 0 10px', fontSize:19, fontWeight:800 }}>Deactivate Client?</h3>
+            <h3 style={{ margin:'0 0 10px', fontSize:19, fontWeight:800 }}>{t('clients.modal.deactivate_title')}</h3>
             <p style={{ color:'#64748b', marginBottom:26, lineHeight:1.6 }}>
-              <strong>{deleteConfirm.full_name}</strong> will be marked as inactive. No data will be deleted.
+              {t('clients.modal.deactivate_message', { name: deleteConfirm.full_name })}
             </p>
             <div style={{ display:'flex', gap:10 }}>
               <button onClick={()=>setDeleteConfirm(null)}
@@ -1147,7 +1165,7 @@ export default function Clients() {
               <button onClick={handleDelete}
                 style={{ flex:1, padding:12, borderRadius:10, border:'none',
                   background:'#dc2626', color:'#fff', cursor:'pointer', fontWeight:700, fontSize:14 }}>
-                Deactivate
+                {t('clients.button.deactivate')}
               </button>
             </div>
           </div>

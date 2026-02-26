@@ -74,7 +74,7 @@ export default function LoginPage() {
       <div className="logo">
         <img
           src="/assets/images/logos/full_logo_colored.png"
-          alt="Trasealla Delivery"
+          alt="Trasealla Solutions"
           onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
         />
         <span style={{ display: 'none', fontSize: 28, fontWeight: 800, color: '#244066' }}>Trasealla</span>

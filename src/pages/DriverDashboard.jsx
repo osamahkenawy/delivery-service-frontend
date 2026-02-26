@@ -30,9 +30,10 @@ const fmtFull = d => d ? new Date(d).toLocaleDateString('en-AE', { day: '2-digit
 
 /* ── Progress Steps ── */
 function ProgressSteps({ current }) {
+  const { t } = useTranslation();
   const steps = ['assigned', 'picked_up', 'in_transit', 'delivered'];
   const idx = steps.indexOf(current);
-  const labels = ['Assigned', 'Picked Up', 'In Transit', 'Delivered'];
+  const stepLabels = [t('driverDashboard.step_assigned'), t('driverDashboard.step_picked_up'), t('driverDashboard.step_in_transit'), t('driverDashboard.step_delivered')];
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 0, margin: '12px 0 8px', padding: '0 4px' }}>
       {steps.map((s, i) => {
@@ -51,7 +52,7 @@ function ProgressSteps({ current }) {
                 {done ? <Check width={13} height={13} /> : i + 1}
               </div>
               <span style={{ fontSize: 9, fontWeight: 600, color: done ? m.color : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
-                {labels[i].split(' ')[0]}
+                {stepLabels[i]}
               </span>
             </div>
             {i < steps.length - 1 && (
@@ -67,6 +68,7 @@ function ProgressSteps({ current }) {
 /* ── Dashboard ── */
 export default function DriverDashboard() {
   const { t } = useTranslation();
+  const fmtAED = v => { const n = parseFloat(v); return !isNaN(n) && n > 0 ? `${t('driverDashboard.currency_aed')} ${n.toFixed(2)}` : '\u2014'; };
   const navigate = useNavigate();
   const [data, setData]         = useState(null);
   const [loading, setLoading]   = useState(true);
@@ -226,12 +228,12 @@ export default function DriverDashboard() {
     try {
       const res = await api.patch(`/tracking/${order.tracking_token}/status`, payload);
       if (res.success) {
-        showToast(`${order.order_number} \u2192 ${STATUS_META[next]?.label || next}`);
+        showToast(t('driverDashboard.status_updated', { orderNumber: order.order_number, status: t('driverDashboard.status_' + next) }));
         fetchOrders();
       } else {
-        showToast(res.message || 'Failed to update', 'error');
+        showToast(res.message || t('driverDashboard.failed_to_update'), 'error');
       }
-    } catch { showToast('Network error', 'error'); }
+    } catch { showToast(t('driverDashboard.network_error'), 'error'); }
     finally { setUpdating(null); }
   };
 
@@ -249,32 +251,32 @@ export default function DriverDashboard() {
       });
       const data = await res.json();
       if (data.success) {
-        showToast('Proof photo uploaded ✓');
+        showToast(t('driverDashboard.proof_uploaded_toast'));
         fetchOrders();
       } else {
-        showToast(data.message || 'Upload failed', 'error');
+        showToast(data.message || t('driverDashboard.upload_failed'), 'error');
       }
     } catch {
-      showToast('Network error uploading proof', 'error');
+      showToast(t('driverDashboard.network_error_upload'), 'error');
     } finally {
       setProofUploading(null);
     }
   };
 
-  const markFailed = async (order) => {    const reason = prompt('Failure reason (optional):');
+  const markFailed = async (order) => {    const reason = prompt(t('driverDashboard.failure_reason_prompt'));
     setUpdating(order.id);
     const gps = await getGPS();
     try {
       const res = await api.patch(`/tracking/${order.tracking_token}/status`, {
-        status: 'failed', lat: gps?.lat, lng: gps?.lng, note: reason || 'Delivery failed',
+        status: 'failed', lat: gps?.lat, lng: gps?.lng, note: reason || t('driverDashboard.delivery_failed_note'),
       });
       if (res.success) {
-        showToast(`${order.order_number} marked as failed`, 'error');
+        showToast(t('driverDashboard.marked_as_failed', { orderNumber: order.order_number }), 'error');
         fetchOrders();
       } else {
-        showToast(res.message || 'Failed', 'error');
+        showToast(res.message || t('driverDashboard.failed_toast'), 'error');
       }
-    } catch { showToast('Network error', 'error'); }
+    } catch { showToast(t('driverDashboard.network_error'), 'error'); }
     finally { setUpdating(null); }
   };
 
@@ -285,18 +287,18 @@ export default function DriverDashboard() {
     try {
       const res = await api.post('/tracking/start-trip', { lat: gps?.lat, lng: gps?.lng });
       if (res.success) {
-        showToast(res.message || `${res.started} order(s) started!`);
+        showToast(res.message || t('driverDashboard.orders_started', { count: res.started }));
         fetchOrders();
       } else {
-        showToast(res.message || 'Failed to start trip', 'error');
+        showToast(res.message || t('driverDashboard.failed_to_start_trip'), 'error');
       }
-    } catch { showToast('Network error', 'error'); }
+    } catch { showToast(t('driverDashboard.network_error'), 'error'); }
     finally { setStarting(false); }
   };
 
   const copyToken = (token) => {
     navigator.clipboard.writeText(`${window.location.origin}/track/${token}`);
-    showToast('Tracking link copied!');
+    showToast(t('driverDashboard.tracking_link_copied'));
   };
 
   const stats = data?.stats || {};
@@ -315,7 +317,7 @@ export default function DriverDashboard() {
           <WarningTriangle width={40} height={40} color="#dc2626" />
         </div>
         <h2>{t("driverDashboard.no_profile")}</h2>
-        <p>Your account is not linked to a driver profile. Please contact your admin to link your account.</p>
+        <p>{t('driverDashboard.no_profile_message')}</p>
         <Toast toasts={toasts} />
       </div>
     );
@@ -330,20 +332,20 @@ export default function DriverDashboard() {
           <div>
             <div className="dp-hero-greeting">{today}</div>
             <h2 className="dp-hero-name">
-              {driver.name ? `Hi, ${driver.name.split(' ')[0]}` : 'My Deliveries'}
+              {driver.name ? t('driverDashboard.greeting', { name: driver.name.split(' ')[0] }) : t('driverDashboard.my_deliveries')}
             </h2>
             <div className="dp-hero-status">
               <span className={`dp-status-dot ${driver.status || 'offline'}`} />
-              <span className="dp-status-text">{driver.status || 'Busy'}</span>
+              <span className="dp-status-text">{t('driverDashboard.driver_status_' + (driver.status || 'busy'))}</span>
               {gpsActive && !gpsError && (
                 <span className="dp-gps-badge">
                   <span className="dp-gps-dot" />
-                  GPS Live
+                  {t('driverDashboard.gps_live')}
                 </span>
               )}
               {gpsActive && gpsError && (
                 <span className="dp-gps-badge" style={{ background: 'rgba(239,68,68,0.15)', color: '#dc2626' }}>
-                  <WarningTriangle width={11} height={11} /> GPS Error
+                  <WarningTriangle width={11} height={11} /> {t('driverDashboard.gps_error_label')}
                 </span>
               )}
             </div>
@@ -355,16 +357,16 @@ export default function DriverDashboard() {
             )}
             {gpsActive && gpsError && (
               <div style={{ marginTop: 6, fontSize: 11, color: '#fca5a5' }}>
-                {gpsError} — check browser location permissions
+                {t('driverDashboard.gps_error_hint', { error: gpsError })}
               </div>
             )}
           </div>
           <div className="dp-hero-actions">
-            <button onClick={() => { setLoading(true); fetchOrders(); }} title="Refresh" className="dp-btn-refresh">
+            <button onClick={() => { setLoading(true); fetchOrders(); }} title={t('driverDashboard.refresh')} className="dp-btn-refresh">
               <Refresh width={16} height={16} />
             </button>
             <button onClick={() => navigate('/driver/scan')} className="dp-btn-scan">
-              <Eye width={14} height={14} /> Scan
+              <Eye width={14} height={14} /> {t('driverDashboard.scan')}
             </button>
           </div>
         </div>
@@ -373,10 +375,10 @@ export default function DriverDashboard() {
         <div className="dp-today-label">{t("driverDashboard.today_performance")}</div>
         <div className="dp-today-grid">
           {[
-            { label: 'Active',    value: stats.active || 0,   icon: <Package width={18} height={18} color="#f97316" />, bg: 'rgba(249,115,22,0.12)' },
-            { label: 'Delivered', value: stats.delivered || 0, icon: <CheckCircle width={18} height={18} color="#16a34a" />, bg: 'rgba(34,197,94,0.12)' },
-            { label: 'Failed',    value: stats.failed || 0,   icon: <Xmark width={18} height={18} color="#dc2626" />, bg: 'rgba(239,68,68,0.12)' },
-            { label: 'Revenue',   value: fmtAED(stats.revenue), icon: <DollarCircle width={18} height={18} color="#0ea5e9" />, bg: 'rgba(14,165,233,0.12)' },
+            { label: t('driverDashboard.stat_active'),    value: stats.active || 0,   icon: <Package width={18} height={18} color="#f97316" />, bg: 'rgba(249,115,22,0.12)' },
+            { label: t('driverDashboard.stat_delivered'), value: stats.delivered || 0, icon: <CheckCircle width={18} height={18} color="#16a34a" />, bg: 'rgba(34,197,94,0.12)' },
+            { label: t('driverDashboard.stat_failed'),    value: stats.failed || 0,   icon: <Xmark width={18} height={18} color="#dc2626" />, bg: 'rgba(239,68,68,0.12)' },
+            { label: t('driverDashboard.stat_revenue'),   value: fmtAED(stats.revenue), icon: <DollarCircle width={18} height={18} color="#0ea5e9" />, bg: 'rgba(14,165,233,0.12)' },
           ].map(s => (
             <div key={s.label} className="dp-today-card" style={{ background: s.bg }}>
               <div className="tc-icon">{s.icon}</div>
@@ -393,15 +395,15 @@ export default function DriverDashboard() {
           <div className="dp-alltime-header">
             <h3 className="dp-alltime-title">{t("driverDashboard.overall_performance")}</h3>
             <span className={`dp-rate-badge ${deliveryRate >= 90 ? 'excellent' : deliveryRate >= 70 ? 'good' : 'poor'}`}>
-              {deliveryRate}% Success
+              {t('driverDashboard.success_badge', { rate: deliveryRate })}
             </span>
           </div>
           <div className="dp-alltime-grid">
             {[
-              { label: 'Total Orders', value: allTimeStats.total_orders, color: '#3b82f6', bg: '#eff6ff' },
-              { label: 'Delivered', value: allTimeStats.total_delivered, color: '#16a34a', bg: '#f0fdf4' },
-              { label: 'Failed', value: allTimeStats.total_failed, color: '#dc2626', bg: '#fef2f2' },
-              { label: 'Earned', value: fmtAED(allTimeStats.total_revenue), color: '#0369a1', bg: '#f0f9ff' },
+              { label: t('driverDashboard.total_orders'), value: allTimeStats.total_orders, color: '#3b82f6', bg: '#eff6ff' },
+              { label: t('driverDashboard.stat_delivered'), value: allTimeStats.total_delivered, color: '#16a34a', bg: '#f0fdf4' },
+              { label: t('driverDashboard.stat_failed'), value: allTimeStats.total_failed, color: '#dc2626', bg: '#fef2f2' },
+              { label: t('driverDashboard.earned'), value: fmtAED(allTimeStats.total_revenue), color: '#0369a1', bg: '#f0f9ff' },
             ].map(s => (
               <div key={s.label} className="dp-alltime-stat" style={{ background: s.bg }}>
                 <div className="as-value" style={{ color: s.color }}>{s.value}</div>
@@ -429,26 +431,26 @@ export default function DriverDashboard() {
       {tab === 'active' && assignedCount > 0 && (
         <button onClick={startTrip} disabled={starting} className="dp-start-trip">
           <DeliveryTruck width={20} height={20} />
-          {starting ? 'Starting Trip...' : `Start Trip — ${assignedCount} Order${assignedCount > 1 ? 's' : ''}`}
+          {starting ? t('driverDashboard.starting_trip') : t(assignedCount > 1 ? 'driverDashboard.start_trip_other' : 'driverDashboard.start_trip_one', { count: assignedCount })}
         </button>
       )}
 
       {/* ═══ Tabs ═══ */}
       <div className="dp-tabs">
         {[
-          { key: 'active',    label: 'Active',    count: stats.active,    color: '#f97316' },
-          { key: 'completed', label: 'Delivered', count: stats.delivered, color: '#16a34a' },
-          { key: 'failed',    label: 'Failed',    count: stats.failed,    color: '#dc2626' },
-        ].map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)}
-            className={`dp-tab ${tab === t.key ? 'active' : ''}`}
-            style={tab === t.key ? { color: t.color } : undefined}>
-            {t.label}
-            {t.count != null && (
+          { key: 'active',    label: t('driverDashboard.tab_active'),    count: stats.active,    color: '#f97316' },
+          { key: 'completed', label: t('driverDashboard.tab_delivered'), count: stats.delivered, color: '#16a34a' },
+          { key: 'failed',    label: t('driverDashboard.tab_failed'),    count: stats.failed,    color: '#dc2626' },
+        ].map(tabItem => (
+          <button key={tabItem.key} onClick={() => setTab(tabItem.key)}
+            className={`dp-tab ${tab === tabItem.key ? 'active' : ''}`}
+            style={tab === tabItem.key ? { color: tabItem.color } : undefined}>
+            {tabItem.label}
+            {tabItem.count != null && (
               <span className="dp-tab-count" style={{
-                background: tab === t.key ? t.color + '15' : '#e2e8f0',
-                color: tab === t.key ? t.color : '#94a3b8',
-              }}>{t.count}</span>
+                background: tab === tabItem.key ? tabItem.color + '15' : '#e2e8f0',
+                color: tab === tabItem.key ? tabItem.color : '#94a3b8',
+              }}>{tabItem.count}</span>
             )}
           </button>
         ))}
@@ -465,8 +467,8 @@ export default function DriverDashboard() {
           <div className="dp-empty-icon">
             <Package width={40} height={40} style={{ color: '#cbd5e1' }} />
           </div>
-          <h3>{tab === 'active' ? 'No Active Deliveries' : `No ${tab === 'completed' ? 'Delivered' : 'Failed'} Orders`}</h3>
-          <p>{tab === 'active' ? 'New orders will appear here when assigned to you.' : 'Your history will appear here.'}</p>
+          <h3>{tab === 'active' ? t('driverDashboard.no_active_deliveries') : tab === 'completed' ? t('driverDashboard.no_delivered_orders') : t('driverDashboard.no_failed_orders')}</h3>
+          <p>{tab === 'active' ? t('driverDashboard.empty_active_hint') : t('driverDashboard.empty_history_hint')}</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -488,8 +490,8 @@ export default function DriverDashboard() {
                     </div>
                   </div>
                   <div className="dp-order-badges">
-                    <span className="dp-status-pill">{m.label}</span>
-                    <button onClick={() => copyToken(order.tracking_token)} title="Copy tracking link" className="dp-copy-btn">
+                    <span className="dp-status-pill">{t('driverDashboard.status_' + order.status)}</span>
+                    <button onClick={() => copyToken(order.tracking_token)} title={t('driverDashboard.copy_tracking')} className="dp-copy-btn">
                       <Copy width={14} height={14} />
                     </button>
                   </div>
@@ -533,12 +535,12 @@ export default function DriverDashboard() {
                   {(order.recipient_lat && order.recipient_lng) ? (
                     <a href={`https://www.google.com/maps/dir/?api=1&destination=${order.recipient_lat},${order.recipient_lng}`}
                       target="_blank" rel="noreferrer" className="dp-navigate has-coords">
-                      <MapPin width={14} height={14} /> Navigate
+                      <MapPin width={14} height={14} /> {t('driverDashboard.navigate')}
                     </a>
                   ) : order.recipient_address && (
                     <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(order.recipient_address + ' ' + (order.recipient_emirate || 'Dubai'))}`}
                       target="_blank" rel="noreferrer" className="dp-navigate no-coords">
-                      <MapPin width={14} height={14} /> Navigate
+                      <MapPin width={14} height={14} /> {t('driverDashboard.navigate')}
                     </a>
                   )}
                 </div>
@@ -549,12 +551,12 @@ export default function DriverDashboard() {
                     {/* Order details grid */}
                     <div className="dp-details-grid">
                       {[
-                        { label: 'Type', value: order.order_type?.replace(/_/g, ' ') || 'Standard' },
-                        { label: 'Category', value: order.category || '—' },
-                        { label: 'Weight', value: order.weight_kg ? `${order.weight_kg} kg` : '—' },
-                        { label: 'Zone', value: order.zone_name || '—' },
-                        { label: 'Client', value: order.client_name || '—' },
-                        { label: 'Sender', value: order.sender_name || '—' },
+                        { label: t('driverDashboard.type'), value: order.order_type?.replace(/_/g, ' ') || t('driverDashboard.standard') },
+                        { label: t('driverDashboard.category'), value: order.category || '—' },
+                        { label: t('driverDashboard.weight'), value: order.weight_kg ? `${order.weight_kg} kg` : '—' },
+                        { label: t('driverDashboard.zone'), value: order.zone_name || '—' },
+                        { label: t('driverDashboard.client'), value: order.client_name || '—' },
+                        { label: t('driverDashboard.sender'), value: order.sender_name || '—' },
                       ].map(d => (
                         <div key={d.label} className="dp-detail-cell">
                           <div className="dc-label">{d.label}</div>
@@ -570,17 +572,17 @@ export default function DriverDashboard() {
                         <div className="dp-tracking-value">{order.tracking_token}</div>
                       </div>
                       <button onClick={() => copyToken(order.tracking_token)} className="dp-copy-link">
-                        <Copy width={12} height={12} /> Copy Link
+                        <Copy width={12} height={12} /> {t('driverDashboard.copy_link')}
                       </button>
                     </div>
 
                     {/* Timestamps */}
                     {(order.picked_up_at || order.in_transit_at || order.delivered_at || order.failed_at) && (
                       <div className="dp-timestamps">
-                        {order.picked_up_at && <div className="dp-timestamp"><Timer width={12} height={12} /> Picked up: {fmtFull(order.picked_up_at)}</div>}
-                        {order.in_transit_at && <div className="dp-timestamp"><DeliveryTruck width={12} height={12} /> In transit: {fmtFull(order.in_transit_at)}</div>}
-                        {order.delivered_at && <div className="dp-timestamp" style={{ color: '#16a34a' }}><Check width={12} height={12} /> Delivered: {fmtFull(order.delivered_at)}</div>}
-                        {order.failed_at && <div className="dp-timestamp" style={{ color: '#dc2626' }}><Xmark width={12} height={12} /> Failed: {fmtFull(order.failed_at)}</div>}
+                        {order.picked_up_at && <div className="dp-timestamp"><Timer width={12} height={12} /> {t('driverDashboard.picked_up_at', { time: fmtFull(order.picked_up_at) })}</div>}
+                        {order.in_transit_at && <div className="dp-timestamp"><DeliveryTruck width={12} height={12} /> {t('driverDashboard.in_transit_at', { time: fmtFull(order.in_transit_at) })}</div>}
+                        {order.delivered_at && <div className="dp-timestamp" style={{ color: '#16a34a' }}><Check width={12} height={12} /> {t('driverDashboard.delivered_at', { time: fmtFull(order.delivered_at) })}</div>}
+                        {order.failed_at && <div className="dp-timestamp" style={{ color: '#dc2626' }}><Xmark width={12} height={12} /> {t('driverDashboard.failed_at', { time: fmtFull(order.failed_at) })}</div>}
                       </div>
                     )}
                   </div>
@@ -589,17 +591,17 @@ export default function DriverDashboard() {
                 {/* ── Payment Strip ── */}
                 <div className="dp-payment-strip">
                   <div className="dp-payment-cell">
-                    <div className="pc-label">Payment</div>
+                    <div className="pc-label">{t('driverDashboard.payment')}</div>
                     <div className="pc-value" style={{ color: order.payment_method === 'cod' ? '#d97706' : '#2563eb', textTransform: 'uppercase' }}>{order.payment_method || '—'}</div>
                   </div>
                   <div className="dp-payment-cell">
-                    <div className="pc-label">Fee</div>
+                    <div className="pc-label">{t('driverDashboard.fee')}</div>
                     <div className="pc-value">{fmtAED(order.delivery_fee)}</div>
                   </div>
                   {order.payment_method === 'cod' && parseFloat(order.cod_amount) > 0 && (
                     <div className="dp-payment-cell cod-collect">
-                      <div className="pc-label"><Wallet width={12} height={12} style={{ marginRight: 4, verticalAlign: 'middle' }} /> Collect</div>
-                      <div className="pc-value">AED {parseFloat(order.cod_amount).toFixed(0)}</div>
+                      <div className="pc-label"><Wallet width={12} height={12} style={{ marginRight: 4, verticalAlign: 'middle' }} /> {t('driverDashboard.collect')}</div>
+                      <div className="pc-value">{t('driverDashboard.currency_aed')} {parseFloat(order.cod_amount).toFixed(0)}</div>
                     </div>
                   )}
                 </div>
@@ -608,7 +610,7 @@ export default function DriverDashboard() {
                 {order.special_instructions && (
                   <div className="dp-instructions">
                     <WarningTriangle width={14} height={14} style={{ flexShrink: 0, marginTop: 1 }} />
-                    <span><strong>Note:</strong> {order.special_instructions}</span>
+                    <span><strong>{t('driverDashboard.note')}</strong> {order.special_instructions}</span>
                   </div>
                 )}
 
@@ -618,10 +620,10 @@ export default function DriverDashboard() {
                     {showCod && (
                       <div className="dp-cod-box">
                         <label className="dp-cod-label">
-                          <Wallet width={13} height={13} /> COD Amount Collected (AED)
+                          <Wallet width={13} height={13} /> {t('driverDashboard.cod_amount_collected')}
                         </label>
                         <input type="number" step="0.01" className="dp-cod-input"
-                          placeholder={`Enter amount${order.cod_amount ? ' (Expected: ' + parseFloat(order.cod_amount).toFixed(0) + ')' : ''}`}
+                          placeholder={order.cod_amount ? t('driverDashboard.enter_amount_expected', { amount: parseFloat(order.cod_amount).toFixed(0) }) : t('driverDashboard.enter_amount')}
                           value={codInput[order.id] || ''}
                           onChange={e => setCodInput(prev => ({ ...prev, [order.id]: e.target.value }))}
                         />
@@ -633,11 +635,11 @@ export default function DriverDashboard() {
                           className="dp-btn-advance"
                           style={{ background: STATUS_META[next]?.gradient || '#f97316', boxShadow: `0 4px 16px ${STATUS_META[next]?.color || '#f97316'}40` }}>
                           {isUpdating ? (
-                            <><div className="dp-btn-spinner" /> Processing...</>
+                            <><div className="dp-btn-spinner" /> {t('driverDashboard.processing')}</>
                           ) : (
                             <>
-                              {next === 'in_transit' && <><DeliveryTruck width={16} height={16} /> {order.status === 'assigned' ? 'Start Order' : 'Start Delivery'}</>}
-                              {next === 'delivered'   && <><CheckCircle width={16} height={16} /> Mark Delivered</>}
+                              {next === 'in_transit' && <><DeliveryTruck width={16} height={16} /> {order.status === 'assigned' ? t('driverDashboard.start_order') : t('driverDashboard.start_delivery')}</>}
+                              {next === 'delivered'   && <><CheckCircle width={16} height={16} /> {t('driverDashboard.mark_delivered')}</>}
                             </>
                           )}
                         </button>
@@ -651,8 +653,8 @@ export default function DriverDashboard() {
                           background: '#f8fafc',
                         }}>
                           {proofUploading === order.id
-                            ? <><div className="dp-btn-spinner" /> Uploading…</>
-                            : <><Eye width={14} height={14} /> Add Proof Photo</>
+                            ? <><div className="dp-btn-spinner" /> {t('driverDashboard.uploading')}</>
+                            : <><Eye width={14} height={14} /> {t('driverDashboard.add_proof_photo')}</>
                           }
                           <input
                             type="file" accept="image/*" capture="environment"
@@ -665,12 +667,12 @@ export default function DriverDashboard() {
                       {order.proof_of_delivery_url && (
                         <a href={order.proof_of_delivery_url} target="_blank" rel="noreferrer"
                           style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#16a34a', fontWeight: 600 }}>
-                          <CheckCircle width={13} height={13} /> Proof uploaded
+                          <CheckCircle width={13} height={13} /> {t('driverDashboard.proof_uploaded')}
                         </a>
                       )}
                       {['assigned', 'picked_up', 'in_transit'].includes(order.status) && (
                         <button onClick={() => markFailed(order)} disabled={isUpdating} className="dp-btn-fail">
-                          <Xmark width={14} height={14} /> Failed
+                          <Xmark width={14} height={14} /> {t('driverDashboard.failed_btn')}
                         </button>
                       )}
                     </div>
@@ -684,8 +686,8 @@ export default function DriverDashboard() {
                       <Calendar width={12} height={12} /> {fmtDate(order.created_at)}
                     </span>
                     <span style={{ fontWeight: 600, color: order.delivered_at ? '#16a34a' : '#dc2626' }}>
-                      {order.delivered_at && `✓ Delivered ${fmtTime(order.delivered_at)}`}
-                      {order.failed_at && `✗ Failed ${fmtTime(order.failed_at)}`}
+                      {order.delivered_at && t('driverDashboard.delivered_stamp', { time: fmtTime(order.delivered_at) })}
+                      {order.failed_at && t('driverDashboard.failed_stamp', { time: fmtTime(order.failed_at) })}
                     </span>
                   </div>
                 )}
