@@ -3,7 +3,8 @@ import {
   User, Phone, Mail, MapPin, Star, Package, DeliveryTruck, Check, Xmark,
   Plus, Search, EditPencil, Eye, Refresh, NavArrowLeft, NavArrowRight,
   StatsReport, Medal, Timer, TruckLength, Clock, Calendar, Bicycle, XmarkCircle,
-  MoreHoriz, Prohibition, Gps, DollarCircle, ArrowRight
+  MoreHoriz, Prohibition, Gps, DollarCircle, ArrowRight,
+  Motorcycle, Car, Truck, Bus
 } from 'iconoir-react';
 import { AuthContext } from '../App';
 import api from '../lib/api';
@@ -20,11 +21,11 @@ const STATUS_META = {
 };
 
 const VEHICLE_META = {
-  motorcycle: { label: 'Motorcycle', emoji: '🏍️', color: '#f97316' },
-  car:        { label: 'Car',        emoji: '🚗', color: '#3b82f6' },
-  van:        { label: 'Van',        emoji: '🚐', color: '#8b5cf6' },
-  truck:      { label: 'Truck',      emoji: '🚛', color: '#ef4444' },
-  bicycle:    { label: 'Bicycle',    emoji: '🚲', color: '#10b981' },
+  motorcycle: { label: 'Motorcycle', Icon: Motorcycle, color: '#f97316' },
+  car:        { label: 'Car',        Icon: Car,        color: '#3b82f6' },
+  van:        { label: 'Van',        Icon: Bus,        color: '#8b5cf6' },
+  truck:      { label: 'Truck',      Icon: Truck,      color: '#ef4444' },
+  bicycle:    { label: 'Bicycle',    Icon: Bicycle,    color: '#10b981' },
 };
 
 const EMPTY_FORM = {
@@ -50,11 +51,12 @@ const fmtPing  = d => {
 
 /* ─── Sub-components ─────────────────────────────────────────── */
 const StatusBadge = ({ status, size = 'sm' }) => {
+  const { t } = useTranslation();
   const m = STATUS_META[status] || STATUS_META.offline;
   return (
     <span className={`drv-status-badge ${size}`} style={{ background: m.bg, color: m.color }}>
       <span className={`drv-status-dot ${m.pulse ? 'pulse' : ''}`} style={{ background: m.color }} />
-      {m.label}
+      {t(`drivers.status.${status}`, { defaultValue: m.label })}
     </span>
   );
 };
@@ -250,15 +252,15 @@ export default function Drivers() {
       {/* ── Header ── */}
       <div className="page-header-row">
         <div>
-          <h2 className="page-heading">Drivers</h2>
-          <p className="page-subheading">{stats.total} registered drivers</p>
+          <h2 className="page-heading">{t('drivers.title')}</h2>
+          <p className="page-subheading">{t('drivers.registered_drivers', { count: stats.total })}</p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="btn-outline-action" onClick={fetchDrivers}>
-            <Refresh width={15} height={15} /> Refresh
+            <Refresh width={15} height={15} /> {t('common.refresh')}
           </button>
           <button className="btn-primary-action" onClick={openNew}>
-            <Plus width={16} height={16} /> Add Driver
+            <Plus width={16} height={16} /> {t('drivers.add_driver')}
           </button>
         </div>
       </div>
@@ -271,7 +273,7 @@ export default function Drivers() {
           </div>
           <div className="ord-stat-info">
             <div className="ord-stat-value">{stats.total}</div>
-            <div className="ord-stat-label">Total Drivers</div>
+            <div className="ord-stat-label">{t('drivers.total_drivers')}</div>
           </div>
         </div>
         {Object.entries(STATUS_META).map(([key, m]) => (
@@ -285,7 +287,7 @@ export default function Drivers() {
             </div>
             <div className="ord-stat-info">
               <div className="ord-stat-value" style={{ color: m.color }}>{stats[key]}</div>
-              <div className="ord-stat-label">{m.label}</div>
+              <div className="ord-stat-label">{t(`drivers.status.${key}`, { defaultValue: m.label })}</div>
             </div>
             {filters.status === key && <div className="drv-stat-active-pip" style={{ background: m.color }} />}
           </div>
@@ -311,15 +313,15 @@ export default function Drivers() {
           onChange={e => setFilters(f => ({ ...f, vehicle_type: e.target.value }))}>
           <option value="">{t("drivers.all_vehicles")}</option>
           {Object.entries(VEHICLE_META).map(([k, v]) => (
-            <option key={k} value={k}>{v.emoji} {v.label}</option>
+          <option key={k} value={k}>{t(`drivers.vehicle.${k}`, { defaultValue: v.label })}</option>
           ))}
         </select>
         {hasFilters && (
           <button className="btn-outline-action" onClick={clearFilters}>
-            <Xmark width={14} height={14} /> Clear
+            <Xmark width={14} height={14} /> {t('common.clear')}
           </button>
         )}
-        <span className="filter-count">{visibleDrivers.length} result{visibleDrivers.length !== 1 ? 's' : ''}</span>
+        <span className="filter-count">{t('drivers.filter_count', { count: visibleDrivers.length })}</span>
       </div>
 
       {/* ── Drivers Grid ── */}
@@ -327,10 +329,10 @@ export default function Drivers() {
         <div className="ord-empty">
           <div className="ord-empty-icon"><User width={48} height={48} /></div>
           <h3>{t("drivers.no_drivers")}</h3>
-          <p>{hasFilters ? 'Try adjusting your search or filters' : 'Add your first driver to get started'}</p>
+          <p>{hasFilters ? t('drivers.adjust_filters') : t('drivers.no_drivers_hint')}</p>
           {!hasFilters && (
             <button className="btn-primary-action" onClick={openNew}>
-              <Plus width={16} height={16} /> Add Driver
+              <Plus width={16} height={16} /> {t('drivers.add_driver')}
             </button>
           )}
         </div>
@@ -370,15 +372,15 @@ export default function Drivers() {
                     className="drv-status-select"
                     style={{ background: sm.bg, color: sm.color }}>
                     {Object.entries(STATUS_META).map(([k, m]) => (
-                      <option key={k} value={k}>{m.label}</option>
-                    ))}
+                      <option key={k} value={k}>{t(`drivers.status.${k}`, { defaultValue: m.label })}</option>
+                    ))}  
                   </select>
                 </div>
 
                 {/* Vehicle + Zone */}
                 <div className="drv-card-tags">
                   <span className="drv-tag vehicle" style={{ background: vm.color + '15', color: vm.color }}>
-                    {vm.emoji} {vm.label}
+                    {vm.Icon && <vm.Icon width={13} height={13} />} {t(`drivers.vehicle.${driver.vehicle_type}`, { defaultValue: vm.label })}
                     {driver.vehicle_plate && <> · {driver.vehicle_plate}</>}
                   </span>
                   {driver.zone_name && (
@@ -386,7 +388,7 @@ export default function Drivers() {
                       <MapPin width={11} height={11} /> {driver.zone_name}
                     </span>
                   )}
-                  {isInactive && <span className="drv-tag inactive">Inactive</span>}
+                  {isInactive && <span className="drv-tag inactive">{t('drivers.inactive')}</span>}
                 </div>
 
                 {/* Rating + Active orders */}
@@ -395,7 +397,7 @@ export default function Drivers() {
                   {driver.active_orders > 0 && (
                     <span className="drv-active-badge">
                       <DeliveryTruck width={12} height={12} />
-                      {driver.active_orders} active
+                      {t('drivers.active_orders', { count: driver.active_orders })}
                     </span>
                   )}
                 </div>
@@ -404,17 +406,17 @@ export default function Drivers() {
                 <div className="drv-metrics">
                   <div className="drv-metric">
                     <div className="drv-metric-val">{driver.total_deliveries || driver.total_orders || 0}</div>
-                    <div className="drv-metric-lbl">Total</div>
+                    <div className="drv-metric-lbl">{t('drivers.metric_total')}</div>
                   </div>
                   <div className="drv-metric">
                     <div className="drv-metric-val" style={{ color: '#0369a1' }}>{driver.orders_today || 0}</div>
-                    <div className="drv-metric-lbl">Today</div>
+                    <div className="drv-metric-lbl">{t('drivers.metric_today')}</div>
                   </div>
                   <div className="drv-metric">
                     <div className="drv-metric-val" style={{ color: '#16a34a' }}>
                       {pct !== null ? `${pct}%` : '—'}
                     </div>
-                    <div className="drv-metric-lbl">Success</div>
+                    <div className="drv-metric-lbl">{t('drivers.metric_success')}</div>
                   </div>
                 </div>
 
@@ -422,17 +424,17 @@ export default function Drivers() {
                 <div className="drv-card-footer" onClick={e => e.stopPropagation()}>
                   <div className="drv-card-date">
                     {driver.joined_at ? (
-                      <><Calendar width={11} height={11} /> Joined {fmtDate(driver.joined_at)}</>
+                      <><Calendar width={11} height={11} /> {t('drivers.joined', { date: fmtDate(driver.joined_at) })}</>
                     ) : (
                       <span style={{ color: '#94a3b8' }}>{t("drivers.no_join_date")}</span>
                     )}
                   </div>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    <button className="action-btn view" title="View Details"
+                    <button className="action-btn view" title={t('drivers.view_details')}
                       onClick={e => { e.stopPropagation(); openView(driver); }}>
                       <Eye width={13} height={13} />
                     </button>
-                    <button className="action-btn edit" title="Edit"
+                    <button className="action-btn edit" title={t('common.edit')}
                       onClick={e => { e.stopPropagation(); openEdit(driver); }}>
                       <EditPencil width={13} height={13} />
                     </button>
@@ -466,7 +468,7 @@ export default function Drivers() {
                       background: (VEHICLE_META[viewDriver.vehicle_type]?.color || '#666') + '18',
                       color: VEHICLE_META[viewDriver.vehicle_type]?.color || '#666', fontSize: 12
                     }}>
-                      {VEHICLE_META[viewDriver.vehicle_type]?.emoji} {VEHICLE_META[viewDriver.vehicle_type]?.label}
+                      {(() => { const VIcon = VEHICLE_META[viewDriver.vehicle_type]?.Icon; return VIcon ? <VIcon width={13} height={13} /> : null; })()} {t(`drivers.vehicle.${viewDriver.vehicle_type}`, { defaultValue: VEHICLE_META[viewDriver.vehicle_type]?.label })}
                     </span>
                   )}
                 </div>
@@ -480,12 +482,12 @@ export default function Drivers() {
             <div className="drv-tabs">
               <button className={`drv-tab ${activeTab === 'profile' ? 'active' : ''}`}
                 onClick={() => setActiveTab('profile')}>
-                <User width={14} height={14} /> Profile
+                <User width={14} height={14} /> {t('drivers.tab_profile')}
               </button>
               <button className={`drv-tab ${activeTab === 'orders' ? 'active' : ''}`}
                 onClick={() => setActiveTab('orders')}>
                 <Package width={14} height={14} />
-                Orders
+                {t('drivers.tab_orders')}
                 {viewDetail?.recent_orders?.length > 0 && (
                   <span className="drv-tab-badge">{viewDetail.recent_orders.length}</span>
                 )}
@@ -507,21 +509,21 @@ export default function Drivers() {
                     <div className="drv-perf-row">
                       <div className="drv-perf-card" style={{ '--accent': '#244066' }}>
                         <div className="drv-perf-val">{viewDetail?.total_deliveries || viewDetail?.total_orders || 0}</div>
-                        <div className="drv-perf-lbl">Total Deliveries</div>
+                        <div className="drv-perf-lbl">{t('drivers.total_deliveries')}</div>
                       </div>
                       <div className="drv-perf-card" style={{ '--accent': '#0369a1' }}>
                         <div className="drv-perf-val">{viewDetail?.orders_today || 0}</div>
-                        <div className="drv-perf-lbl">Today</div>
+                        <div className="drv-perf-lbl">{t('drivers.metric_today')}</div>
                       </div>
                       <div className="drv-perf-card" style={{ '--accent': '#16a34a' }}>
                         <div className="drv-perf-val">
                           {fmtPct(viewDetail?.delivered_orders, viewDetail?.total_orders)}
                         </div>
-                        <div className="drv-perf-lbl">Success Rate</div>
+                        <div className="drv-perf-lbl">{t('drivers.metric_success_rate')}</div>
                       </div>
                       <div className="drv-perf-card" style={{ '--accent': '#d97706' }}>
                         <div className="drv-perf-val">{fmtAED(viewDetail?.total_earned)}</div>
-                        <div className="drv-perf-lbl">Earned</div>
+                        <div className="drv-perf-lbl">{t('drivers.earned')}</div>
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
@@ -536,15 +538,15 @@ export default function Drivers() {
 
                   {/* Contact */}
                   <div className="ord-view-section">
-                    <div className="ord-view-section-title"><User width={14} height={14} /> Contact</div>
+                    <div className="ord-view-section-title"><User width={14} height={14} /> {t('drivers.contact')}</div>
                     <div className="ord-view-card">
                       <div className="ord-view-row">
-                        <span className="ord-view-label">Phone</span>
+                        <span className="ord-view-label">{t('common.phone')}</span>
                         <a href={`tel:${viewDriver.phone}`} className="ord-view-value link">{viewDriver.phone}</a>
                       </div>
                       {viewDriver.email && (
                         <div className="ord-view-row">
-                          <span className="ord-view-label">Email</span>
+                          <span className="ord-view-label">{t('common.email')}</span>
                           <span className="ord-view-value">{viewDriver.email}</span>
                         </div>
                       )}
@@ -556,7 +558,7 @@ export default function Drivers() {
                       )}
                       {viewDriver.joined_at && (
                         <div className="ord-view-row">
-                          <span className="ord-view-label">Joined</span>
+                          <span className="ord-view-label">{t('drivers.joined_label')}</span>
                           <span className="ord-view-value">{fmtDate(viewDriver.joined_at)}</span>
                         </div>
                       )}
@@ -566,34 +568,34 @@ export default function Drivers() {
                   {/* Vehicle */}
                   <div className="ord-view-section">
                     <div className="ord-view-section-title">
-                      {VEHICLE_META[viewDriver.vehicle_type]?.emoji || '🚗'} Vehicle
+                      {(() => { const VIcon = VEHICLE_META[viewDriver.vehicle_type]?.Icon || Car; return <VIcon width={14} height={14} />; })()} {t('drivers.vehicle_section')}
                     </div>
                     <div className="ord-view-card">
                       <div className="ord-view-row">
-                        <span className="ord-view-label">Type</span>
-                        <span className="ord-view-value bold">{VEHICLE_META[viewDriver.vehicle_type]?.label || viewDriver.vehicle_type}</span>
+                        <span className="ord-view-label">{t('drivers.type')}</span>
+                        <span className="ord-view-value bold">{t(`drivers.vehicle.${viewDriver.vehicle_type}`, { defaultValue: VEHICLE_META[viewDriver.vehicle_type]?.label || viewDriver.vehicle_type })}</span>
                       </div>
                       {viewDriver.vehicle_plate && (
                         <div className="ord-view-row">
-                          <span className="ord-view-label">Plate</span>
+                          <span className="ord-view-label">{t('drivers.plate')}</span>
                           <span className="ord-view-value drv-plate">{viewDriver.vehicle_plate}</span>
                         </div>
                       )}
                       {viewDriver.vehicle_model && (
                         <div className="ord-view-row">
-                          <span className="ord-view-label">Model</span>
+                          <span className="ord-view-label">{t('drivers.vehicle_model')}</span>
                           <span className="ord-view-value">{viewDriver.vehicle_model}</span>
                         </div>
                       )}
                       {viewDriver.vehicle_color && (
                         <div className="ord-view-row">
-                          <span className="ord-view-label">Color</span>
+                          <span className="ord-view-label">{t('drivers.vehicle_color')}</span>
                           <span className="ord-view-value">{viewDriver.vehicle_color}</span>
                         </div>
                       )}
                       {viewDriver.license_number && (
                         <div className="ord-view-row">
-                          <span className="ord-view-label">License #</span>
+                          <span className="ord-view-label">{t('drivers.license_hash')}</span>
                           <span className="ord-view-value">{viewDriver.license_number}</span>
                         </div>
                       )}
@@ -630,15 +632,15 @@ export default function Drivers() {
                                   </div>
                                   {viewDriver.vehicle_type && (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#374151', marginTop: 4 }}>
-                                      <span>🚗</span>
+                                      <DeliveryTruck width={14} height={14} style={{ flexShrink: 0 }} />
                                       <span style={{ textTransform: 'capitalize' }}>{viewDriver.vehicle_type}</span>
                                       <span style={{ color: '#9ca3af' }}>•</span>
                                       <span style={{ fontFamily: 'monospace', fontWeight: 600, background: '#f3f4f6', padding: '1px 6px', borderRadius: 4 }}>{viewDriver.vehicle_plate || '—'}</span>
                                     </div>
                                   )}
                                   {viewDetail.last_ping && (
-                                    <div style={{ marginTop: 6, color: '#6b7280', fontSize: '0.76rem' }}>
-                                      📍 Last ping: {fmtPing(viewDetail.last_ping)}
+                                    <div style={{ marginTop: 6, color: '#6b7280', fontSize: '0.76rem', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                      <MapPin width={11} height={11} /> Last ping: {fmtPing(viewDetail.last_ping)}
                                     </div>
                                   )}
                                 </div>
@@ -655,7 +657,7 @@ export default function Drivers() {
                     <div className="ord-view-section">
                       <div className="ord-view-card subtle">
                         <div className="ord-view-row" style={{ alignItems: 'flex-start' }}>
-                          <span className="ord-view-label">Notes</span>
+                          <span className="ord-view-label">{t('common.notes')}</span>
                           <span className="ord-view-value" style={{ whiteSpace: 'pre-wrap' }}>{viewDriver.notes}</span>
                         </div>
                       </div>
@@ -700,13 +702,13 @@ export default function Drivers() {
                 onClick={() => handleToggleActive(viewDriver)}
                 style={{ color: viewDriver.is_active === 0 ? '#16a34a' : '#dc2626',
                          borderColor: viewDriver.is_active === 0 ? '#bbf7d0' : '#fecaca' }}>
-                {viewDriver.is_active === 0 ? <><Check width={14} height={14} /> Activate</> : <><Prohibition width={14} height={14} /> Deactivate</>}
+                {viewDriver.is_active === 0 ? <><Check width={14} height={14} /> {t('drivers.activate')}</> : <><Prohibition width={14} height={14} /> {t('drivers.deactivate')}</>}
               </button>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button className="btn-outline-action" onClick={() => setViewDriver(null)}>{t("common.close")}</button>
+                <button className="btn-outline-action" onClick={() => setViewDriver(null)}>{t('common.close')}</button>
                 <button className="btn-primary-action"
                   onClick={() => { setViewDriver(null); openEdit(viewDriver); }}>
-                  <EditPencil width={14} height={14} /> Edit Driver
+                  <EditPencil width={14} height={14} /> {t('drivers.edit_driver')}
                 </button>
               </div>
             </div>
@@ -721,7 +723,7 @@ export default function Drivers() {
         <div className="modal-overlay" onClick={closeForm}>
           <div className="modal-container large" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>{selected ? `Edit — ${selected.full_name}` : 'Add New Driver'}</h3>
+              <h3>{selected ? t('drivers.edit_title', { name: selected.full_name }) : t('drivers.add_driver_title')}</h3>
               <button className="modal-close" onClick={closeForm}><Xmark width={18} height={18} /></button>
             </div>
             <form onSubmit={handleSubmit}>
@@ -735,23 +737,23 @@ export default function Drivers() {
                 {/* Personal */}
                 <div className="form-section-title">
                   <User width={15} height={15} style={{ verticalAlign: 'middle', marginRight: 6 }} />
-                  Personal Information
+                  {t('drivers.personal_info')}
                 </div>
                 <div className="form-grid-2">
                   <div className="form-field">
-                    <label>Full Name *</label>
+                    <label>{t('drivers.full_name_required')}</label>
                     <input required type="text" value={form.full_name}
                       onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))}
                       placeholder={t("drivers.name_placeholder")} />
                   </div>
                   <div className="form-field">
-                    <label>Phone *</label>
+                    <label>{t('drivers.phone_required')}</label>
                     <input required type="text" value={form.phone}
                       onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
                       placeholder="+971 50 000 0000" />
                   </div>
                   <div className="form-field">
-                    <label>Email</label>
+                    <label>{t('common.email')}</label>
                     <input type="email" value={form.email}
                       onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
                       placeholder="driver@example.com" />
@@ -768,16 +770,16 @@ export default function Drivers() {
                       onChange={e => setForm(f => ({ ...f, joined_at: e.target.value }))} />
                   </div>
                   <div className="form-field">
-                    <label>Status</label>
+                    <label>{t('drivers.status_label')}</label>
                     <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}>
                       {Object.entries(STATUS_META).map(([k, m]) => (
-                        <option key={k} value={k}>{m.label}</option>
+                        <option key={k} value={k}>{t(`drivers.status.${k}`, { defaultValue: m.label })}</option>
                       ))}
                     </select>
                   </div>
                   {!selected && (
                     <div className="form-field">
-                      <label>Password</label>
+                      <label>{t('common.password') || 'Password'}</label>
                       <input type="password" value={form.password}
                         onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
                         placeholder={t("drivers.password_placeholder")} />
@@ -787,31 +789,32 @@ export default function Drivers() {
 
                 {/* Vehicle */}
                 <div className="form-section-title" style={{ marginTop: '1.5rem' }}>
-                  🚗 Vehicle Information
+                  <Car width={15} height={15} style={{ verticalAlign: 'middle', marginRight: 6 }} />
+                  {t('drivers.vehicle_info')}
                 </div>
                 <div className="form-grid-2">
                   <div className="form-field">
-                    <label>{t("drivers.vehicle_type")}</label>
+                    <label>{t('drivers.vehicle_type')}</label>
                     <select value={form.vehicle_type} onChange={e => setForm(f => ({ ...f, vehicle_type: e.target.value }))}>
                       {Object.entries(VEHICLE_META).map(([k, v]) => (
-                        <option key={k} value={k}>{v.emoji} {v.label}</option>
+                        <option key={k} value={k}>{t(`drivers.vehicle.${k}`, { defaultValue: v.label })}</option>
                       ))}
                     </select>
                   </div>
                   <div className="form-field">
-                    <label>Plate Number</label>
+                    <label>{t('drivers.plate_number')}</label>
                     <input type="text" value={form.vehicle_plate}
                       onChange={e => setForm(f => ({ ...f, vehicle_plate: e.target.value }))}
                       placeholder="e.g. A 12345 Dubai" />
                   </div>
                   <div className="form-field">
-                    <label>Vehicle Model</label>
+                    <label>{t('drivers.vehicle_model_label')}</label>
                     <input type="text" value={form.vehicle_model}
                       onChange={e => setForm(f => ({ ...f, vehicle_model: e.target.value }))}
                       placeholder="e.g. Honda CB150" />
                   </div>
                   <div className="form-field">
-                    <label>Vehicle Color</label>
+                    <label>{t('drivers.vehicle_color_label')}</label>
                     <input type="text" value={form.vehicle_color}
                       onChange={e => setForm(f => ({ ...f, vehicle_color: e.target.value }))}
                       placeholder="e.g. Red" />
@@ -832,7 +835,7 @@ export default function Drivers() {
                     </select>
                   </div>
                   <div className="form-field span-2">
-                    <label>Notes</label>
+                    <label>{t('common.notes')}</label>
                     <textarea rows={3} value={form.notes}
                       onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
                       placeholder={t("drivers.notes_placeholder")} />
@@ -841,9 +844,9 @@ export default function Drivers() {
               </div>
 
               <div className="modal-footer">
-                <button type="button" className="btn-outline-action" onClick={closeForm}>{t("common.cancel")}</button>
+                <button type="button" className="btn-outline-action" onClick={closeForm}>{t('common.cancel')}</button>
                 <button type="submit" className="btn-primary-action" disabled={saving}>
-                  {saving ? 'Saving...' : selected ? 'Update Driver' : 'Add Driver'}
+                  {saving ? t('common.loading') : selected ? t('drivers.update_driver') : t('drivers.add_driver')}
                 </button>
               </div>
             </form>
@@ -871,12 +874,12 @@ export default function Drivers() {
                 <Check width={32} height={32} strokeWidth={2.5} />
               </div>
               <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, letterSpacing: '-0.01em' }}>
-                Driver Account Created
+                {t('drivers.credentials.title')}
               </h3>
               <p style={{ margin: '6px 0 0', opacity: 0.85, fontSize: '0.85rem' }}>
                 {credentialsModal.isDefault
-                  ? 'A default password was auto-generated'
-                  : 'Using the password you set'}
+                  ? t('drivers.credentials.default_password')
+                  : t('drivers.credentials.custom_password')}
               </p>
             </div>
 
@@ -890,14 +893,14 @@ export default function Drivers() {
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   padding: '14px 16px', borderBottom: '1px solid #e2e8f0',
                 }}>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Username</span>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('drivers.credentials.username')}</span>
                   <span style={{ fontSize: '0.95rem', fontWeight: 600, fontFamily: 'monospace', color: '#1e293b' }}>{credentialsModal.username}</span>
                 </div>
                 <div style={{
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   padding: '14px 16px',
                 }}>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Password</span>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('drivers.credentials.password')}</span>
                   <span style={{ fontSize: '0.95rem', fontWeight: 600, fontFamily: 'monospace', color: '#1e293b' }}>{credentialsModal.password}</span>
                 </div>
               </div>
@@ -910,7 +913,7 @@ export default function Drivers() {
                 }}>
                   <span style={{ fontSize: 18, flexShrink: 0, marginTop: 1 }}>⚠️</span>
                   <p style={{ margin: 0, fontSize: '0.82rem', color: '#9a3412', lineHeight: 1.5 }}>
-                    This is an auto-generated password. Share it securely with the driver and advise them to change it after first login.
+                    {t('drivers.credentials.warning')}
                   </p>
                 </div>
               )}
@@ -924,14 +927,14 @@ export default function Drivers() {
                 }}
                 style={{ width: '100%', padding: '12px', borderRadius: 10, fontSize: '0.9rem', fontWeight: 600 }}
               >
-                Copy Credentials & Close
+                {t('drivers.credentials.copy_close')}
               </button>
               <button
                 className="btn-outline-action"
                 onClick={() => setCredentialsModal(null)}
                 style={{ width: '100%', padding: '10px', borderRadius: 10, marginTop: 8, fontSize: '0.85rem' }}
               >
-                Close
+                {t('common.close')}
               </button>
             </div>
           </div>

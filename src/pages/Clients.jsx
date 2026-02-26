@@ -979,7 +979,7 @@ export default function Clients() {
                       {/* Active Toggle at Top */}
                       <div style={{ gridColumn:'1/-1', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px', background:'#f0fdf4', borderRadius:10, border:'1px solid #dcfce7', marginBottom:4 }}>
                         <label style={{ fontSize:14, fontWeight:700, color:'#16a34a', margin:0, cursor:'pointer', userSelect:'none' }}>
-                          Active Status
+                          {t("clients.active_status")}
                         </label>
                         <button type="button" onClick={() => set('is_active', !form.is_active)}
                           style={{

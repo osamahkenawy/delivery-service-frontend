@@ -22,14 +22,14 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement,
 const AUTO_REFRESH_MS = 30000; // 30 seconds
 
 const WIDGET_DEFS = [
-  { key: 'metrics',      label: 'widgets.metrics' },
-  { key: 'cod',          label: 'widgets.cod' },
-  { key: 'charts',       label: 'widgets.charts' },
-  { key: 'hourly',       label: 'widgets.hourly' },
-  { key: 'drivers_util', label: 'widgets.drivers_util' },
-  { key: 'zones',        label: 'widgets.zones' },
-  { key: 'drivers',      label: 'widgets.drivers' },
-  { key: 'recent',       label: 'widgets.recent' },
+  { key: 'metrics',      label: 'dashboard.widgets.metrics' },
+  { key: 'cod',          label: 'dashboard.widgets.cod' },
+  { key: 'charts',       label: 'dashboard.widgets.charts' },
+  { key: 'hourly',       label: 'dashboard.widgets.hourly' },
+  { key: 'drivers_util', label: 'dashboard.widgets.drivers_util' },
+  { key: 'zones',        label: 'dashboard.widgets.zones' },
+  { key: 'drivers',      label: 'dashboard.widgets.drivers' },
+  { key: 'recent',       label: 'dashboard.widgets.recent' },
 ];
 const DEFAULT_VISIBLE = () => WIDGET_DEFS.reduce((acc, w) => ({ ...acc, [w.key]: true }), {});
 const STORAGE_KEY = 'dashboard_widgets';
@@ -231,8 +231,8 @@ export default function Dashboard() {
             {t('dashboard.new_order')}
           </Link>
           <div style={{ position: 'relative' }}>
-            <button className="btn-auto-refresh" onClick={() => setShowWidgetPanel(v => !v)} title={t('dashboard.customize_widgets')}>
-              <Settings width={15} height={15} /> Widgets
+            <button className="btn-auto-refresh" onClick={() => setShowWidgetPanel(v => !v)} title={t('dashboard.settings.customize_widgets')}>
+              <Settings width={15} height={15} /> {t('dashboard.settings.customize_widgets')}
             </button>
             {showWidgetPanel && (
               <div className="widget-panel">
@@ -243,7 +243,7 @@ export default function Dashboard() {
                 {WIDGET_DEFS.map(w => (
                   <label key={w.key} className="widget-panel-item">
                     <input type="checkbox" checked={!!widgetVis[w.key]} onChange={() => toggleWidget(w.key)} />
-                    <span>{w.label}</span>
+                    <span>{t(w.label)}</span>
                   </label>
                 ))}
               </div>

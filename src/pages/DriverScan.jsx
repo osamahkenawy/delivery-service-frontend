@@ -1,8 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import jsQR from 'jsqr';
+import {
+  Camera, RotateCameraRight, VideoCamera, MapPin, Phone,
+  WarningTriangle, Clock, XmarkCircle, NavArrowRight, ScanBarcode,
+} from 'iconoir-react';
 import api from '../lib/api';
 import './CRMPages.css';
-import { useTranslation } from 'react-i18next';
 
 /* ── Status transition rules ─────────────────────────────────────── */
 const VALID_NEXT = {
@@ -18,25 +22,25 @@ const VALID_NEXT = {
 };
 
 const STATUS_META = {
-  pending:    { emoji: '🕐', color: '#f59e0b', label: 'Pending'     },
-  confirmed:  { emoji: '✅', color: '#10b981', label: 'Confirmed'   },
-  assigned:   { emoji: '👤', color: '#6366f1', label: 'Assigned'    },
-  picked_up:  { emoji: '📦', color: '#3b82f6', label: 'Picked Up'   },
-  in_transit: { emoji: '🚗', color: '#f97316', label: 'In Transit'  },
-  delivered:  { emoji: '🎉', color: '#16a34a', label: 'Delivered'   },
-  failed:     { emoji: '❌', color: '#dc2626', label: 'Failed'      },
-  returned:   { emoji: '↩️', color: '#8b5cf6', label: 'Returned'   },
-  cancelled:  { emoji: '🚫', color: '#94a3b8', label: 'Cancelled'   },
+  pending:    { color: '#f59e0b', labelKey: 'pending'     },
+  confirmed:  { color: '#10b981', labelKey: 'confirmed'   },
+  assigned:   { color: '#6366f1', labelKey: 'assigned'    },
+  picked_up:  { color: '#3b82f6', labelKey: 'picked_up'   },
+  in_transit: { color: '#f97316', labelKey: 'in_transit'  },
+  delivered:  { color: '#16a34a', labelKey: 'delivered'   },
+  failed:     { color: '#dc2626', labelKey: 'failed'      },
+  returned:   { color: '#8b5cf6', labelKey: 'returned'    },
+  cancelled:  { color: '#94a3b8', labelKey: 'cancelled'   },
 };
 
-const STATUS_FLOW_LABELS = {
-  confirmed:  { label: '✅ Confirm', scan_type: 'warehouse_in',  bg: '#10b981' },
-  picked_up:  { label: '📦 Mark Picked Up', scan_type: 'pickup_scan',  bg: '#3b82f6' },
-  in_transit: { label: '🚗 Out for Delivery', scan_type: 'driver_scan', bg: '#f97316' },
-  delivered:  { label: '🎉 Mark Delivered', scan_type: 'delivery_scan', bg: '#16a34a' },
-  failed:     { label: '❌ Delivery Failed', scan_type: 'driver_scan',  bg: '#dc2626' },
-  returned:   { label: '↩️ Return to Hub', scan_type: 'warehouse_in',  bg: '#8b5cf6' },
-  cancelled:  { label: '🚫 Cancel', scan_type: 'driver_scan',           bg: '#94a3b8' },
+const STATUS_FLOW = {
+  confirmed:  { actionKey: 'confirmed', scan_type: 'warehouse_in',  bg: '#10b981' },
+  picked_up:  { actionKey: 'picked_up', scan_type: 'pickup_scan',   bg: '#3b82f6' },
+  in_transit: { actionKey: 'in_transit',scan_type: 'driver_scan',   bg: '#f97316' },
+  delivered:  { actionKey: 'delivered', scan_type: 'delivery_scan', bg: '#16a34a' },
+  failed:     { actionKey: 'failed',    scan_type: 'driver_scan',   bg: '#dc2626' },
+  returned:   { actionKey: 'returned',  scan_type: 'warehouse_in',  bg: '#8b5cf6' },
+  cancelled:  { actionKey: 'cancelled', scan_type: 'driver_scan',   bg: '#94a3b8' },
 };
 
 function getGPS() {
@@ -52,6 +56,7 @@ function getGPS() {
 
 /* ─────────────────── Order Card ──────────────────────────────────── */
 function OrderCard({ order, onStatusUpdate, onScan, loading }) {
+  const { t } = useTranslation();
   const [statusNote, setStatusNote] = useState('');
   const [codAmt, setCodAmt]         = useState(order.cod_amount || '');
   const [updating, setUpdating]     = useState(false);
@@ -59,20 +64,21 @@ function OrderCard({ order, onStatusUpdate, onScan, loading }) {
 
   const nextStatuses = VALID_NEXT[order.status] || [];
   const meta = STATUS_META[order.status] || {};
+  const statusLabel = t(`orders.status.${meta.labelKey}`, { defaultValue: meta.labelKey || order.status });
 
   const doStatusUpdate = async (newStatus) => {
     setUpdating(true);
     const gps = await getGPS();
     const payload = { statusNote, gps };
-    // Send COD collected amount when delivering a COD order
     if (newStatus === 'delivered' && order.payment_method === 'cod' && codAmt) {
       payload.cod_collected_amount = parseFloat(codAmt);
     }
     const result = await onStatusUpdate(order.tracking_token, newStatus, statusNote, gps, payload.cod_collected_amount);
+    const newLabel = t(`orders.status.${newStatus}`, { defaultValue: newStatus });
     if (result?.success) {
-      setScanResult({ ok: true, msg: `✅ Marked as ${STATUS_META[newStatus]?.label || newStatus}` });
+      setScanResult({ ok: true, msg: t('driverScan.marked_as', { status: newLabel }) });
     } else {
-      setScanResult({ ok: false, msg: result?.message || 'Update failed' });
+      setScanResult({ ok: false, msg: result?.message || t('driverScan.update_failed') });
     }
     setUpdating(false);
   };
@@ -82,9 +88,9 @@ function OrderCard({ order, onStatusUpdate, onScan, loading }) {
     const gps = await getGPS();
     const result = await onScan(order.tracking_token, scanType, gps);
     if (result?.success) {
-      setScanResult({ ok: true, msg: result.message || '📷 Scan logged' });
+      setScanResult({ ok: true, msg: result.message || t('driverScan.scan_logged') });
     } else {
-      setScanResult({ ok: false, msg: result?.message || 'Scan failed' });
+      setScanResult({ ok: false, msg: result?.message || t('driverScan.scan_failed') });
     }
     setUpdating(false);
   };
@@ -95,56 +101,73 @@ function OrderCard({ order, onStatusUpdate, onScan, loading }) {
       <div style={{ background: meta.color || '#64748b', padding: '18px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <div style={{ color: '#fff', fontWeight: 800, fontSize: '1.25rem' }}>{order.order_number}</div>
-          <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '.85rem', marginTop: 2 }}>
-            {meta.emoji} {meta.label}
-            {order.payment_method === 'cod' && <span style={{ marginLeft: 10, background: 'rgba(255,255,255,0.25)', padding: '1px 8px', borderRadius: 10, fontSize: '.75rem', fontWeight: 700 }}>💵 COD AED {order.cod_amount}</span>}
+          <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '.85rem', marginTop: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ background: 'rgba(255,255,255,0.2)', padding: '2px 10px', borderRadius: 12, fontWeight: 700 }}>
+              {statusLabel}
+            </span>
+            {order.payment_method === 'cod' && (
+              <span style={{ background: 'rgba(255,255,255,0.25)', padding: '1px 8px', borderRadius: 10, fontSize: '.75rem', fontWeight: 700 }}>
+                COD AED {order.cod_amount}
+              </span>
+            )}
           </div>
         </div>
-        <div style={{ fontSize: '2.5rem' }}>{meta.emoji}</div>
+        <div style={{ width: 48, height: 48, borderRadius: 12, background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Clock width={24} height={24} color="#fff" />
+        </div>
       </div>
 
       <div style={{ padding: '18px 20px' }}>
         {/* Recipient */}
         <div style={{ background: 'var(--bg-hover)', borderRadius: 10, padding: '14px 16px', marginBottom: 14 }}>
-          <div style={{ fontSize: '.75rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', marginBottom: 8 }}>{t("driverScan.recipient")}</div>
+          <div style={{ fontSize: '.75rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', marginBottom: 8 }}>
+            {t('driverScan.recipient')}
+          </div>
           <div style={{ fontWeight: 700, fontSize: '1rem' }}>{order.recipient_name}</div>
           {order.recipient_phone && (
-            <a href={`tel:${order.recipient_phone}`} style={{ color: '#f97316', fontWeight: 600, fontSize: '.9rem', textDecoration: 'none', display: 'block', marginTop: 4 }}>
-              📞 {order.recipient_phone}
+            <a href={`tel:${order.recipient_phone}`} style={{ color: '#f97316', fontWeight: 600, fontSize: '.9rem', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+              <Phone width={14} height={14} /> {order.recipient_phone}
             </a>
           )}
-          <div style={{ color: 'var(--text-muted)', fontSize: '.85rem', marginTop: 6, lineHeight: 1.4 }}>
-            📍 {order.recipient_address}{order.recipient_area ? `, ${order.recipient_area}` : ''}{order.recipient_emirate ? ` — ${order.recipient_emirate}` : ''}
+          <div style={{ color: 'var(--text-muted)', fontSize: '.85rem', marginTop: 6, display: 'flex', alignItems: 'flex-start', gap: 6, lineHeight: 1.4 }}>
+            <MapPin width={14} height={14} style={{ flexShrink: 0, marginTop: 2 }} />
+            <span>
+              {order.recipient_address}
+              {order.recipient_area ? `, ${order.recipient_area}` : ''}
+              {order.recipient_emirate ? ` — ${order.recipient_emirate}` : ''}
+            </span>
           </div>
         </div>
 
         {/* Open in Maps */}
         {(order.recipient_lat && order.recipient_lng) ? (
           <a href={`https://maps.google.com/?q=${order.recipient_lat},${order.recipient_lng}`} target="_blank" rel="noreferrer"
-            style={{ display: 'block', textAlign: 'center', padding: '10px', borderRadius: 10, background: '#dbeafe', color: '#1d4ed8', fontWeight: 700, fontSize: '.85rem', textDecoration: 'none', marginBottom: 14 }}>
-            🗺️ Open in Google Maps
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px', borderRadius: 10, background: '#dbeafe', color: '#1d4ed8', fontWeight: 700, fontSize: '.85rem', textDecoration: 'none', marginBottom: 14 }}>
+            <MapPin width={15} height={15} /> {t('driverScan.open_maps')}
           </a>
         ) : order.recipient_address ? (
           <a href={`https://maps.google.com/?q=${encodeURIComponent(order.recipient_address + ' ' + (order.recipient_emirate || 'Dubai'))}`} target="_blank" rel="noreferrer"
-            style={{ display: 'block', textAlign: 'center', padding: '10px', borderRadius: 10, background: '#dbeafe', color: '#1d4ed8', fontWeight: 700, fontSize: '.85rem', textDecoration: 'none', marginBottom: 14 }}>
-            🗺️ Search Address in Maps
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px', borderRadius: 10, background: '#dbeafe', color: '#1d4ed8', fontWeight: 700, fontSize: '.85rem', textDecoration: 'none', marginBottom: 14 }}>
+            <MapPin width={15} height={15} /> {t('driverScan.search_maps')}
           </a>
         ) : null}
 
         {/* COD Collection */}
         {order.payment_method === 'cod' && order.status === 'in_transit' && (
           <div style={{ background: '#fef3c7', border: '1px solid #fcd34d', borderRadius: 10, padding: '12px 14px', marginBottom: 14 }}>
-            <div style={{ fontSize: '.75rem', fontWeight: 700, color: '#92400e', marginBottom: 8 }}>💵 COD Amount to Collect</div>
+            <div style={{ fontSize: '.75rem', fontWeight: 700, color: '#92400e', marginBottom: 8 }}>
+              {t('driverScan.cod_collect')}
+            </div>
             <input type="number" step="0.01" value={codAmt} onChange={e => setCodAmt(e.target.value)}
-              placeholder="Enter collected amount"
+              placeholder={t('driverScan.enter_amount')}
               style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #fcd34d', fontSize: '1.1rem', fontWeight: 700, color: '#92400e', background: '#fffbeb', boxSizing: 'border-box' }} />
-            <div style={{ fontSize: '.75rem', color: '#92400e', marginTop: 4 }}>Confirm amount before marking delivered</div>
+            <div style={{ fontSize: '.75rem', color: '#92400e', marginTop: 4 }}>{t('driverScan.confirm_hint')}</div>
           </div>
         )}
 
         {/* Note */}
         <div style={{ marginBottom: 14 }}>
-          <textarea rows={2} placeholder={t("driverScan.note_placeholder")} value={statusNote}
+          <textarea rows={2} placeholder={t('driverScan.note_placeholder')} value={statusNote}
             onChange={e => setStatusNote(e.target.value)}
             style={{ width: '100%', padding: '8px 12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-hover)', color: 'var(--text-primary)', fontSize: '.875rem', resize: 'none', boxSizing: 'border-box' }} />
         </div>
@@ -154,25 +177,25 @@ function OrderCard({ order, onStatusUpdate, onScan, loading }) {
           {['warehouse_in', 'warehouse_out'].map(st => (
             <button key={st} onClick={() => doScan(st)} disabled={updating}
               style={{ padding: '7px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-hover)', fontSize: '.78rem', fontWeight: 600, cursor: 'pointer', color: 'var(--text-secondary)' }}>
-              {st === 'warehouse_in' ? '🏭 Hub In' : '🏭 Hub Out'}
+              {st === 'warehouse_in' ? t('driverScan.hub_in') : t('driverScan.hub_out')}
             </button>
           ))}
         </div>
 
         {/* Status Action Buttons */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {nextStatuses.filter(s => STATUS_FLOW_LABELS[s]).map(s => {
-            const flow = STATUS_FLOW_LABELS[s];
+          {nextStatuses.filter(s => STATUS_FLOW[s]).map(s => {
+            const flow = STATUS_FLOW[s];
             return (
               <button key={s} onClick={() => doStatusUpdate(s)} disabled={updating || loading}
                 style={{ padding: '14px', borderRadius: 12, border: 'none', background: flow.bg, color: '#fff', fontWeight: 800, fontSize: '1rem', cursor: 'pointer', opacity: (updating || loading) ? 0.7 : 1 }}>
-                {updating ? '⏳ Processing...' : flow.label}
+                {updating ? t('driverScan.processing') : t(`driverScan.action.${flow.actionKey}`)}
               </button>
             );
           })}
           {nextStatuses.length === 0 && (
             <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)', fontSize: '.9rem' }}>
-              No further actions — order is {meta.label}
+              {t('driverScan.no_actions')} — {statusLabel}
             </div>
           )}
         </div>
@@ -189,19 +212,21 @@ function OrderCard({ order, onStatusUpdate, onScan, loading }) {
         {/* Status Timeline */}
         {order.status_logs?.length > 0 && (
           <details style={{ marginTop: 16 }}>
-            <summary style={{ cursor: 'pointer', fontSize: '.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-              🕐 History ({order.status_logs.length} events)
+            <summary style={{ cursor: 'pointer', fontSize: '.85rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Clock width={14} height={14} /> {t('driverScan.history', { count: order.status_logs.length })}
             </summary>
             <div style={{ marginTop: 10, paddingLeft: 12, borderLeft: '2px solid var(--border)' }}>
-              {order.status_logs.slice(-6).reverse().map((log, i) => (
-                <div key={i} style={{ marginBottom: 10 }}>
-                  <div style={{ fontWeight: 600, fontSize: '.82rem' }}>
-                    {STATUS_META[log.status]?.emoji} {STATUS_META[log.status]?.label || log.status}
+              {order.status_logs.slice(-6).reverse().map((log, i) => {
+                const lMeta = STATUS_META[log.status] || {};
+                const lLabel = t(`orders.status.${lMeta.labelKey || log.status}`, { defaultValue: log.status });
+                return (
+                  <div key={i} style={{ marginBottom: 10 }}>
+                    <div style={{ fontWeight: 600, fontSize: '.82rem', color: lMeta.color }}>{lLabel}</div>
+                    {log.note && <div style={{ fontSize: '.78rem', color: 'var(--text-muted)' }}>{log.note}</div>}
+                    <div style={{ fontSize: '.72rem', color: 'var(--text-muted)' }}>{new Date(log.created_at).toLocaleString()}</div>
                   </div>
-                  {log.note && <div style={{ fontSize: '.78rem', color: 'var(--text-muted)' }}>{log.note}</div>}
-                  <div style={{ fontSize: '.72rem', color: 'var(--text-muted)' }}>{new Date(log.created_at).toLocaleString()}</div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </details>
         )}
@@ -248,7 +273,7 @@ export default function DriverScan() {
       }
       setScanning(true);
     } catch (err) {
-      setCameraErr(`Camera error: ${err.message}. Try the manual entry below.`);
+      setCameraErr(t('driverScan.camera_error'));
     }
   }, [facingMode]);
 
@@ -307,7 +332,7 @@ export default function DriverScan() {
       // Auto-log the scan
       await api.post(`/tracking/${token}/scan`, { scan_type: 'driver_scan' }).catch(() => {});
     } else {
-      setFetchError(res.message || 'Order not found');
+      setFetchError(res.message || t('common.not_found', { defaultValue: 'Order not found' }));
     }
     setLoadingOrder(false);
   };
@@ -344,7 +369,7 @@ export default function DriverScan() {
     <div className="page-container" style={{ maxWidth: 640, margin: '0 auto' }}>
       <div className="page-header-row" style={{ marginBottom: 20 }}>
         <div>
-          <h2 className="page-heading">📷 Driver Scan</h2>
+          <h2 className="page-heading" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><ScanBarcode width={22} height={22} /> {t('driverScan.title')}</h2>
           <p className="page-subheading">{t("driverScan.scan_hint")}</p>
         </div>
         {order && (
@@ -365,7 +390,7 @@ export default function DriverScan() {
               <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
                 <div style={{ width: '60%', aspectRatio: '1', border: '3px solid #f97316', borderRadius: 12, boxShadow: '0 0 0 9999px rgba(0,0,0,0.35)' }}>
                   <div style={{ position: 'absolute', top: '20%', left: '50%', transform: 'translateX(-50%)', color: 'rgba(255,255,255,0.7)', fontSize: '.8rem', whiteSpace: 'nowrap' }}>
-                    Point at QR or barcode
+                    {t('driverScan.point_qr')}
                   </div>
                 </div>
               </div>
@@ -374,8 +399,8 @@ export default function DriverScan() {
             {/* Idle state */}
             {!scanning && (
               <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, color: '#94a3b8' }}>
-                <div style={{ fontSize: '4rem' }}>📷</div>
-                <div style={{ fontSize: '.9rem' }}>{t("driverScan.camera_off")}</div>
+                <VideoCamera width={56} height={56} />
+                <div style={{ fontSize: '.9rem' }}>{t('driverScan.camera_off')}</div>
               </div>
             )}
 
@@ -383,18 +408,18 @@ export default function DriverScan() {
             <div style={{ position: 'absolute', bottom: 16, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 12 }}>
               {!scanning ? (
                 <button onClick={startCamera}
-                  style={{ padding: '12px 28px', borderRadius: 12, border: 'none', background: '#f97316', color: '#fff', fontWeight: 800, fontSize: '1rem', cursor: 'pointer' }}>
-                  📷 Start Scanner
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 28px', borderRadius: 12, border: 'none', background: '#f97316', color: '#fff', fontWeight: 800, fontSize: '1rem', cursor: 'pointer' }}>
+                  <Camera width={18} height={18} /> {t('driverScan.start_scanner')}
                 </button>
               ) : (
                 <>
                   <button onClick={() => { setFacingMode(f => f === 'environment' ? 'user' : 'environment'); stopCamera(); setTimeout(startCamera, 300); }}
-                    style={{ padding: '10px 18px', borderRadius: 10, border: 'none', background: 'rgba(255,255,255,0.15)', color: '#fff', cursor: 'pointer', fontSize: '.85rem' }}>
-                    🔄 Flip
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 18px', borderRadius: 10, border: 'none', background: 'rgba(255,255,255,0.15)', color: '#fff', cursor: 'pointer', fontSize: '.85rem' }}>
+                    <RotateCameraRight width={16} height={16} /> {t('driverScan.flip')}
                   </button>
                   <button onClick={stopCamera}
-                    style={{ padding: '10px 18px', borderRadius: 10, border: 'none', background: 'rgba(255,0,0,0.3)', color: '#fff', cursor: 'pointer', fontSize: '.85rem' }}>
-                    ⏹ Stop
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 18px', borderRadius: 10, border: 'none', background: 'rgba(255,0,0,0.3)', color: '#fff', cursor: 'pointer', fontSize: '.85rem' }}>
+                    <XmarkCircle width={16} height={16} /> {t('driverScan.stop')}
                   </button>
                 </>
               )}
@@ -402,37 +427,37 @@ export default function DriverScan() {
           </div>
 
           {cameraErr && (
-            <div style={{ background: '#fee2e2', color: '#dc2626', padding: '10px 14px', borderRadius: 10, fontSize: '.85rem', marginBottom: 14 }}>
-              ⚠️ {cameraErr}
+            <div style={{ background: '#fee2e2', color: '#dc2626', padding: '10px 14px', borderRadius: 10, fontSize: '.85rem', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <WarningTriangle width={16} height={16} /> {cameraErr}
             </div>
           )}
 
           {/* Manual Entry */}
           <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px 20px', marginBottom: 16 }}>
             <div style={{ fontSize: '.8rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '.05em' }}>
-              Or enter manually
+              {t('driverScan.or_enter_manually')}
             </div>
             <form onSubmit={handleManualSearch} style={{ display: 'flex', gap: 10 }}>
               <input type="text" value={manualToken} onChange={e => setManualToken(e.target.value)}
                 placeholder={t("driverScan.token_placeholder")}
                 style={{ flex: 1, padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-hover)', color: 'var(--text-primary)', fontSize: '.9rem' }} />
               <button type="submit" disabled={loadingOrder}
-                style={{ padding: '10px 20px', borderRadius: 10, border: 'none', background: '#f97316', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>
-                {loadingOrder ? '...' : '→'}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10px 16px', borderRadius: 10, border: 'none', background: '#f97316', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>
+                {loadingOrder ? <Clock width={18} height={18} /> : <NavArrowRight width={18} height={18} />}
               </button>
             </form>
           </div>
 
           {fetchError && (
-            <div style={{ background: '#fee2e2', color: '#dc2626', padding: '14px 18px', borderRadius: 12, textAlign: 'center', fontWeight: 600 }}>
-              ❌ {fetchError}
+            <div style={{ background: '#fee2e2', color: '#dc2626', padding: '14px 18px', borderRadius: 12, textAlign: 'center', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+              <WarningTriangle width={16} height={16} /> {fetchError}
             </div>
           )}
 
           {loadingOrder && (
             <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
-              <div style={{ fontSize: '2rem', marginBottom: 8 }}>🔍</div>
-              <div>{t("driverScan.looking_up")}</div>
+              <ScanBarcode width={40} height={40} style={{ marginBottom: 8, opacity: 0.5 }} />
+              <div>{t('driverScan.looking_up')}</div>
             </div>
           )}
         </>

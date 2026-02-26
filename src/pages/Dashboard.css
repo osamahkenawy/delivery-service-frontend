@@ -16,7 +16,7 @@
   border-radius: 20px;
   color: white;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .dashboard-header::before {
@@ -78,7 +78,6 @@
 
 .header-actions {
   position: relative;
-  z-index: 1;
 }
 
 .btn-primary {
@@ -517,7 +516,7 @@
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.15);
   border: 1px solid #e2e8f0;
-  z-index: 100;
+  z-index: 9999;
   padding: 0;
   overflow: hidden;
 }

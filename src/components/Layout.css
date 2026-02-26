@@ -190,12 +190,13 @@ html, body {
 }
 
 [dir="rtl"] .custom-topbar {
-  left: 0;
-  right: var(--sidebar-width);
+  left: 0 !important;
+  right: var(--sidebar-width) !important;
 }
 
 [dir="rtl"] .custom-topbar.sidebar-closed {
-  right: 0;
+  right: 0 !important;
+  left: 0 !important;
 }
 
 .topbar-left {
@@ -605,31 +606,31 @@ html, body {
 }
 
 .rtl .custom-topbar {
-  left: 0;
-  right: var(--sidebar-width);
-  flex-direction: row-reverse;
+  left: 0 !important;
+  right: var(--sidebar-width) !important;
 }
 
 .rtl .custom-topbar.sidebar-closed {
-  right: 0;
+  right: 0 !important;
+  left: 0 !important;
 }
 
 .rtl .main-content {
-  margin-left: 0;
-  margin-right: var(--sidebar-width);
+  margin-left: 0 !important;
+  margin-right: var(--sidebar-width) !important;
 }
 
 .rtl .main-content.sidebar-closed {
-  margin-right: 0;
+  margin-right: 0 !important;
 }
 
 .rtl .custom-footer {
-  left: 0;
-  right: var(--sidebar-width);
+  left: 0 !important;
+  right: var(--sidebar-width) !important;
 }
 
 .rtl .custom-footer.sidebar-closed {
-  right: 0;
+  right: 0 !important;
 }
 
 /* RTL Sidebar Navigation */
@@ -648,14 +649,14 @@ html, body {
 }
 
 .rtl .sidebar-nav-link {
-  flex-direction: row-reverse;
+  flex-direction: row;
   text-align: right;
   justify-content: flex-start;
 }
 
 .rtl .sidebar-nav-link svg {
-  margin-left: 12px;
   margin-right: 0;
+  margin-left: 12px;
 }
 
 .rtl .sidebar-nav-link span {
@@ -668,13 +669,13 @@ html, body {
   text-align: right;
 }
 
-/* RTL Topbar */
+/* RTL Topbar - keep same visual order as LTR (menu left, actions right) */
 .rtl .topbar-left {
-  flex-direction: row-reverse;
+  flex-direction: row;
 }
 
 .rtl .topbar-actions {
-  flex-direction: row-reverse;
+  flex-direction: row;
 }
 
 .rtl .topbar-brand-mobile img {
@@ -728,15 +729,16 @@ html, body {
   }
   
   .rtl .custom-topbar {
-    right: 0;
+    right: 0 !important;
+    left: 0 !important;
   }
   
   .rtl .main-content {
-    margin-right: 0;
+    margin-right: 0 !important;
   }
   
   .rtl .custom-footer {
-    right: 0;
+    right: 0 !important;
   }
 }
 
@@ -766,21 +768,21 @@ html, body {
 }
 
 [dir="rtl"] .main-content {
-  margin-left: 0;
-  margin-right: var(--sidebar-width);
+  margin-left: 0 !important;
+  margin-right: var(--sidebar-width) !important;
 }
 
 [dir="rtl"] .main-content.sidebar-closed {
-  margin-right: 0;
+  margin-right: 0 !important;
 }
 
 [dir="rtl"] .custom-footer {
-  left: 0;
-  right: var(--sidebar-width);
+  left: 0 !important;
+  right: var(--sidebar-width) !important;
 }
 
 [dir="rtl"] .custom-footer.sidebar-closed {
-  right: 0;
+  right: 0 !important;
 }
 
 /* RTL Sidebar Navigation */
@@ -799,14 +801,14 @@ html, body {
 }
 
 [dir="rtl"] .sidebar-nav-link {
-  flex-direction: row-reverse;
+  flex-direction: row;
   text-align: right;
   justify-content: flex-start;
 }
 
 [dir="rtl"] .sidebar-nav-link svg {
-  margin-left: 12px;
   margin-right: 0;
+  margin-left: 12px;
 }
 
 [dir="rtl"] .sidebar-nav-link span {
@@ -819,13 +821,13 @@ html, body {
   text-align: right;
 }
 
-/* RTL Topbar */
+/* RTL Topbar - keep same visual order as LTR (menu left, actions right) */
 [dir="rtl"] .topbar-left {
-  flex-direction: row-reverse;
+  flex-direction: row;
 }
 
 [dir="rtl"] .topbar-actions {
-  flex-direction: row-reverse;
+  flex-direction: row;
 }
 
 [dir="rtl"] .topbar-brand-mobile img {
@@ -882,15 +884,16 @@ html, body {
   }
   
   [dir="rtl"] .custom-topbar {
-    right: 0;
+    right: 0 !important;
+    left: 0 !important;
   }
   
   [dir="rtl"] .main-content {
-    margin-right: 0;
+    margin-right: 0 !important;
   }
   
   [dir="rtl"] .custom-footer {
-    right: 0;
+    right: 0 !important;
   }
 }
 

@@ -22,13 +22,13 @@ export default function ResetPassword() {
 
   /* Validate token presence */
   useEffect(() => {
-    if (!token) setError('Missing or invalid reset link. Please request a new one.');
+    if (!token) setError(t('resetPassword.missing_token'));
   }, [token]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (password !== confirm) { setError('Passwords do not match.'); return; }
-    if (password.length < 6)  { setError('Password must be at least 6 characters.'); return; }
+    if (password !== confirm) { setError(t('resetPassword.passwords_no_match')); return; }
+    if (password.length < 6)  { setError(t('resetPassword.password_too_short')); return; }
 
     setError('');
     setLoading(true);
@@ -42,10 +42,10 @@ export default function ResetPassword() {
       if (data.success) {
         setDone(true);
       } else {
-        setError(data.message || 'Reset failed. The link may have expired — please request a new one.');
+        setError(data.message || t('resetPassword.reset_failed'));
       }
     } catch {
-      setError('Network error. Please try again.');
+      setError(t('resetPassword.network_error'));
     } finally {
       setLoading(false);
     }
@@ -59,10 +59,10 @@ export default function ResetPassword() {
     if (/[A-Z]/.test(pw))          score++;
     if (/[0-9]/.test(pw))          score++;
     if (/[^A-Za-z0-9]/.test(pw))   score++;
-    if (score <= 1) return { label: 'Weak',   color: '#ef4444', width: '25%' };
-    if (score === 2) return { label: 'Fair',   color: '#f97316', width: '50%' };
-    if (score === 3) return { label: 'Good',   color: '#3b82f6', width: '75%' };
-    return           { label: 'Strong', color: '#22c55e', width: '100%' };
+    if (score <= 1) return { label: t('resetPassword.strength_weak'),   color: '#ef4444', width: '25%' };
+    if (score === 2) return { label: t('resetPassword.strength_fair'),   color: '#f97316', width: '50%' };
+    if (score === 3) return { label: t('resetPassword.strength_good'),   color: '#3b82f6', width: '75%' };
+    return           { label: t('resetPassword.strength_strong'), color: '#22c55e', width: '100%' };
   }
   const str = strength(password);
 
@@ -89,14 +89,14 @@ export default function ResetPassword() {
               </div>
               <h1 style={{ marginBottom: 8 }}>{t("resetPassword.updated_title")}</h1>
               <p className="lp-subtitle" style={{ marginBottom: 24 }}>
-                Your password has been changed successfully. You can now sign in with your new password.
+                {t('resetPassword.success_message')}
               </p>
               <button
                 type="button"
                 className="lp-btn-primary"
                 onClick={() => navigate('/login')}
               >
-                Go to Sign In
+                {t('resetPassword.go_to_sign_in')}
               </button>
             </div>
           ) : (
@@ -168,13 +168,13 @@ export default function ResetPassword() {
 
                 <button type="submit" className="lp-btn-primary" disabled={loading || !token}>
                   {loading ? <span className="lp-spinner" /> : null}
-                  {loading ? 'Saving…' : 'Set New Password'}
+                  {loading ? t('resetPassword.saving') : t('resetPassword.set_new_password')}
                 </button>
               </form>
 
               <div style={{ textAlign:'center', marginTop:16 }}>
                 <a href="/login" style={{ fontSize:13, color:'#64748b', fontWeight:600 }}>
-                  &larr; Back to Sign In
+                  &larr; {t('resetPassword.back_to_sign_in')}
                 </a>
               </div>
             </div>

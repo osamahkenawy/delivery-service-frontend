@@ -39,7 +39,7 @@ export default function LoginPage() {
         setError(result.message || t('auth.invalid_credentials'));
       }
     } catch {
-      setError('An error occurred. Please try again.');
+      setError(t('auth.error_occurred'));
     } finally {
       setLoading(false);
     }
@@ -60,10 +60,10 @@ export default function LoginPage() {
       if (data.success) {
         setView('sent');
       } else {
-        setFpError(data.message || 'Something went wrong. Please try again.');
+        setFpError(data.message || t('auth.something_wrong'));
       }
     } catch {
-      setFpError('Network error. Please try again.');
+      setFpError(t('auth.network_error'));
     } finally {
       setFpLoading(false);
     }
@@ -91,8 +91,8 @@ export default function LoginPage() {
           {/* ── LOGIN VIEW ── */}
           {view === 'login' && (
             <div className="lp-view lp-view-enter">
-              <h1>Welcome To Go Line</h1>
-              <p className="lp-subtitle">Sign in to your Delivery Management account</p>
+              <h1>{t('auth.welcome_title')}</h1>
+              <p className="lp-subtitle">{t('auth.welcome_subtitle')}</p>
 
               <form onSubmit={handleSubmit} className="login-form">
                 {error && (
@@ -102,12 +102,12 @@ export default function LoginPage() {
                 )}
 
                 <div className="lp-field">
-                  <label>Username or Email</label>
+                  <label>{t('auth.username_or_email')}</label>
                   <input
                     type="text"
                     value={username}
                     onChange={e => setUsername(e.target.value)}
-                    placeholder="Enter your username or email"
+                    placeholder={t('auth.username_placeholder')}
                     autoComplete="username"
                     required
                   />
@@ -115,9 +115,9 @@ export default function LoginPage() {
 
                 <div className="lp-field">
                   <div className="lp-field-row" style={{ marginBottom: 6 }}>
-                    <label style={{ margin: 0 }}>Password</label>
+                    <label style={{ margin: 0 }}>{t('auth.password')}</label>
                     <button type="button" className="lp-forgot-link" onClick={() => { setView('forgot'); setFpError(''); }}>
-                      Forgot password?
+                      {t('auth.forgot_password_link')}
                     </button>
                   </div>
                   <div className="lp-pw-wrap">
@@ -125,7 +125,7 @@ export default function LoginPage() {
                       type={showPw ? 'text' : 'password'}
                       value={password}
                       onChange={e => setPassword(e.target.value)}
-                      placeholder="Enter your password"
+                      placeholder={t('auth.password_placeholder')}
                       autoComplete="current-password"
                       required
                     />
@@ -137,7 +137,7 @@ export default function LoginPage() {
 
                 <button type="submit" className="lp-btn-primary" disabled={loading}>
                   {loading ? <span className="lp-spinner" /> : null}
-                  {loading ? 'Signing in…' : 'Sign In'}
+                  {loading ? t('auth.signing_in') : t('auth.sign_in')}
                 </button>
               </form>
             </div>
@@ -147,14 +147,14 @@ export default function LoginPage() {
           {view === 'forgot' && (
             <div className="lp-view lp-view-enter">
               <button type="button" className="lp-back-view" onClick={() => setView('login')}>
-                <ArrowLeft width={14} height={14} /> Back to Sign In
+                <ArrowLeft width={14} height={14} /> {t('auth.back_to_sign_in')}
               </button>
 
               <div className="lp-fp-icon">
                 <Mail width={26} height={26} />
               </div>
-              <h1 style={{ marginBottom: 8 }}>Forgot Password?</h1>
-              <p className="lp-subtitle">Enter your email and we'll send you a reset link.</p>
+              <h1 style={{ marginBottom: 8 }}>{t('auth.forgot_password_title')}</h1>
+              <p className="lp-subtitle">{t('auth.forgot_password_subtitle')}</p>
 
               <form onSubmit={handleForgot} className="login-form" style={{ marginTop: 24 }}>
                 {fpError && (
@@ -163,19 +163,19 @@ export default function LoginPage() {
                   </div>
                 )}
                 <div className="lp-field">
-                  <label>Email Address</label>
+                  <label>{t('auth.email_address')}</label>
                   <input
                     type="email"
                     value={fpEmail}
                     onChange={e => setFpEmail(e.target.value)}
-                    placeholder="your@email.com"
+                    placeholder={t('auth.email_placeholder')}
                     autoComplete="email"
                     required
                   />
                 </div>
                 <button type="submit" className="lp-btn-primary" disabled={fpLoading}>
                   {fpLoading ? <span className="lp-spinner" /> : null}
-                  {fpLoading ? 'Sending…' : 'Send Reset Link'}
+                  {fpLoading ? t('auth.sending') : t('auth.send_reset_link')}
                 </button>
               </form>
             </div>
@@ -187,16 +187,16 @@ export default function LoginPage() {
               <div className="lp-sent-icon">
                 <CheckCircle width={32} height={32} />
               </div>
-              <h1 style={{ marginBottom: 8 }}>Check your inbox</h1>
-              <p className="lp-subtitle" style={{ marginBottom: 20 }}>
-                If <strong>{fpEmail}</strong> is registered, you'll receive a password reset link shortly.
-              </p>
+              <h1 style={{ marginBottom: 8 }}>{t('auth.check_inbox')}</h1>
+              <p className="lp-subtitle" style={{ marginBottom: 20 }}
+                dangerouslySetInnerHTML={{ __html: t('auth.check_inbox_desc', { email: fpEmail }) }}
+              />
               <div className="lp-sent-tips">
-                <p style={{ margin: '0 0 8px', fontWeight: 700, fontSize: 13, color: '#374151' }}>Didn't get an email?</p>
+                <p style={{ margin: '0 0 8px', fontWeight: 700, fontSize: 13, color: '#374151' }}>{t('auth.didnt_get_email')}</p>
                 <ul style={{ margin: 0, padding: '0 0 0 18px', fontSize: 13, color: '#64748b', lineHeight: 1.8 }}>
-                  <li>Check your spam or junk folder</li>
-                  <li>Make sure you entered the correct email</li>
-                  <li>The link expires in 1 hour</li>
+                  <li>{t('auth.check_spam')}</li>
+                  <li>{t('auth.check_correct_email')}</li>
+                  <li>{t('auth.link_expires')}</li>
                 </ul>
               </div>
               <button
@@ -205,7 +205,7 @@ export default function LoginPage() {
                 style={{ marginTop: 20 }}
                 onClick={() => { setView('login'); setFpEmail(''); }}
               >
-                Back to Sign In
+                {t('auth.back_to_sign_in')}
               </button>
               <button
                 type="button"
@@ -213,15 +213,15 @@ export default function LoginPage() {
                 style={{ marginTop: 12 }}
                 onClick={() => { setView('forgot'); setFpError(''); }}
               >
-                Try a different email
+                {t('auth.try_different_email')}
               </button>
             </div>
           )}
 
           <p style={{ textAlign: 'center', marginTop: '1.5rem', color: '#94a3b8', fontSize: '0.85rem' }}>
-            Platform administrator?{' '}
+            {t('auth.platform_admin')}{' '}
             <a href="/super-admin/login" style={{ color: '#f2421b', fontWeight: 600 }}>
-              Super Admin Login &rarr;
+              {t('auth.super_admin_login')} &rarr;
             </a>
           </p>
         </div>

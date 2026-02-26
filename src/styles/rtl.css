@@ -36,32 +36,27 @@
 }
 
 /* Content Area RTL */
-[dir="rtl"] .staff-wrapper.rtl .content-area {
+[dir="rtl"] .staff-wrapper.rtl .main-content {
   margin-left: 0;
   margin-right: 280px;
 }
 
-[dir="rtl"] .staff-wrapper.rtl.sidebar-closed .content-area {
+[dir="rtl"] .staff-wrapper.rtl.sidebar-closed .main-content {
   margin-right: 0;
 }
 
 /* Topbar RTL */
 [dir="rtl"] .custom-topbar {
-  left: auto;
-  right: 280px;
+  left: 0 !important;
+  right: var(--sidebar-width) !important;
 }
 
 [dir="rtl"] .custom-topbar.sidebar-closed {
-  right: 0;
+  right: 0 !important;
+  left: 0 !important;
 }
 
-[dir="rtl"] .topbar-left {
-  order: 2;
-}
-
-[dir="rtl"] .topbar-actions {
-  order: 1;
-}
+/* topbar-left and topbar-actions keep their natural LTR order in RTL */
 
 [dir="rtl"] .menu-toggle {
   margin-left: 15px;

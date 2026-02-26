@@ -226,9 +226,8 @@ export default function TrackingPublic() {
       {/* ═══ Header with Logo + Refresh ═══ */}
       <div style={S.header}>
         <div style={S.headerLeft}>
-          <img src="/logo-icon.png" alt="Trasealla" style={S.logo} />
+          <img src="/assets/images/logos/trasealla_white_without_bg.png" alt="Trasealla" style={S.logo} />
           <div>
-            <div style={{ color: '#fff', fontWeight: 800, fontSize: 18, letterSpacing: '-0.02em' }}>Trasealla</div>
             <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, fontWeight: 500 }}>{t("trackingPublic.title")}</div>
           </div>
         </div>

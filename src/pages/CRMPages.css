@@ -1895,8 +1895,23 @@ textarea.form-control {
 .bc-card-wrap { position: relative; cursor: pointer; border-radius: 12px; border: 2px solid transparent; transition: border-color .15s; user-select: none; }
 .bc-card-wrap:hover { border-color: var(--accent); }
 .bc-card-wrap.bc-selected { border-color: var(--accent); }
-.bc-select-box { position: absolute; top: 10px; right: 10px; font-size: 1.2rem; z-index: 1; color: var(--accent); }
-.bc-card { background: #fff; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.bc-select-box { position: absolute; top: 10px; right: 10px; z-index: 1; color: #94a3b8; display: flex; align-items: center; }
+.bc-select-box.checked { color: var(--accent); }
+.bc-card { background: #fff; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; transition: box-shadow .2s; }
+.bc-card-highlighted { box-shadow: 0 0 0 3px #f97316, 0 4px 20px rgba(249,115,22,.25); }
+.bc-highlighted-wrap { border-color: #f97316 !important; }
+.bc-status-pill { font-size: .65rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; white-space: nowrap; text-transform: capitalize; flex-shrink: 0; }
+/* Scan-to-find bar */
+.bc-scan-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.bc-scan-input-wrap { position: relative; display: flex; align-items: center; min-width: 260px; flex: 1; max-width: 440px; }
+.bc-scan-icon { position: absolute; left: 11px; color: #64748b; pointer-events: none; flex-shrink: 0; }
+.bc-scan-input { width: 100%; padding: 9px 36px 9px 34px; border: 1.5px solid var(--border); border-radius: 8px; font-size: .875rem; background: #f8fafc; color: #1e293b; outline: none; transition: border-color .15s; }
+.bc-scan-input:focus { border-color: var(--accent); background: #fff; }
+.bc-scan-feedback { font-size: .8rem; color: #94a3b8; }
+.bc-scan-feedback.found { color: #16a34a; font-weight: 600; }
+.bc-scan-feedback.not-found { color: #dc2626; font-weight: 600; }
+/* Filter row */
+.bc-filter-row { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
 .bc-card-header { padding: 12px 16px; border-bottom: 1px solid var(--border); }
 .bc-order-number { font-size: 1rem; font-weight: 800; color: #1e293b; }
 .bc-meta { font-size: .75rem; color: #475569; margin-top: 2px; }
