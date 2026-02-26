@@ -39,7 +39,8 @@ const CHART_BASE = {
 const COLORS = ['#f97316', '#244066', '#22c55e', '#ef4444', '#8b5cf6', '#0ea5e9', '#f59e0b'];
 
 export default function Reports() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
   const [period,   setPeriod]   = useState('30');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo,   setDateTo]   = useState('');
@@ -434,7 +435,7 @@ export default function Reports() {
                                 <div style={{ fontSize: 26, fontWeight: 800, lineHeight: 1 }}>{z.orders}</div>
                                 <div style={{ fontSize: 11, opacity: 0.85, marginTop: 2 }}>{t('reports.chart.orders_label')}</div>
                               </div>
-                              <div style={{ textAlign: 'right' }}>
+                              <div style={{ textAlign: isRTL ? 'left' : 'right' }}>
                                 <div style={{ fontSize: 14, fontWeight: 700 }}>{successRate}%</div>
                                 <div style={{ fontSize: 10, opacity: 0.8 }}>{t('reports.chart.success_label')}</div>
                               </div>

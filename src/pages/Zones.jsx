@@ -74,6 +74,7 @@ function FitAllZones({ zones }) {
 
 /* ── Location search with Nominatim ──────────────────────────── */
 function LocationSearch({ onSelect, initialQuery }) {
+  const { t } = useTranslation();
   const [query, setQuery] = useState(initialQuery || '');
   const [results, setResults] = useState([]);
   const [open, setOpen] = useState(false);
@@ -199,7 +200,7 @@ export default function Zones() {
   /* ── Submit zone ─────────────────────────────────────────────── */
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
-    if (!canSubmit) { setError('Enter a name and set the zone center on the map'); return; }
+    if (!canSubmit) { setError(t('zones.validation_error')); return; }
     setSaving(true); setError('');
     try {
       const payload = {
@@ -226,17 +227,17 @@ export default function Zones() {
         closeForm();
         fetchZones();
       } else {
-        setError(res.message || 'Failed to save zone');
+        setError(res.message || t('zones.save_failed'));
       }
     } catch (err) {
       console.error('Zone save error:', err);
-      setError('Network error — please try again');
+      setError(t('zones.network_error'));
     }
     finally { setSaving(false); }
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Delete this zone permanently?')) return;
+    if (!confirm(t('zones.delete_confirm'))) return;
     try {
       await api.delete(`/zones/${id}`);
       if (activeZone === id) setActiveZone(null);
@@ -348,14 +349,14 @@ export default function Zones() {
             <NavArrowLeft width={20} height={20} />
           </button>
           <div className="zf-header-text">
-            <h2>{selected ? 'Edit Zone' : 'Create New Zone'}</h2>
-            <p>Define zone boundaries and pricing on the map</p>
+            <h2>{selected ? t('zones.edit_title') : t('zones.create_title')}</h2>
+            <p>{t('zones.form_subtitle')}</p>
           </div>
           <div className="zf-header-actions">
             <button type="button" className="btn-outline-action" onClick={closeForm}>{t("zones.discard")}</button>
             <button className="btn-primary-action" onClick={handleSubmit} disabled={saving || !canSubmit}
-              title={!canSubmit ? 'Enter a name and click the map to set a location' : ''}>
-              {saving ? 'Saving...' : selected ? 'Save Changes' : 'Create Zone'}
+              title={!canSubmit ? t('zones.validation_hint') : ''}>
+              {saving ? t('zones.saving') : selected ? t('zones.save_changes') : t('zones.create_btn')}
             </button>
           </div>
         </div>
@@ -390,7 +391,7 @@ export default function Zones() {
                       pathOptions={{ color:form.color, fillColor:form.color, fillOpacity:0.18, weight:2.5, dashArray:'6 4' }}
                     />
                     <Marker position={[formCenterLat, formCenterLng]} icon={MARKER_ICONS.zone}>
-                      <Popup><strong>{form.name || 'Zone Center'}</strong></Popup>
+                      <Popup><strong>{form.name || t('zones.zone_center')}</strong></Popup>
                     </Marker>
                   </>
                 )}
@@ -406,13 +407,13 @@ export default function Zones() {
                     />
                   );
                 })}
-                {myLocation && <Marker position={myLocation} icon={myLocIcon}><Popup><strong>You</strong></Popup></Marker>}
+                {myLocation && <Marker position={myLocation} icon={myLocIcon}><Popup><strong>{t('zones.you')}</strong></Popup></Marker>}
               </MapContainer>
 
               {!formHasCenter && (
                 <div className="zf-map-hint">
                   <Gps width={18} height={18} />
-                  <span>Search a location above or click the map</span>
+                  <span>{t('zones.map_hint')}</span>
                 </div>
               )}
             </div>
@@ -424,7 +425,7 @@ export default function Zones() {
                 value={pf(form.radius) || 5000}
                 onChange={e => setForm(f => ({ ...f, radius: parseInt(e.target.value) }))}
                 className="radius-slider" />
-              <span className="zf-radius-val">{((pf(form.radius) || 5000) / 1000).toFixed(1)} km</span>
+              <span className="zf-radius-val">{((pf(form.radius) || 5000) / 1000).toFixed(1)} {t('zones.km')}</span>
             </div>
           </div>
 
@@ -432,7 +433,7 @@ export default function Zones() {
           <div className="zf-form-col">
             {/* Zone name + color */}
             <div className="zf-card">
-              <div className="zf-card-label">Zone Name *</div>
+              <div className="zf-card-label">{t('zones.form.name')}</div>
               <input required type="text" value={form.name} className="zf-input-lg"
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                 placeholder={t("zones.zone_name_placeholder")} />
@@ -449,12 +450,12 @@ export default function Zones() {
             <div className="zf-card">
               <div className="zf-row">
                 <div className="zf-field">
-                  <div className="zf-card-label">City</div>
+                  <div className="zf-card-label">{t('zones.city')}</div>
                   <input type="text" value={form.city}
                     onChange={e => setForm(f => ({ ...f, city: e.target.value }))} placeholder={t("zones.auto_detected")} />
                 </div>
                 <div className="zf-field">
-                  <div className="zf-card-label">Emirate *</div>
+                  <div className="zf-card-label">{t('zones.form.emirate')}</div>
                   <select value={form.emirate} onChange={e => setForm(f => ({ ...f, emirate: e.target.value }))}>
                     {EMIRATES.map(em => <option key={em} value={em}>{em}</option>)}
                   </select>
@@ -469,7 +470,7 @@ export default function Zones() {
               ) : (
                 <div className="zf-coords" style={{ background:'#fef3c7', borderColor:'#fbbf24' }}>
                   <Gps width={13} height={13} style={{ color:'#d97706' }} />
-                  <span style={{ color:'#92400e' }}>No location set — click map or search above</span>
+                  <span style={{ color:'#92400e' }}>{t('zones.no_location_hint')}</span>
                 </div>
               )}
             </div>
@@ -477,16 +478,16 @@ export default function Zones() {
             {/* Pricing */}
             <div className="zf-card">
               <div className="zf-card-title">
-                <DollarCircle width={15} height={15} /> Pricing
+                <DollarCircle width={15} height={15} /> {t('zones.form.pricing')}
               </div>
               <div className="zf-row">
                 <div className="zf-field">
-                  <div className="zf-card-label">Base Fee (AED)</div>
+                  <div className="zf-card-label">{t('zones.form.base_fee')}</div>
                   <input type="number" min="0" step="0.01" value={form.base_delivery_fee}
                     onChange={e => setForm(f => ({ ...f, base_delivery_fee: e.target.value }))} placeholder="25" />
                 </div>
                 <div className="zf-field">
-                  <div className="zf-card-label">Per km (AED)</div>
+                  <div className="zf-card-label">{t('zones.form.per_km')}</div>
                   <input type="number" min="0" step="0.01" value={form.extra_km_fee}
                     onChange={e => setForm(f => ({ ...f, extra_km_fee: e.target.value }))} placeholder="2.5" />
                 </div>
@@ -513,7 +514,7 @@ export default function Zones() {
                   <span className="toggle-knob" />
                 </button>
                 <span style={{ fontWeight:600, fontSize:'0.88rem', color: form.is_active ? '#16a34a' : '#94a3b8' }}>
-                  {form.is_active ? 'Active' : 'Inactive'}
+                  {form.is_active ? t('zones.active_status') : t('zones.inactive_status')}
                 </span>
               </div>
               <textarea rows={2} value={form.notes} className="zf-notes"
@@ -532,12 +533,12 @@ export default function Zones() {
     <div className="page-container">
       <div className="page-header-row">
         <div>
-          <h2 className="page-heading">Delivery Zones</h2>
-          <p className="page-subheading">{zones.length} zone{zones.length !== 1 ? 's' : ''} configured</p>
+          <h2 className="page-heading">{t('zones.title')}</h2>
+          <p className="page-subheading">{t('zones.zones_configured', { count: zones.length })}</p>
         </div>
         <div style={{ display:'flex', gap:10 }}>
-          <button className="btn-outline-action" onClick={fetchZones}><Refresh width={15} height={15} /> Refresh</button>
-          <button className="btn-primary-action" onClick={openNew}><Plus width={16} height={16} /> Add Zone</button>
+          <button className="btn-outline-action" onClick={fetchZones}><Refresh width={15} height={15} /> {t('zones.refresh_btn')}</button>
+          <button className="btn-primary-action" onClick={openNew}><Plus width={16} height={16} /> {t('zones.add_btn')}</button>
         </div>
       </div>
 
@@ -551,7 +552,7 @@ export default function Zones() {
         <div className="zl-chips">
           <button onClick={() => setEmirateFilter('')}
             className={`summary-chip ${!emirateFilter ? 'active' : ''}`}
-            style={{ '--chip-color':'#244066', '--chip-bg':'#eff6ff' }}>All ({zones.length})</button>
+            style={{ '--chip-color':'#244066', '--chip-bg':'#eff6ff' }}>{t('zones.all_count', { count: zones.length })}</button>
           {EMIRATES.map(em => {
             const cnt = zones.filter(z => z.emirate === em).length;
             if (!cnt) return null;
@@ -574,7 +575,7 @@ export default function Zones() {
               <div className="zl-empty">
                 <MapPin width={36} height={36} />
                 <p>{t("zones.no_zones")}</p>
-                <button className="btn-primary-action" onClick={openNew}><Plus width={15} height={15} /> Add Zone</button>
+                <button className="btn-primary-action" onClick={openNew}><Plus width={15} height={15} /> {t('zones.add_btn')}</button>
               </div>
             ) : filtered.map((zone, i) => {
               const c = zone.color || ZONE_COLORS[i % 8];
@@ -608,22 +609,22 @@ export default function Zones() {
                     <div className="zl-card-stats">
                       <div className="zl-stat">
                         <DollarCircle width={12} height={12} />
-                        <span>AED {fmtFee(zone.base_delivery_fee)}</span>
+                        <span>{t('zones.aed_amount', { amount: fmtFee(zone.base_delivery_fee) })}</span>
                       </div>
                       <div className="zl-stat">
                         <Truck width={12} height={12} />
-                        <span>{zone.driver_count || 0} driver{(zone.driver_count||0) !== 1 ? 's':''}</span>
+                        <span>{t('zones.driver_count', { count: zone.driver_count || 0 })}</span>
                       </div>
                       {pf(zone.extra_km_fee) > 0 && (
                         <div className="zl-stat">
                           <MapPin width={12} height={12} />
-                          <span>+{fmtFee(zone.extra_km_fee)}/km</span>
+                          <span>{t('zones.per_km_suffix', { fee: fmtFee(zone.extra_km_fee) })}</span>
                         </div>
                       )}
                     </div>
                     <div className="zl-card-actions" onClick={e => e.stopPropagation()}>
                       <button onClick={() => openEdit(zone)}>
-                        <EditPencil width={12} height={12} /> Edit
+                        <EditPencil width={12} height={12} /> {t('zones.edit_btn')}
                       </button>
                       <button className="danger" onClick={() => handleDelete(zone.id)}>
                         <Trash width={12} height={12} />
@@ -666,7 +667,7 @@ export default function Zones() {
                     <Popup>
                       <div className="map-popup">
                         <strong>{z.name}</strong>
-                        <div className="popup-detail">{z.emirate} &bull; AED {fmtFee(z.base_delivery_fee)} &bull; {(rad/1000).toFixed(1)} km</div>
+                        <div className="popup-detail">{z.emirate} &bull; {t('zones.aed_amount', { amount: fmtFee(z.base_delivery_fee) })} &bull; {(rad/1000).toFixed(1)} {t('zones.km')}</div>
                       </div>
                     </Popup>
                   </Circle>

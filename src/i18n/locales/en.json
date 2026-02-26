@@ -605,24 +605,7 @@
       "credit_limit": "Credit Limit"
     },
     "drawer": {
-      "edit": "Edit Client",
-      "new_order": "New Order",
-      "deactivate": "Deactivate",
-      "activate": "Activate",
-      "profile": "Profile Information",
-      "alt_phone": "Alt Phone",
-      "joined": "Joined",
-      "recent_orders": "Recent Orders",
-      "profile_information": "Profile Information",
-      "total_orders": "Total Orders",
-      "delivered": "Delivered",
-      "credit_limit": "Credit Limit",
-      "no_limit": "No limit",
-      "stat": {
-        "orders": "Total Orders",
-        "delivered": "Delivered",
-        "credit": "Credit Limit"
-      }
+      "recent_orders": "Recent Orders"
     },
     "form": {
       "edit_title": "Edit Client",
@@ -703,9 +686,6 @@
       "active": "Active",
       "inactive": "Inactive",
       "no_limit": "No limit"
-    },
-    "drawer": {
-      "recent_orders": "Recent Orders"
     },
     "modal": {
       "edit_title": "Edit Client",
@@ -866,6 +846,24 @@
     "edit_title": "Edit Zone",
     "create_title": "Create New Zone",
     "form_subtitle": "Define zone boundaries and pricing on the map",
+    "saving": "Saving...",
+    "save_changes": "Save Changes",
+    "validation_error": "Enter a name and set the zone center on the map",
+    "validation_hint": "Enter a name and click the map to set a location",
+    "save_failed": "Failed to save zone",
+    "network_error": "Network error — please try again",
+    "delete_confirm": "Delete this zone permanently?",
+    "zone_center": "Zone Center",
+    "active_status": "Active",
+    "inactive_status": "Inactive",
+    "zones_configured": "{{count}} zones configured",
+    "refresh_btn": "Refresh",
+    "all_count": "All ({{count}})",
+    "aed_amount": "AED {{amount}}",
+    "driver_count": "{{count}} drivers",
+    "edit_btn": "Edit",
+    "per_km_suffix": "+{{fee}}/km",
+    "km": "km",
     "form": {
       "name": "Zone Name *",
       "emirate": "Emirate *",
@@ -1306,6 +1304,46 @@
     "status": {
       "active": "Active",
       "inactive": "Inactive"
+    },
+    "rules_configured": "{{count}} rules configured",
+    "add_rule": "+ Add Rule",
+    "header_zone": "Zone",
+    "header_type": "Type",
+    "header_weight_range": "Weight Range",
+    "header_base_fee": "Base Fee",
+    "header_per_kg": "Per KG",
+    "header_cod_pct": "COD%",
+    "header_status": "Status",
+    "header_actions": "Actions",
+    "zone_fallback": "Zone {{id}}",
+    "weight_unit": "kg",
+    "currency_value": "AED {{value}}",
+    "active_label": "Active",
+    "off_label": "Off",
+    "delete_short": "Del",
+    "price_calculator": "💰 Price Calculator",
+    "zone_required": "Zone *",
+    "order_type_required": "Order Type *",
+    "weight_kg_required": "Weight (kg) *",
+    "cod_amount_aed": "COD Amount (AED)",
+    "calculating": "Calculating...",
+    "calculate_price": "Calculate Price",
+    "add_pricing_rule": "Add Pricing Rule",
+    "base_fee_aed": "Base Fee (AED)",
+    "per_kg_fee_aed": "Per KG Fee (AED)",
+    "min_weight_kg": "Min Weight (kg)",
+    "max_weight_kg": "Max Weight (kg)",
+    "cod_fee_pct": "COD Fee (%)",
+    "priority_fee_aed": "Priority Fee (AED)",
+    "saving": "Saving...",
+    "delete_confirm": "Delete this rule?",
+    "save_failed": "Failed to save",
+    "types": {
+      "standard": "Standard",
+      "express": "Express",
+      "same_day": "Same Day",
+      "scheduled": "Scheduled",
+      "return": "Return"
     }
   },
   "cod": {
@@ -2094,7 +2132,43 @@
     "order_details": "Order Details",
     "journey": "Shipment Journey",
     "your_driver": "Your Driver",
-    "brand": "Trasealla"
+    "brand": "Trasealla",
+    "live": "Live",
+    "refresh": "Refresh",
+    "last_updated": "Last updated",
+    "order_number_label": "Order #{{number}}",
+    "driver_en_route": "Driver is en route — live tracking",
+    "delivered_at": "Delivered",
+    "live_driver_location": "Live Driver Location",
+    "as_of": "as of",
+    "delivery_location": "Delivery Location",
+    "driver_fallback": "Driver",
+    "powered_by": "Powered by",
+    "delivery_platform": "Delivery Platform",
+    "invalid_tracking_link": "Invalid tracking link",
+    "unable_to_load": "Unable to load tracking information",
+    "order_not_found": "Order not found",
+    "status": {
+      "pending": "Order Placed",
+      "confirmed": "Confirmed",
+      "assigned": "Driver Assigned",
+      "picked_up": "Picked Up",
+      "in_transit": "On The Way",
+      "delivered": "Delivered",
+      "failed": "Delivery Failed",
+      "returned": "Returned",
+      "cancelled": "Cancelled"
+    },
+    "detail": {
+      "recipient": "Recipient",
+      "address": "Address",
+      "emirate": "Emirate",
+      "type": "Type",
+      "payment": "Payment",
+      "cod_amount": "COD Amount",
+      "scheduled": "Scheduled",
+      "aed": "AED"
+    }
   },
   "driverScan": {
     "title": "Driver Scan",
@@ -2547,5 +2621,17 @@
       "delivery_link": "Delivery Login →",
       "connection_error": "Connection error. Please try again."
     }
+  },
+  "notifBell": {
+    "title": "Notifications",
+    "mark_all_read": "Mark all read",
+    "loading": "Loading...",
+    "all_caught_up": "All caught up!",
+    "no_notifications": "No notifications yet",
+    "view_all": "View All Notifications",
+    "just_now": "just now",
+    "minutes_ago": "{{count}}m ago",
+    "hours_ago": "{{count}}h ago",
+    "days_ago": "{{count}}d ago"
   }
 }

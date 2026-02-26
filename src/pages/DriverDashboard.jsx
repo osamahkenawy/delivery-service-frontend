@@ -67,7 +67,8 @@ function ProgressSteps({ current }) {
 
 /* ── Dashboard ── */
 export default function DriverDashboard() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
   const fmtAED = v => { const n = parseFloat(v); return !isNaN(n) && n > 0 ? `${t('driverDashboard.currency_aed')} ${n.toFixed(2)}` : '\u2014'; };
   const navigate = useNavigate();
   const [data, setData]         = useState(null);
@@ -600,7 +601,7 @@ export default function DriverDashboard() {
                   </div>
                   {order.payment_method === 'cod' && parseFloat(order.cod_amount) > 0 && (
                     <div className="dp-payment-cell cod-collect">
-                      <div className="pc-label"><Wallet width={12} height={12} style={{ marginRight: 4, verticalAlign: 'middle' }} /> {t('driverDashboard.collect')}</div>
+                      <div className="pc-label"><Wallet width={12} height={12} style={{ [isRTL?'marginLeft':'marginRight']: 4, verticalAlign: 'middle' }} /> {t('driverDashboard.collect')}</div>
                       <div className="pc-value">{t('driverDashboard.currency_aed')} {parseFloat(order.cod_amount).toFixed(0)}</div>
                     </div>
                   )}

@@ -88,7 +88,8 @@ function pickupIcon() {
 
 /* ── Route Info Modal ────────────────────────────────────────── */
 function RouteInfoModal({ info, onClose }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
   if (!info) return null;
   const mins = info.duration ?? Math.ceil((info.dist / 40) * 60);
   const hrs  = Math.floor(mins / 60);
@@ -168,7 +169,7 @@ function RouteInfoModal({ info, onClose }) {
               <div style={{ width: 2, height: 28, background: 'linear-gradient(to bottom, ' + (STATUS_COLOR[info.status] || '#f97316') + ', #ef4444)', borderRadius: 1 }} />
               <div style={{ width: 10, height: 10, borderRadius: '50% 50% 50% 0', background: '#ef4444', transform: 'rotate(-45deg)', border: '2px solid #fff', boxShadow: '0 1px 4px rgba(0,0,0,.2)' }} />
             </div>
-            <div style={{ flex: 1, marginLeft: 12, display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ flex: 1, [isRTL?'marginRight':'marginLeft']: 12, display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
                 <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.05em' }}>{t("liveMap.driver_position")}</div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b', marginTop: 1 }}>{info.driverName}</div>
@@ -189,7 +190,7 @@ function RouteInfoModal({ info, onClose }) {
               <Package width={14} color="#ea580c" />
               <span style={{ fontWeight: 700, color: '#ea580c', fontSize: 13 }}>{info.orderNum}</span>
               <span style={{
-                marginLeft: 'auto', fontSize: 11, fontWeight: 600, color: '#fff',
+                [isRTL?'marginRight':'marginLeft']: 'auto', fontSize: 11, fontWeight: 600, color: '#fff',
                 padding: '2px 8px', borderRadius: 99,
                 background: STATUS_COLOR[info.status] || '#f97316',
               }}>{t('liveMap.status_' + info.status)}</span>
@@ -247,7 +248,8 @@ function timeAgo(dateStr, t) {
 
 /* ══════════════════════════════════════════════════════════════ */
 export default function LiveMap() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
   const { tenant } = useContext(AuthContext);
   const [drivers, setDrivers]        = useState({});
   const [filter, setFilter]          = useState('all');
@@ -693,7 +695,7 @@ export default function LiveMap() {
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', background: '#fff7ed', borderRadius: 6, border: '1px solid #fed7aa' }}>
                               <Package width={13} color="#ea580c" />
                               <span style={{ fontWeight: 700, color: '#ea580c', fontSize: '.82rem' }}>{d.current_order}</span>
-                              {dist != null && <span style={{ marginLeft: 'auto', fontSize: '.7rem', color: '#6b7280' }}>{t('liveMap.distance_km', { distance: dist.toFixed(1) })}</span>}
+                              {dist != null && <span style={{ [isRTL?'marginRight':'marginLeft']: 'auto', fontSize: '.7rem', color: '#6b7280' }}>{t('liveMap.distance_km', { distance: dist.toFixed(1) })}</span>}
                             </div>
                           </>
                         )}
@@ -724,7 +726,7 @@ export default function LiveMap() {
 
           {/* Legend overlay */}
           <div style={{
-            position: 'absolute', bottom: 12, left: 12, zIndex: 999,
+            position: 'absolute', bottom: 12, [isRTL?'right':'left']: 12, zIndex: 999,
             background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(8px)',
             borderRadius: 8, padding: '8px 12px', fontSize: '.68rem',
             boxShadow: '0 2px 8px rgba(0,0,0,.15)', display: 'flex', gap: 12, flexWrap: 'wrap',
@@ -783,7 +785,7 @@ export default function LiveMap() {
                     padding: '10px 14px', borderBottom: '1px solid var(--border)',
                     display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
                     background: isSelected ? (STATUS_COLOR[d.status] || '#94a3b8') + '10' : 'transparent',
-                    borderLeft: isSelected ? '3px solid ' + (STATUS_COLOR[d.status] || '#94a3b8') : '3px solid transparent',
+                    [isRTL?'borderRight':'borderLeft']: isSelected ? '3px solid ' + (STATUS_COLOR[d.status] || '#94a3b8') : '3px solid transparent',
                     transition: 'all .15s ease',
                   }}>
                   <div style={{
@@ -808,12 +810,12 @@ export default function LiveMap() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2, fontSize: '.68rem' }}>
                         <Package width={11} color="#ea580c" />
                         <span style={{ fontWeight: 600, color: '#ea580c' }}>{d.current_order}</span>
-                        {dist != null && <span style={{ color: '#6b7280', marginLeft: 4 }}>{t('liveMap.distance_km', { distance: dist.toFixed(1) })}</span>}
-                        {eta != null && <span style={{ color: '#f97316', fontWeight: 600, marginLeft: 4 }}>{t('liveMap.eta_short_minutes', { minutes: eta })}</span>}
+                        {dist != null && <span style={{ color: '#6b7280', [isRTL?'marginRight':'marginLeft']: 4 }}>{t('liveMap.distance_km', { distance: dist.toFixed(1) })}</span>}
+                        {eta != null && <span style={{ color: '#f97316', fontWeight: 600, [isRTL?'marginRight':'marginLeft']: 4 }}>{t('liveMap.eta_short_minutes', { minutes: eta })}</span>}
                       </div>
                     )}
                   </div>
-                  <div style={{ flexShrink: 0, textAlign: 'right' }}>
+                  <div style={{ flexShrink: 0, textAlign: isRTL ? 'left' : 'right' }}>
                     <span style={{
                       display: 'inline-block', padding: '2px 7px', borderRadius: 99, fontSize: '.65rem',
                       fontWeight: 700, background: (STATUS_COLOR[d.status] || '#94a3b8') + '20',

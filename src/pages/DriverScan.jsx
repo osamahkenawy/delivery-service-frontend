@@ -56,7 +56,8 @@ function getGPS() {
 
 /* ─────────────────── Order Card ──────────────────────────────────── */
 function OrderCard({ order, onStatusUpdate, onScan, loading }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
   const [statusNote, setStatusNote] = useState('');
   const [codAmt, setCodAmt]         = useState(order.cod_amount || '');
   const [updating, setUpdating]     = useState(false);
@@ -215,7 +216,7 @@ function OrderCard({ order, onStatusUpdate, onScan, loading }) {
             <summary style={{ cursor: 'pointer', fontSize: '.85rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
               <Clock width={14} height={14} /> {t('driverScan.history', { count: order.status_logs.length })}
             </summary>
-            <div style={{ marginTop: 10, paddingLeft: 12, borderLeft: '2px solid var(--border)' }}>
+            <div style={{ marginTop: 10, [isRTL?'paddingRight':'paddingLeft']: 12, [isRTL?'borderRight':'borderLeft']: '2px solid var(--border)' }}>
               {order.status_logs.slice(-6).reverse().map((log, i) => {
                 const lMeta = STATUS_META[log.status] || {};
                 const lLabel = t(`orders.status.${lMeta.labelKey || log.status}`, { defaultValue: log.status });

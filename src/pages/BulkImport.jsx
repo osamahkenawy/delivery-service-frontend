@@ -60,7 +60,8 @@ function downloadCSV(content, filename) {
 }
 
 export default function BulkImport() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
   const fileRef = useRef(null);
   const [step, setStep] = useState(1); // 1=upload, 2=map, 3=preview, 4=importing, 5=done
   const [dragOver, setDragOver] = useState(false);
@@ -477,7 +478,7 @@ export default function BulkImport() {
 
             {/* Error details */}
             {importResult.errors.length > 0 && (
-              <div style={{ marginTop: 20, textAlign: 'left', maxWidth: 500, margin: '20px auto 0' }}>
+              <div style={{ marginTop: 20, textAlign: isRTL ? 'right' : 'left', maxWidth: 500, margin: '20px auto 0' }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: '#ef4444', marginBottom: 8 }}>{t("bulkImport.failed_rows")}</div>
                 {importResult.errors.slice(0, 10).map((err, i) => (
                   <div key={i} style={{ fontSize: 12, color: '#64748b', padding: '4px 0', borderBottom: '1px solid #fafafa' }}>

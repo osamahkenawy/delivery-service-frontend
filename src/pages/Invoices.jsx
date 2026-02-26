@@ -24,6 +24,7 @@ const STATUS_CONFIG = {
 /* ═══════════════════════════ MAIN COMPONENT ═══════════════════════════ */
 export default function Invoices() {
   const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
@@ -197,7 +198,7 @@ export default function Invoices() {
       {/* ── Search & Filters ── */}
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 20, alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: 1, minWidth: 200, maxWidth: 360 }}>
-          <Search width={16} height={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+          <Search width={16} height={16} style={{ position: 'absolute', [isRTL?'right':'left']: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
           <input
             type="text"
             placeholder={t("invoices.search_placeholder")}
@@ -598,7 +599,7 @@ function DetailModal({ invoice, loading, onClose, onDownload, onStatusChange, fm
                 position: 'relative',
                 overflow: 'hidden'
               }}>
-                <div style={{ position: 'absolute', top: 10, right: 16, opacity: 0.1 }}>
+                <div style={{ position: 'absolute', top: 10, [isRTL?'left':'right']: 16, opacity: 0.1 }}>
                   <DollarCircle width={48} height={48} color="#fff" />
                 </div>
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.6px' }}>{t("invoices.total_amount")}</div>

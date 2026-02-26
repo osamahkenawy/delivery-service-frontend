@@ -198,7 +198,7 @@ function AddressSearch({ onSelect }) {
             return (
               <button key={i} type="button" onClick={() => pick(r)}
                 style={{ display:'flex', alignItems:'flex-start', gap:10, width:'100%', padding:'11px 14px', border:'none', background:'none',
-                  cursor:'pointer', textAlign:'left', borderBottom: i < results.length-1 ? '1px solid #f1f5f9':'none' }}
+                  cursor:'pointer', textAlign: isRTL ? 'right' : 'left', borderBottom: i < results.length-1 ? '1px solid #f1f5f9':'none' }}
                 onMouseEnter={e => e.currentTarget.style.background='#f8fafc'}
                 onMouseLeave={e => e.currentTarget.style.background='none'}>
                 <span style={{ color:'#f97316', flexShrink:0, marginTop:2 }}>📍</span>
@@ -562,7 +562,7 @@ export default function Clients() {
                 <thead>
                   <tr style={{ background:'#f8fafc', borderBottom:'2px solid #f1f5f9' }}>
                     {[t('clients.table.client'), t('clients.table.type'), t('clients.table.contact'), t('clients.table.emirate'), t('clients.table.orders'), t('clients.table.credit_limit'), t('clients.table.status'), ''].map(h => (
-                      <th key={h} style={{ padding:'10px 16px', textAlign:'left', fontSize:11,
+                      <th key={h} style={{ padding:'10px 16px', textAlign: isRTL ? 'right' : 'left', fontSize:11,
                         fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:'0.06em' }}>{h}</th>
                     ))}
                   </tr>
@@ -845,7 +845,7 @@ export default function Clients() {
                               <div style={{ fontWeight:700, fontSize:13, color:'#1e293b' }}>#{o.order_number}</div>
                               <div style={{ fontSize:11, color:'#94a3b8', marginTop:1 }}>{new Date(o.created_at).toLocaleDateString()}</div>
                             </div>
-                            <div style={{ textAlign:'right' }}>
+                            <div style={{ textAlign: isRTL ? 'left' : 'right' }}>
                               <span style={{ background:sc+'20', color:sc, padding:'3px 9px',
                                 borderRadius:20, fontSize:11, fontWeight:700, textTransform:'capitalize' }}>
                                 {o.status?.replace(/_/g,' ')}
@@ -1008,9 +1008,9 @@ export default function Clients() {
                             boxShadow: form.is_active ? '0 0 0 3px rgba(22,163,74,0.1)' : 'none'
                           }}>
                           <span style={{
-                            position:'absolute', left: form.is_active ? '26px' : '2px',
+                            position:'absolute', [isRTL?'right':'left']: form.is_active ? '26px' : '2px',
                             width:24, height:24, background:'#fff', borderRadius:'50%',
-                            transition:'left 0.3s', boxShadow:'0 2px 4px rgba(0,0,0,0.1)'
+                            transition: isRTL ? 'right 0.3s' : 'left 0.3s', boxShadow:'0 2px 4px rgba(0,0,0,0.1)'
                           }} />
                         </button>
                       </div>

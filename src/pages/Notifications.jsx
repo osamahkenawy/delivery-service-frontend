@@ -24,7 +24,8 @@ const SB = {
 };
 
 export default function Notifications() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
   /* ── state ─────────────────────────────────────────────────── */
   const [tab, setTab] = useState('all');
   const [loading, setLoading] = useState(true);
@@ -168,7 +169,7 @@ export default function Notifications() {
               <h3>{c.value}</h3>
               <p>{c.label}</p>
             </div>
-            {c.sub && <span style={{ fontSize: '.72rem', color: 'var(--text-muted)', position: 'absolute', bottom: 8, right: 14 }}>{c.sub}</span>}
+            {c.sub && <span style={{ fontSize: '.72rem', color: 'var(--text-muted)', position: 'absolute', bottom: 8, [isRTL?'left':'right']: 14 }}>{c.sub}</span>}
           </div>
         ))}
       </div>

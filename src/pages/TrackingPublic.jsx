@@ -65,7 +65,8 @@ const S = {
 };
 
 export default function TrackingPublic() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
   const { token } = useParams();
   const mapRef = useRef(null);
   const mapObjRef = useRef(null);
@@ -90,13 +91,13 @@ export default function TrackingPublic() {
       const r = await fetch(`${apiBase}/tracking/${token}`);
       const data = await r.json();
       if (data.success) { setOrder(data.data); setError(''); setLastRefresh(new Date()); }
-      else setError(data.message || 'Order not found');
-    } catch { setError('Unable to load tracking information'); }
+      else setError(data.message || t('trackingPublic.order_not_found'));
+    } catch { setError(t('trackingPublic.unable_to_load')); }
     finally { if (!silent) setLoading(false); setRefreshing(false); }
   };
 
   useEffect(() => {
-    if (!token) { setError('Invalid tracking link'); setLoading(false); return; }
+    if (!token) { setError(t('trackingPublic.invalid_tracking_link')); setLoading(false); return; }
     ensureLeaflet();
     fetchOrder();
   }, [token]);
@@ -157,10 +158,10 @@ export default function TrackingPublic() {
         markerRef.current = L.marker([lat, lng], { icon: driverIcon }).addTo(mapObjRef.current)
           .bindPopup(`<div style="min-width:180px;font-family:Inter,system-ui,sans-serif">
             <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:linear-gradient(135deg,#f97316,#ea580c);border-radius:8px 8px 0 0;color:#fff;font-weight:700;font-size:13px">
-              Your Driver
+              ${t('trackingPublic.your_driver')}
             </div>
             <div style="padding:8px 10px;font-size:12px;color:#374151">
-              <div style="font-weight:600;font-size:13px;margin-bottom:2px">${order.driver_name || 'Driver'}</div>
+              <div style="font-weight:600;font-size:13px;margin-bottom:2px">${order.driver_name || t('trackingPublic.driver_fallback')}</div>
               ${order.driver_phone ? `<div style="color:#6b7280;margin-top:2px">${order.driver_phone}</div>` : ''}
             </div>
           </div>`);
@@ -177,7 +178,7 @@ export default function TrackingPublic() {
         destMarkerRef.current = L.marker([order.recipient_lat, order.recipient_lng], { icon: destIcon }).addTo(mapObjRef.current)
           .bindPopup(`<div style="min-width:180px;font-family:Inter,system-ui,sans-serif">
             <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:linear-gradient(135deg,#3b82f6,#2563eb);border-radius:8px 8px 0 0;color:#fff;font-weight:700;font-size:13px">
-              Delivery Location
+              ${t('trackingPublic.delivery_location')}
             </div>
             <div style="padding:8px 10px;font-size:12px;color:#374151">
               <div style="font-weight:600;font-size:13px;margin-bottom:2px">${order.recipient_name || ''}</div>
@@ -235,11 +236,11 @@ export default function TrackingPublic() {
           {isLive && (
             <div style={S.liveTag}>
               <span style={S.liveDot} />
-              Live
+              {t('trackingPublic.live')}
             </div>
           )}
           <button onClick={() => fetchOrder(true)} style={S.refreshBtn} className="tp-refresh-btn"
-            title={lastRefresh ? `Last updated: ${lastRefresh.toLocaleTimeString()}` : 'Refresh'}>
+            title={lastRefresh ? `${t('trackingPublic.last_updated')}: ${lastRefresh.toLocaleTimeString()}` : t('trackingPublic.refresh')}>
             <Refresh width={14} height={14} style={refreshing ? { animation: 'tpSpin 0.8s linear infinite' } : undefined} />
             {lastRefresh && <span>{lastRefresh.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}
           </button>
@@ -280,20 +281,20 @@ export default function TrackingPublic() {
                 <StatusIcon status={order.status} size={32} color={STATUS_COLORS[order.status] || '#f97316'} />
               </div>
               <div style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', marginBottom: 6 }}>
-                {STATUS_LABELS[order.status] || order.status}
+                {t('trackingPublic.status.' + order.status) || order.status}
               </div>
               <div style={{ fontSize: 14, color: '#64748b', marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                <Package width={14} height={14} color="#94a3b8" /> Order #{order.order_number}
+                <Package width={14} height={14} color="#94a3b8" /> {t('trackingPublic.order_number_label', { number: order.order_number })}
               </div>
               {isLive && (
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#fef3c7', padding: '7px 16px', borderRadius: 20, fontSize: 13, color: '#92400e', fontWeight: 600, border: '1px solid #fde68a' }}>
                   <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#f59e0b', animation: 'tpPulse 1.5s ease-in-out infinite' }} />
-                  Driver is en route \u2014 live tracking
+                  {t('trackingPublic.driver_en_route')}
                 </div>
               )}
               {order.status === 'delivered' && order.delivered_at && (
                 <div style={{ marginTop: 12, color: '#16a34a', fontWeight: 600, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                  <CheckCircle width={16} height={16} /> Delivered {new Date(order.delivered_at).toLocaleString()}
+                  <CheckCircle width={16} height={16} /> {t('trackingPublic.delivered_at')} {new Date(order.delivered_at).toLocaleString()}
                 </div>
               )}
             </div>
@@ -302,8 +303,8 @@ export default function TrackingPublic() {
             {!isFinal && currentStep >= 0 && (
               <div className="tp-card" style={{ ...S.card, padding: '24px 20px' }}>
                 <div style={{ position: 'relative', paddingBottom: 32 }}>
-                  <div style={{ position: 'absolute', top: 16, left: '8%', right: '8%', height: 3, background: '#e2e8f0', borderRadius: 2 }} />
-                  <div style={{ position: 'absolute', top: 16, left: '8%', height: 3, background: 'linear-gradient(90deg, #f97316, #ea580c)', borderRadius: 2, width: (currentStep / (STATUS_STEPS.length - 1) * 84) + '%', transition: 'width 0.6s ease' }} />
+                  <div style={{ position: 'absolute', top: 16, [isRTL?'right':'left']: '8%', [isRTL?'left':'right']: '8%', height: 3, background: '#e2e8f0', borderRadius: 2 }} />
+                  <div style={{ position: 'absolute', top: 16, [isRTL?'right':'left']: '8%', height: 3, background: isRTL ? 'linear-gradient(270deg, #f97316, #ea580c)' : 'linear-gradient(90deg, #f97316, #ea580c)', borderRadius: 2, width: (currentStep / (STATUS_STEPS.length - 1) * 84) + '%', transition: 'width 0.6s ease' }} />
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     {STATUS_STEPS.map((step, idx) => {
                       const done = idx <= currentStep;
@@ -322,7 +323,7 @@ export default function TrackingPublic() {
                             {done ? (active ? <StatusIcon status={step} size={14} color="#fff" /> : <Check width={14} height={14} />) : <span>{idx + 1}</span>}
                           </div>
                           <div style={{ fontSize: 10, textAlign: 'center', color: done ? '#f97316' : '#94a3b8', fontWeight: done ? 700 : 500, lineHeight: 1.2 }}>
-                            {STATUS_LABELS[step]}
+                            {t('trackingPublic.status.' + step)}
                           </div>
                         </div>
                       );
@@ -337,9 +338,9 @@ export default function TrackingPublic() {
               <div className="tp-card" style={S.card}>
                 <div style={{ padding: '14px 18px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontWeight: 700, fontSize: 15, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Map width={18} height={18} color="#f97316" /> Live Driver Location
+                    <Map width={18} height={18} color="#f97316" /> {t('trackingPublic.live_driver_location')}
                   </span>
-                  {lastRefresh && <span style={{ fontSize: 12, color: '#94a3b8' }}>as of {lastRefresh.toLocaleTimeString()}</span>}
+                  {lastRefresh && <span style={{ fontSize: 12, color: '#94a3b8' }}>{t('trackingPublic.as_of')} {lastRefresh.toLocaleTimeString()}</span>}
                 </div>
                 <div ref={mapRef} style={{ height: 280, width: '100%' }} />
               </div>
@@ -379,21 +380,21 @@ export default function TrackingPublic() {
               </div>
               <div style={{ padding: '4px 20px 12px' }}>
                 {[
-                  { label: 'Recipient', value: order.recipient_name, icon: User },
-                  { label: 'Address',   value: order.recipient_address, icon: MapPin },
-                  { label: 'Emirate',   value: order.recipient_emirate, icon: Map },
-                  { label: 'Type',      value: order.order_type?.replace(/_/g, ' '), icon: Package },
-                  { label: 'Payment',   value: order.payment_method?.toUpperCase(), icon: Clock },
-                  order.cod_amount > 0 ? { label: 'COD Amount', value: 'AED ' + parseFloat(order.cod_amount).toFixed(2), highlight: true, icon: Clock } : null,
-                  order.scheduled_at ? { label: 'Scheduled', value: new Date(order.scheduled_at).toLocaleString(), icon: Calendar } : null,
+                  { key: 'recipient', label: t('trackingPublic.detail.recipient'), value: order.recipient_name, icon: User },
+                  { key: 'address',   label: t('trackingPublic.detail.address'),   value: order.recipient_address, icon: MapPin },
+                  { key: 'emirate',   label: t('trackingPublic.detail.emirate'),   value: order.recipient_emirate, icon: Map },
+                  { key: 'type',      label: t('trackingPublic.detail.type'),      value: order.order_type?.replace(/_/g, ' '), icon: Package },
+                  { key: 'payment',   label: t('trackingPublic.detail.payment'),   value: order.payment_method?.toUpperCase(), icon: Clock },
+                  order.cod_amount > 0 ? { key: 'cod', label: t('trackingPublic.detail.cod_amount'), value: t('trackingPublic.detail.aed') + ' ' + parseFloat(order.cod_amount).toFixed(2), highlight: true, icon: Clock } : null,
+                  order.scheduled_at ? { key: 'scheduled', label: t('trackingPublic.detail.scheduled'), value: new Date(order.scheduled_at).toLocaleString(), icon: Calendar } : null,
                 ].filter(Boolean).map(item => {
                   const Icon = item.icon;
                   return (
-                    <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 0', borderBottom: '1px solid #f8fafc' }}>
+                    <div key={item.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 0', borderBottom: '1px solid #f8fafc' }}>
                       <span style={{ fontSize: 13, color: '#64748b', display: 'flex', alignItems: 'center', gap: 6 }}>
                         <Icon width={14} height={14} color="#94a3b8" /> {item.label}
                       </span>
-                      <span style={{ fontSize: 13, fontWeight: item.highlight ? 800 : 600, color: item.highlight ? '#f97316' : '#0f172a', textTransform: item.label === 'Type' ? 'capitalize' : 'none' }}>{item.value || '\u2014'}</span>
+                      <span style={{ fontSize: 13, fontWeight: item.highlight ? 800 : 600, color: item.highlight ? '#f97316' : '#0f172a', textTransform: item.key === 'type' ? 'capitalize' : 'none' }}>{item.value || '\u2014'}</span>
                     </div>
                   );
                 })}
@@ -407,15 +408,15 @@ export default function TrackingPublic() {
                   <Timer width={18} height={18} color="#f97316" />
                   <span style={{ fontWeight: 700, fontSize: 15, color: '#0f172a' }}>{t("trackingPublic.journey")}</span>
                 </div>
-                <div style={{ padding: '16px 20px', position: 'relative', paddingLeft: 44 }}>
-                  <div style={{ position: 'absolute', left: 30, top: 8, bottom: 8, width: 2, background: '#f1f5f9' }} />
+                <div style={{ padding: '16px 20px', position: 'relative', [isRTL?'paddingRight':'paddingLeft']: 44 }}>
+                  <div style={{ position: 'absolute', [isRTL?'right':'left']: 30, top: 8, bottom: 8, width: 2, background: '#f1f5f9' }} />
                   {order.status_logs.map((log, idx) => {
                     const isLast = idx === order.status_logs.length - 1;
                     const clr = isLast ? (STATUS_COLORS[log.status] || '#f97316') : '#cbd5e1';
                     return (
                       <div key={idx} style={{ position: 'relative', marginBottom: 20 }}>
                         <div style={{
-                          position: 'absolute', left: -22, top: 2, width: 18, height: 18, borderRadius: '50%',
+                          position: 'absolute', [isRTL?'right':'left']: -22, top: 2, width: 18, height: 18, borderRadius: '50%',
                           background: isLast ? clr : '#f8fafc',
                           border: isLast ? 'none' : `2px solid ${clr}`,
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -424,7 +425,7 @@ export default function TrackingPublic() {
                           {isLast && <StatusIcon status={log.status} size={10} color="#fff" />}
                         </div>
                         <div style={{ fontWeight: 600, fontSize: 14, color: isLast ? clr : '#1e293b', display: 'flex', alignItems: 'center', gap: 6 }}>
-                          {STATUS_LABELS[log.status] || log.status}
+                          {t('trackingPublic.status.' + log.status) || log.status}
                         </div>
                         {(log.note || log.notes) && <div style={{ fontSize: 13, color: '#64748b', marginTop: 3 }}>{log.note || log.notes}</div>}
                         <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 3, display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -441,7 +442,7 @@ export default function TrackingPublic() {
       </div>
 
       <div style={S.footer}>
-        Powered by <strong style={{ color: '#f97316' }}>Trasealla</strong> Delivery Platform
+        {t('trackingPublic.powered_by')} <strong style={{ color: '#f97316' }}>Trasealla</strong> {t('trackingPublic.delivery_platform')}
       </div>
     </div>
   );

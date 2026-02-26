@@ -6,17 +6,18 @@ import {
   Xmark, Package, DeliveryTruck, MapPin, Mail,
   Clock, User,
 } from 'iconoir-react';
+import { useTranslation } from 'react-i18next';
 import api from '../lib/api';
 import { getSocket } from '../lib/socketClient';
 
 /* ── helpers ──────────────────────────────────────────────── */
-function timeAgo(dateStr) {
+function timeAgo(dateStr, t, locale) {
   const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
-  if (diff < 60) return 'just now';
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
-  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  if (diff < 60) return t('notifBell.just_now');
+  if (diff < 3600) return t('notifBell.minutes_ago', { count: Math.floor(diff / 60) });
+  if (diff < 86400) return t('notifBell.hours_ago', { count: Math.floor(diff / 3600) });
+  if (diff < 604800) return t('notifBell.days_ago', { count: Math.floor(diff / 86400) });
+  return new Date(dateStr).toLocaleDateString(locale === 'ar' ? 'ar-AE' : 'en-US', { month: 'short', day: 'numeric' });
 }
 
 /* ── icon + color config per notification type ────────────── */
@@ -56,6 +57,8 @@ export default function NotificationBell() {
   const ref = useRef(null);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
 
   /* ── fetch unread count ──────────────────────────────────── */
   const fetchCount = useCallback(async () => {
@@ -146,7 +149,7 @@ export default function NotificationBell() {
       {/* ── Trigger Button ───────────────────────────────── */}
       <button
         onClick={() => setOpen(!open)}
-        title="Notifications"
+        title={t('notifBell.title')}
         style={{
           position: 'relative', width: 42, height: 42, borderRadius: 12,
           border: '1px solid var(--border)', background: open ? 'var(--bg-hover)' : 'transparent',
@@ -172,7 +175,7 @@ export default function NotificationBell() {
       {/* ── Dropdown (portal → avoids topbar stacking context) ── */}
       {open && createPortal(
         <div ref={dropdownRef} style={{
-          position: 'fixed', top: 70, right: 20,
+          position: 'fixed', top: 70, [isRTL?'left':'right']: 20,
           width: 400, maxHeight: 'calc(100vh - 100px)', background: '#fff',
           border: '1px solid var(--border)', borderRadius: 16,
           boxShadow: '0 20px 60px rgba(0,0,0,.18)', zIndex: 99999,
@@ -188,7 +191,7 @@ export default function NotificationBell() {
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <BellNotification width={18} height={18} style={{ color: '#f97316' }} />
-              <span style={{ fontWeight: 800, fontSize: '.95rem', color: 'var(--text-primary)' }}>Notifications</span>
+              <span style={{ fontWeight: 800, fontSize: '.95rem', color: 'var(--text-primary)' }}>{t('notifBell.title')}</span>
               {unreadCount > 0 && (
                 <span style={{
                   background: '#f97316', color: '#fff', fontSize: '.65rem', fontWeight: 700,
@@ -204,7 +207,7 @@ export default function NotificationBell() {
                 fontSize: '.78rem', fontWeight: 700, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', gap: 4,
               }}>
-                <Check width={13} height={13} /> Mark all read
+                <Check width={13} height={13} /> {t('notifBell.mark_all_read')}
               </button>
             )}
           </div>
@@ -219,7 +222,7 @@ export default function NotificationBell() {
                   animation: 'notifSpin .8s linear infinite',
                   margin: '0 auto 10px',
                 }} />
-                Loading...
+                {t('notifBell.loading')}
               </div>
             ) : notifications.length === 0 ? (
               <div style={{ padding: 50, textAlign: 'center' }}>
@@ -232,10 +235,10 @@ export default function NotificationBell() {
                   <Bell width={28} height={28} />
                 </div>
                 <div style={{ fontWeight: 600, fontSize: '.9rem', color: 'var(--text-primary)', marginBottom: 4 }}>
-                  All caught up!
+                  {t('notifBell.all_caught_up')}
                 </div>
                 <div style={{ color: 'var(--text-muted)', fontSize: '.82rem' }}>
-                  No notifications yet
+                  {t('notifBell.no_notifications')}
                 </div>
               </div>
             ) : (
@@ -249,7 +252,7 @@ export default function NotificationBell() {
                       transition: 'background .12s',
                       borderBottom: '1px solid var(--border)',
                       background: n.is_read ? 'transparent' : 'rgba(249,115,22,.03)',
-                      borderLeft: n.is_read ? 'none' : '3px solid #f97316',
+                      [isRTL?'borderRight':'borderLeft']: n.is_read ? 'none' : '3px solid #f97316',
                       display: 'flex', gap: 12, alignItems: 'flex-start',
                       position: 'relative',
                     }}
@@ -294,7 +297,7 @@ export default function NotificationBell() {
                         display: 'flex', alignItems: 'center', gap: 4,
                       }}>
                         <Clock width={11} height={11} />
-                        {timeAgo(n.created_at)}
+                        {timeAgo(n.created_at, t, i18n.language)}
                       </div>
                     </div>
                   </div>
@@ -314,8 +317,8 @@ export default function NotificationBell() {
                 fontSize: '.82rem', fontWeight: 700, cursor: 'pointer',
                 display: 'inline-flex', alignItems: 'center', gap: 5,
               }}>
-              View All Notifications
-              <span style={{ fontSize: '.9rem' }}>&rarr;</span>
+              {t('notifBell.view_all')}
+              <span style={{ fontSize: '.9rem' }}>{isRTL ? '\u2190' : '\u2192'}</span>
             </button>
           </div>
         </div>,

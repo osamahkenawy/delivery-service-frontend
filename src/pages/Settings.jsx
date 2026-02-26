@@ -29,15 +29,17 @@ const CATEGORY_COLORS  = ['#f97316','#3b82f6','#8b5cf6','#16a34a','#ec4899','#ef
 
 /* ── Toggle switch ────────────────────────────────────────── */
 function Toggle({ on, onChange }) {
+  const { i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
   return (
     <button type="button" onClick={() => onChange(!on)} style={{
       width:44, height:24, borderRadius:12, border:'none', cursor:'pointer',
       background: on ? '#f97316' : '#e2e8f0', position:'relative', transition:'background .2s', flexShrink:0,
     }}>
       <span style={{
-        position:'absolute', top:3, left: on ? 22 : 2,
+        position:'absolute', top:3, [isRTL?'right':'left']: on ? 22 : 2,
         width:18, height:18, borderRadius:'50%', background:'#fff',
-        boxShadow:'0 1px 4px rgba(0,0,0,.2)', transition:'left .2s',
+        boxShadow:'0 1px 4px rgba(0,0,0,.2)', transition:(isRTL?'right':'left')+' .2s',
         display:'block',
       }}/>
     </button>
@@ -161,7 +163,8 @@ function GeneralTab({ data, setData, onSave, saving }) {
    DELIVERY TAB
 ═══════════════════════════════════════════════════════════════ */
 function DeliveryTab({ data, setData, onSave, saving }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
   const s = data.settings || {};
   const set = (k, v) => setData(d => ({ ...d, settings: { ...d.settings, [k]: v } }));
 
@@ -185,19 +188,19 @@ function DeliveryTab({ data, setData, onSave, saving }) {
           <div className="stg-field">
             <label>{t('settings.delivery.default_fee')}</label>
             <div className="stg-input-wrap"><span className="stg-prefix">AED</span>
-              <input type="number" min="0" step="0.01" value={s.default_delivery_fee||''} onChange={e=>set('default_delivery_fee',e.target.value)} placeholder="15.00" style={{paddingLeft:52}} />
+              <input type="number" min="0" step="0.01" value={s.default_delivery_fee||''} onChange={e=>set('default_delivery_fee',e.target.value)} placeholder="15.00" style={{[isRTL?'paddingRight':'paddingLeft']:52}} />
             </div>
           </div>
           <div className="stg-field">
             <label>{t('settings.delivery.max_cod')}</label>
             <div className="stg-input-wrap"><span className="stg-prefix">AED</span>
-              <input type="number" min="0" value={s.max_cod_amount||''} onChange={e=>set('max_cod_amount',e.target.value)} placeholder="5000" style={{paddingLeft:52}} />
+              <input type="number" min="0" value={s.max_cod_amount||''} onChange={e=>set('max_cod_amount',e.target.value)} placeholder="5000" style={{[isRTL?'paddingRight':'paddingLeft']:52}} />
             </div>
           </div>
           <div className="stg-field">
             <label>{t('settings.delivery.driver_commission')}</label>
             <div className="stg-input-wrap"><span className="stg-prefix">%</span>
-              <input type="number" min="0" max="100" step="0.1" value={s.driver_commission_percent||''} onChange={e=>set('driver_commission_percent',e.target.value)} placeholder="20" style={{paddingLeft:36}} />
+              <input type="number" min="0" max="100" step="0.1" value={s.driver_commission_percent||''} onChange={e=>set('driver_commission_percent',e.target.value)} placeholder="20" style={{[isRTL?'paddingRight':'paddingLeft']:36}} />
             </div>
           </div>
           <div className="stg-field">
@@ -209,7 +212,7 @@ function DeliveryTab({ data, setData, onSave, saving }) {
           <div className="stg-field">
             <label>{t('settings.delivery.max_weight')}</label>
             <div className="stg-input-wrap"><span className="stg-prefix">kg</span>
-              <input type="number" min="0" step="0.1" value={s.max_weight_kg||''} onChange={e=>set('max_weight_kg',e.target.value)} placeholder="30" style={{paddingLeft:38}} />
+              <input type="number" min="0" step="0.1" value={s.max_weight_kg||''} onChange={e=>set('max_weight_kg',e.target.value)} placeholder="30" style={{[isRTL?'paddingRight':'paddingLeft']:38}} />
             </div>
           </div>
         </div>
@@ -256,7 +259,8 @@ function DeliveryTab({ data, setData, onSave, saving }) {
    NOTIFICATIONS TAB
 ═══════════════════════════════════════════════════════════════ */
 function NotificationsTab({ data, setData, onSave, saving }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
   const s = data.settings || {};
   const set = (k, v) => setData(d => ({ ...d, settings: { ...d.settings, [k]: v } }));
   const [showPass, setShowPass] = useState(false);
@@ -289,8 +293,8 @@ function NotificationsTab({ data, setData, onSave, saving }) {
           <div className="stg-field">
             <label>{t('settings.notifications.smtp_password')}</label>
             <div className="stg-input-wrap" style={{position:'relative'}}>
-              <input type={showPass?'text':'password'} value={s.smtp_pass||''} onChange={e=>set('smtp_pass',e.target.value)} placeholder="••••••••••" style={{paddingRight:40}} />
-              <button type="button" onClick={()=>setShowPass(p=>!p)} style={{position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',color:'#94a3b8',padding:0}}>
+              <input type={showPass?'text':'password'} value={s.smtp_pass||''} onChange={e=>set('smtp_pass',e.target.value)} placeholder="••••••••••" style={{[isRTL?'paddingLeft':'paddingRight']:40}} />
+              <button type="button" onClick={()=>setShowPass(p=>!p)} style={{position:'absolute',[isRTL?'left':'right']:12,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',color:'#94a3b8',padding:0}}>
                 {showPass ? <EyeClosed width={15} height={15}/> : <Eye width={15} height={15}/>}
               </button>
             </div>
@@ -500,7 +504,8 @@ function CategoriesTab({ toast }) {
    USERS TAB
 ═══════════════════════════════════════════════════════════════ */
 function UsersTab({ toast }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
   const { user: currentUser } = useContext(AuthContext);
   const [users, setUsers]        = useState([]);
   const [loading, setLoading]    = useState(true);
@@ -611,8 +616,8 @@ function UsersTab({ toast }) {
                 <div className="stg-field">
                   <label>{t('settings.users.password')}</label>
                   <div className="stg-input-wrap" style={{position:'relative'}}>
-                    <input required type={showPw?'text':'password'} value={form.password} onChange={e=>setForm(f=>({...f,password:e.target.value}))} placeholder="Min. 6 characters" style={{paddingRight:40}} />
-                    <button type="button" onClick={()=>setShowPw(p=>!p)} style={{position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',color:'#94a3b8',padding:0}}>
+                    <input required type={showPw?'text':'password'} value={form.password} onChange={e=>setForm(f=>({...f,password:e.target.value}))} placeholder="Min. 6 characters" style={{[isRTL?'paddingLeft':'paddingRight']:40}} />
+                    <button type="button" onClick={()=>setShowPw(p=>!p)} style={{position:'absolute',[isRTL?'left':'right']:12,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',color:'#94a3b8',padding:0}}>
                       {showPw ? <EyeClosed width={15} height={15}/> : <Eye width={15} height={15}/>}
                     </button>
                   </div>
@@ -650,7 +655,8 @@ const TABS = [
 ];
 
 export default function Settings() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
   const [tab,     setTab]    = useState('general');
   const [data,    setData]   = useState({});
   const [loading, setLoading]= useState(true);
@@ -716,7 +722,7 @@ export default function Settings() {
                   <tb.icon width={16} height={16}/>
                 </div>
                 <span>{t('settings.tabs.' + tb.id)}</span>
-                {tab===tb.id && <NavArrowRight width={13} height={13} style={{marginLeft:'auto',color:tb.color}}/>}
+                {tab===tb.id && <NavArrowRight width={13} height={13} style={{[isRTL?'marginRight':'marginLeft']:'auto',color:tb.color}}/>}
               </button>
             ))}
           </nav>

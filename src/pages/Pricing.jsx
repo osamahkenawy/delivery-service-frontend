@@ -3,7 +3,8 @@ import api from '../lib/api';
 import { useTranslation } from 'react-i18next';
 
 export default function Pricing() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
   const [rules, setRules] = useState([]);
   const [zones, setZones] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,12 +32,12 @@ export default function Pricing() {
     setError('');
     const res = selected ? await api.put(`/pricing/${selected.id}`, form) : await api.post('/pricing', form);
     if (res.success) { setShowForm(false); setSelected(null); resetForm(); api.get('/pricing').then(r => r.success && setRules(r.data || [])); }
-    else setError(res.message || 'Failed to save');
+    else setError(res.message || t('pricing.save_failed'));
     setSaving(false);
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Delete this rule?')) return;
+    if (!confirm(t('pricing.delete_confirm'))) return;
     await api.delete(`/pricing/${id}`);
     api.get('/pricing').then(r => r.success && setRules(r.data || []));
   };
@@ -60,11 +61,11 @@ export default function Pricing() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
           <h2 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>{t("pricing.title")}</h2>
-          <p style={{ margin: 0, color: '#64748b', fontSize: 14 }}>{rules.length} rules configured</p>
+          <p style={{ margin: 0, color: '#64748b', fontSize: 14 }}>{t('pricing.rules_configured', { count: rules.length })}</p>
         </div>
         <button onClick={() => { resetForm(); setSelected(null); setShowForm(true); }}
           style={{ background: '#f97316', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 20px', fontWeight: 600, cursor: 'pointer', fontSize: 14 }}>
-          + Add Rule
+          {t('pricing.add_rule')}
         </button>
       </div>
 
@@ -78,8 +79,8 @@ export default function Pricing() {
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    {['Zone', 'Type', 'Weight Range', 'Base Fee', 'Per KG', 'COD%', 'Status', 'Actions'].map(h => (
-                      <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
+                    {[t('pricing.header_zone'), t('pricing.header_type'), t('pricing.header_weight_range'), t('pricing.header_base_fee'), t('pricing.header_per_kg'), t('pricing.header_cod_pct'), t('pricing.header_status'), t('pricing.header_actions')].map((h, i) => (
+                      <th key={i} style={{ padding: '12px 16px', textAlign: isRTL ? 'right' : 'left', fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -88,25 +89,25 @@ export default function Pricing() {
                     <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40, color: '#94a3b8' }}>{t("pricing.no_rules")}</td></tr>
                   ) : rules.map(rule => (
                     <tr key={rule.id} style={{ borderBottom: '1px solid #f8fafc' }}>
-                      <td style={{ padding: '12px 16px', fontSize: 14, fontWeight: 500 }}>{rule.zone_name || `Zone ${rule.zone_id}`}</td>
+                      <td style={{ padding: '12px 16px', fontSize: 14, fontWeight: 500 }}>{rule.zone_name || t('pricing.zone_fallback', { id: rule.zone_id })}</td>
                       <td style={{ padding: '12px 16px' }}>
                         <span style={{ background: '#f1f5f9', color: '#475569', padding: '3px 8px', borderRadius: 6, fontSize: 12, fontWeight: 600 }}>{rule.order_type}</span>
                       </td>
                       <td style={{ padding: '12px 16px', fontSize: 13, color: '#64748b' }}>
-                        {rule.min_weight_kg || 0}–{rule.max_weight_kg || '∞'} kg
+                        {rule.min_weight_kg || 0}–{rule.max_weight_kg || '∞'} {t('pricing.weight_unit')}
                       </td>
-                      <td style={{ padding: '12px 16px', fontSize: 14, fontWeight: 600 }}>AED {rule.base_fee}</td>
-                      <td style={{ padding: '12px 16px', fontSize: 14 }}>{rule.per_kg_fee ? `AED ${rule.per_kg_fee}` : '—'}</td>
+                      <td style={{ padding: '12px 16px', fontSize: 14, fontWeight: 600 }}>{t('pricing.currency_value', { value: rule.base_fee })}</td>
+                      <td style={{ padding: '12px 16px', fontSize: 14 }}>{rule.per_kg_fee ? t('pricing.currency_value', { value: rule.per_kg_fee }) : '—'}</td>
                       <td style={{ padding: '12px 16px', fontSize: 14 }}>{rule.cod_fee_percent ? `${rule.cod_fee_percent}%` : '—'}</td>
                       <td style={{ padding: '12px 16px' }}>
                         <span style={{ padding: '3px 8px', borderRadius: 6, fontSize: 12, fontWeight: 600, background: rule.is_active ? '#dcfce7' : '#f1f5f9', color: rule.is_active ? '#16a34a' : '#64748b' }}>
-                          {rule.is_active ? 'Active' : 'Off'}
+                          {rule.is_active ? t('pricing.active_label') : t('pricing.off_label')}
                         </span>
                       </td>
                       <td style={{ padding: '12px 16px' }}>
                         <div style={{ display: 'flex', gap: 6 }}>
                           <button onClick={() => openEdit(rule)} style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontSize: 12 }}>{t("common.edit")}</button>
-                          <button onClick={() => handleDelete(rule.id)} style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid #fecaca', background: '#fff', color: '#dc2626', cursor: 'pointer', fontSize: 12 }}>Del</button>
+                          <button onClick={() => handleDelete(rule.id)} style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid #fecaca', background: '#fff', color: '#dc2626', cursor: 'pointer', fontSize: 12 }}>{t('pricing.delete_short')}</button>
                         </div>
                       </td>
                     </tr>
@@ -119,25 +120,25 @@ export default function Pricing() {
 
         {/* Calculator */}
         <div style={{ background: '#fff', borderRadius: 12, padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', height: 'fit-content' }}>
-          <h3 style={{ margin: '0 0 16px', fontSize: 18, fontWeight: 700 }}>💰 Price Calculator</h3>
+          <h3 style={{ margin: '0 0 16px', fontSize: 18, fontWeight: 700 }}>{t('pricing.price_calculator')}</h3>
           <form onSubmit={handleCalculate}>
             <div style={{ marginBottom: 12 }}>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>Zone *</label>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>{t('pricing.zone_required')}</label>
               <select required value={calcForm.zone_id} onChange={e => setCalcForm(f => ({ ...f, zone_id: e.target.value }))}
                 style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14 }}>
-                <option value="">Select Zone</option>
+                <option value="">{t('pricing.select_zone')}</option>
                 {zones.map(z => <option key={z.id} value={z.id}>{z.name}</option>)}
               </select>
             </div>
             <div style={{ marginBottom: 12 }}>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>Order Type *</label>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>{t('pricing.order_type_required')}</label>
               <select required value={calcForm.order_type} onChange={e => setCalcForm(f => ({ ...f, order_type: e.target.value }))}
                 style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14 }}>
-                {ORDER_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                {ORDER_TYPES.map(ot => <option key={ot} value={ot}>{t('pricing.types.' + ot)}</option>)}
               </select>
             </div>
             <div style={{ marginBottom: 12 }}>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>Weight (kg) *</label>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>{t('pricing.weight_kg_required')}</label>
               <input required type="number" step="0.1" value={calcForm.weight_kg} onChange={e => setCalcForm(f => ({ ...f, weight_kg: e.target.value }))}
                 style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14, boxSizing: 'border-box' }} />
             </div>
@@ -147,26 +148,26 @@ export default function Pricing() {
             </div>
             {calcForm.is_cod && (
               <div style={{ marginBottom: 12 }}>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>COD Amount (AED)</label>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>{t('pricing.cod_amount_aed')}</label>
                 <input type="number" value={calcForm.cod_amount} onChange={e => setCalcForm(f => ({ ...f, cod_amount: e.target.value }))}
                   style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14, boxSizing: 'border-box' }} />
               </div>
             )}
             <button type="submit" disabled={calcLoading}
               style={{ width: '100%', padding: '10px 0', borderRadius: 8, border: 'none', background: '#f97316', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: 15 }}>
-              {calcLoading ? 'Calculating...' : 'Calculate Price'}
+              {calcLoading ? t('pricing.calculating') : t('pricing.calculate_price')}
             </button>
           </form>
           {calcResult && (
             <div style={{ marginTop: 16, background: '#fff7ed', borderRadius: 10, padding: 16, border: '1px solid #fed7aa' }}>
               <div style={{ fontSize: 13, color: '#64748b', marginBottom: 4 }}>{t("pricing.estimated_price")}</div>
-              <div style={{ fontSize: 28, fontWeight: 800, color: '#f97316' }}>AED {parseFloat(calcResult.total_fee || 0).toFixed(2)}</div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: '#f97316' }}>{t('pricing.currency_value', { value: parseFloat(calcResult.total_fee || 0).toFixed(2) })}</div>
               {calcResult.breakdown && (
                 <div style={{ marginTop: 8, fontSize: 13, color: '#64748b' }}>
                   {Object.entries(calcResult.breakdown).map(([k, v]) => (
                     <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
                       <span>{k.replace(/_/g, ' ')}</span>
-                      <span>AED {parseFloat(v).toFixed(2)}</span>
+                      <span>{t('pricing.currency_value', { value: parseFloat(v).toFixed(2) })}</span>
                     </div>
                   ))}
                 </div>
@@ -180,15 +181,15 @@ export default function Pricing() {
       {showForm && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ background: '#fff', borderRadius: 16, padding: 32, width: '100%', maxWidth: 520, maxHeight: '90vh', overflowY: 'auto' }}>
-            <h3 style={{ margin: '0 0 20px', fontSize: 20, fontWeight: 700 }}>{selected ? 'Edit Rule' : 'Add Pricing Rule'}</h3>
+            <h3 style={{ margin: '0 0 20px', fontSize: 20, fontWeight: 700 }}>{selected ? t('pricing.edit_rule') : t('pricing.add_pricing_rule')}</h3>
             {error && <div style={{ background: '#fee2e2', color: '#dc2626', padding: '10px 16px', borderRadius: 8, marginBottom: 16, fontSize: 14 }}>{error}</div>}
             <form onSubmit={handleSubmit}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>Zone *</label>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>{t('pricing.zone_required')}</label>
                   <select required value={form.zone_id} onChange={e => setForm(f => ({ ...f, zone_id: e.target.value }))}
                     style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14 }}>
-                    <option value="">Select Zone</option>
+                    <option value="">{t('pricing.select_zone')}</option>
                     {zones.map(z => <option key={z.id} value={z.id}>{z.name}</option>)}
                   </select>
                 </div>
@@ -196,16 +197,16 @@ export default function Pricing() {
                   <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>{t("pricing.order_type")}</label>
                   <select value={form.order_type} onChange={e => setForm(f => ({ ...f, order_type: e.target.value }))}
                     style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14 }}>
-                    {ORDER_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                    {ORDER_TYPES.map(ot => <option key={ot} value={ot}>{t('pricing.types.' + ot)}</option>)}
                   </select>
                 </div>
                 {[
-                  { field: 'base_fee', label: 'Base Fee (AED)', required: true, type: 'number' },
-                  { field: 'per_kg_fee', label: 'Per KG Fee (AED)', type: 'number' },
-                  { field: 'min_weight_kg', label: 'Min Weight (kg)', type: 'number' },
-                  { field: 'max_weight_kg', label: 'Max Weight (kg)', type: 'number' },
-                  { field: 'cod_fee_percent', label: 'COD Fee (%)', type: 'number' },
-                  { field: 'priority_fee', label: 'Priority Fee (AED)', type: 'number' },
+                  { field: 'base_fee', label: t('pricing.base_fee_aed'), required: true, type: 'number' },
+                  { field: 'per_kg_fee', label: t('pricing.per_kg_fee_aed'), type: 'number' },
+                  { field: 'min_weight_kg', label: t('pricing.min_weight_kg'), type: 'number' },
+                  { field: 'max_weight_kg', label: t('pricing.max_weight_kg'), type: 'number' },
+                  { field: 'cod_fee_percent', label: t('pricing.cod_fee_pct'), type: 'number' },
+                  { field: 'priority_fee', label: t('pricing.priority_fee_aed'), type: 'number' },
                 ].map(({ field, label, required, type }) => (
                   <div key={field}>
                     <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>{label}{required && ' *'}</label>
@@ -224,7 +225,7 @@ export default function Pricing() {
                   style={{ padding: '10px 20px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontWeight: 500 }}>{t("common.cancel")}</button>
                 <button type="submit" disabled={saving}
                   style={{ padding: '10px 24px', borderRadius: 8, border: 'none', background: '#f97316', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
-                  {saving ? 'Saving...' : selected ? 'Update' : 'Create'}
+                  {saving ? t('pricing.saving') : selected ? t('common.update') : t('common.create')}
                 </button>
               </div>
             </form>

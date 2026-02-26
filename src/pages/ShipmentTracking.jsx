@@ -38,7 +38,8 @@ function formatDate(d) {
 }
 
 export default function ShipmentTracking() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [stats, setStats] = useState({});
@@ -157,7 +158,7 @@ export default function ShipmentTracking() {
   return (
     <div className="trk-page">
       {/* Toast Notifications */}
-      <div style={{ position: 'fixed', top: 24, right: 24, zIndex: 9999, display: 'flex', flexDirection: 'column', gap: 10, pointerEvents: 'none' }}>
+      <div style={{ position: 'fixed', top: 24, [isRTL?'left':'right']: 24, zIndex: 9999, display: 'flex', flexDirection: 'column', gap: 10, pointerEvents: 'none' }}>
         {toasts.map(toast => (
           <div key={toast.id} style={{
             display: 'flex', alignItems: 'center', gap: 10, padding: '12px 18px',
@@ -171,7 +172,7 @@ export default function ShipmentTracking() {
           </div>
         ))}
       </div>
-      <style>{`@keyframes slideInRight{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}`}</style>
+      <style>{`@keyframes slideInRight{from{opacity:0;transform:translateX(${isRTL ? '-40px' : '40px'})}to{opacity:1;transform:translateX(0)}}`}</style>
 
       {/* Hero */}
       <div className="module-hero">
@@ -200,7 +201,7 @@ export default function ShipmentTracking() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#fff' }}>
           <Search width={18} height={18} />
           <span style={{ fontWeight: 800, fontSize: 16 }}>{t("shipmentTracking.quick_track")}</span>
-          <span style={{ fontSize: 12, color: '#94a3b8', marginLeft: 4 }}>{t("shipmentTracking.enter_token")}</span>
+          <span style={{ fontSize: 12, color: '#94a3b8', [isRTL?'marginRight':'marginLeft']: 4 }}>{t("shipmentTracking.enter_token")}</span>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <input
@@ -232,7 +233,7 @@ export default function ShipmentTracking() {
               <div>
                 <span style={{ fontWeight: 800, fontSize: 16, color: '#fff' }}>{quickResult.order_number}</span>
                 <span style={{
-                  display: 'inline-block', marginLeft: 10, padding: '3px 10px', borderRadius: 8,
+                  display: 'inline-block', [isRTL?'marginRight':'marginLeft']: 10, padding: '3px 10px', borderRadius: 8,
                   fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
                   background: STATUS_COLORS[quickResult.status] + '30',
                   color: STATUS_COLORS[quickResult.status] || '#fff',
@@ -670,7 +671,7 @@ export default function ShipmentTracking() {
                           <div className="trk-pod-sig-label">{t('shipmentTracking.pod.signed_by')}</div>
                           <div className="trk-pod-sig-name">{orderDetail.pod_signer || orderDetail.recipient_name}</div>
                         </div>
-                        <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 'auto' }}>
+                        <span style={{ fontSize: 11, color: '#94a3b8', [isRTL?'marginRight':'marginLeft']: 'auto' }}>
                           {formatDate(orderDetail.delivered_at)}
                         </span>
                       </div>

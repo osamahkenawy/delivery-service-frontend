@@ -116,7 +116,8 @@ function StatusPill({ status }) {
 
 /* ── Order Number Tooltip ── */
 function OrderNumCell({ orderNumber, trackingToken, onCopyToken, copied }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
   const [show, setShow] = useState(false);
   const displayNum = orderNumber ? orderNumber.substring(0, 5) + (orderNumber.length > 5 ? '…' : '') : '—';
   const [justCopied, setJustCopied] = useState(false);
@@ -138,7 +139,7 @@ function OrderNumCell({ orderNumber, trackingToken, onCopyToken, copied }) {
       </div>
       {show && (
         <div style={{
-          position: 'absolute', left: 0, top: '110%', zIndex: 9999,
+          position: 'absolute', [isRTL?'right':'left']: 0, top: '110%', zIndex: 9999,
           background: '#1e293b', color: '#fff', borderRadius: 10,
           padding: '10px 14px', minWidth: 230, boxShadow: '0 8px 24px rgba(0,0,0,.22)',
           pointerEvents: 'all',
@@ -146,7 +147,7 @@ function OrderNumCell({ orderNumber, trackingToken, onCopyToken, copied }) {
           onMouseEnter={() => setShow(true)}
           onMouseLeave={() => setShow(false)}>
           {/* Arrow */}
-          <div style={{ position: 'absolute', top: -7, left: 14, width: 14, height: 14, background: '#1e293b', transform: 'rotate(45deg)', borderRadius: 2 }} />
+          <div style={{ position: 'absolute', top: -7, [isRTL?'right':'left']: 14, width: 14, height: 14, background: '#1e293b', transform: 'rotate(45deg)', borderRadius: 2 }} />
           <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 5 }}>{t('orders.tooltip.order_number')}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{
@@ -225,7 +226,8 @@ function StepBar({ current, t }) {
 
 /* Address search (Nominatim) */
 function AddressSearch({ onSelect }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
   const [q, setQ]         = useState('');
   const [results, setRes] = useState([]);
   const [open, setOpen]   = useState(false);
@@ -255,9 +257,9 @@ function AddressSearch({ onSelect }) {
     <div ref={ref} style={{ position:'relative', gridColumn:'1/-1' }}>
       <label style={LABEL}>{t('orders.form.search_address')}</label>
       <div style={{ position:'relative' }}>
-        <Search width={14} height={14} style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'#94a3b8' }} />
+        <Search width={14} height={14} style={{ position:'absolute', [isRTL?'right':'left']:12, top:'50%', transform:'translateY(-50%)', color:'#94a3b8' }} />
         <input value={q} onChange={e=>search(e.target.value)} onFocus={()=>results.length&&setOpen(true)}
-          style={{ ...INPUT, paddingLeft:34 }} placeholder={t('orders.placeholders.search_address')} />
+          style={{ ...INPUT, [isRTL?'paddingRight':'paddingLeft']:34 }} placeholder={t('orders.placeholders.search_address')} />
       </div>
       {open && results.length > 0 && (
         <div style={{ position:'absolute', top:'100%', left:0, right:0, background:'#fff', borderRadius:10,
@@ -290,7 +292,8 @@ function FlyTo({ center }) {
 
 /* Location picker map for order form */
 function LocationPickerMap({ lat, lng, onPick }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
   const center = (lat && lng) ? [parseFloat(lat), parseFloat(lng)] : [25.2048, 55.2708]; // Dubai default
   const hasPin = lat && lng;
   const isMobile = window.innerWidth <= 768;
@@ -299,7 +302,7 @@ function LocationPickerMap({ lat, lng, onPick }) {
   return (
     <div style={{ gridColumn:'1/-1' }}>
       <label style={LABEL}>
-        <MapPin width={12} height={12} style={{ marginRight:4, verticalAlign:'middle' }} />
+        <MapPin width={12} height={12} style={{ [isRTL?'marginLeft':'marginRight']:4, verticalAlign:'middle' }} />
         {t('orders.form.pin_location')} <span style={{ fontWeight:400, textTransform:'none', fontSize:11, color:'#94a3b8' }}>
           {isMobile ? ` — ${t('orders.form.tap_map')}` : ` — ${t('orders.form.click_map')}`}
         </span>
@@ -315,7 +318,7 @@ function LocationPickerMap({ lat, lng, onPick }) {
           {hasPin && <Marker position={center} />}
         </MapContainer>
         {hasPin && (
-          <div style={{ position:'absolute', bottom: isMobile ? 4 : 8, left: isMobile ? 4 : 8, 
+          <div style={{ position:'absolute', bottom: isMobile ? 4 : 8, [isRTL?'right':'left']: isMobile ? 4 : 8, 
             background:'rgba(0,0,0,.7)', color:'#fff',
             borderRadius:6, padding: isMobile ? '2px 6px' : '4px 10px', 
             fontSize: isMobile ? 10 : 11, fontWeight:600, zIndex:999, backdropFilter:'blur(4px)' }}>
@@ -332,6 +335,7 @@ function LocationPickerMap({ lat, lng, onPick }) {
    ══════════════════════════════════════════════════════════════ */
 export default function Orders() {
   const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   /* state */
@@ -734,10 +738,10 @@ export default function Orders() {
       {/* Filter bar */}
       <div style={{ display:'flex', gap:10, marginBottom:20, flexWrap:'wrap', alignItems:'center' }}>
         <div style={{ position:'relative', flex:1, minWidth:220 }}>
-          <Search width={15} height={15} style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'#94a3b8' }} />
+          <Search width={15} height={15} style={{ position:'absolute', [isRTL?'right':'left']:12, top:'50%', transform:'translateY(-50%)', color:'#94a3b8' }} />
           <input type="text" placeholder={t('orders.filters.search_placeholder')}
             value={filters.search} onChange={e => setFilters(f=>({...f, search:e.target.value}))}
-            style={{ ...INPUT, paddingLeft:36, background:'#fff' }} />
+            style={{ ...INPUT, [isRTL?'paddingRight':'paddingLeft']:36, background:'#fff' }} />
         </div>
         <select value={filters.order_type} onChange={e=>setFilters(f=>({...f, order_type:e.target.value}))}
           style={{ ...INPUT, width:140, background:'#fff' }}>
@@ -791,7 +795,7 @@ export default function Orders() {
                 <thead>
                   <tr style={{ background:'#f8fafc', borderBottom:'2px solid #f1f5f9' }}>
                     {[t('orders.table.order_num'),t('orders.table.status'),t('orders.table.client_sender'),t('orders.table.recipient'),t('orders.table.zone'),t('orders.table.type'),t('orders.table.payment'),t('orders.table.fee'),t('orders.table.date'),''].map(h => (
-                      <th key={h} style={{ padding:'12px 16px', textAlign:'left', fontWeight:700, fontSize:12,
+                      <th key={h} style={{ padding:'12px 16px', textAlign: isRTL ? 'right' : 'left', fontWeight:700, fontSize:12,
                         color:'#64748b', textTransform:'uppercase', letterSpacing:'0.04em', whiteSpace:'nowrap' }}>{h}</th>
                     ))}
                   </tr>
@@ -820,7 +824,7 @@ export default function Orders() {
                             </div>
                             {o.client_name && (
                               <div style={{ fontSize:11, color:'#94a3b8' }}>
-                                <Building width={10} height={10} style={{ verticalAlign:'middle', marginRight:3 }} />
+                                <Building width={10} height={10} style={{ verticalAlign:'middle', [isRTL?'marginLeft':'marginRight']:3 }} />
                                 {t('orders.table.client_label')}
                               </div>
                             )}
@@ -954,14 +958,14 @@ export default function Orders() {
         <>
           <div onClick={() => { setDrawer(null); setDrawerFull(null); }}
             style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.35)', zIndex:9990 }} />
-          <div style={{ position:'fixed', top:0, right:0, bottom:0, width:540, maxWidth:'96vw',
+          <div style={{ position:'fixed', top:0, [isRTL?'left':'right']:0, bottom:0, width:540, maxWidth:'96vw',
             background:'#f8fafc', zIndex:9991, overflowY:'auto',
-            boxShadow:'-8px 0 40px rgba(0,0,0,0.14)', display:'flex', flexDirection:'column' }}>
+            boxShadow: isRTL ? '8px 0 40px rgba(0,0,0,0.14)' : '-8px 0 40px rgba(0,0,0,0.14)', display:'flex', flexDirection:'column' }}>
 
             {/* Drawer Header */}
             <div style={{ background:'linear-gradient(135deg,#1e293b,#334155)', padding:'26px 26px 22px', position:'relative' }}>
               <button onClick={() => { setDrawer(null); setDrawerFull(null); }}
-                style={{ position:'absolute', top:14, right:14, background:'rgba(255,255,255,0.1)',
+                style={{ position:'absolute', top:14, [isRTL?'left':'right']:14, background:'rgba(255,255,255,0.1)',
                   border:'none', color:'#fff', width:30, height:30, borderRadius:'50%',
                   cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
                 <Xmark width={15} height={15} />
@@ -1030,7 +1034,7 @@ export default function Orders() {
                       { label:t('orders.drawer.type'),          value:fmtType(drawerFull.order_type),  Icon:Package,      color:'#8b5cf6' },
                     ].map(s => (
                       <div key={s.label} style={{ background:'#fff', borderRadius:12, padding:'13px 15px',
-                        borderLeft:`4px solid ${s.color}`, boxShadow:'0 1px 3px rgba(0,0,0,0.07)' }}>
+                        [isRTL?'borderRight':'borderLeft']:`4px solid ${s.color}`, boxShadow:'0 1px 3px rgba(0,0,0,0.07)' }}>
                         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
                           <s.Icon width={22} height={22} color={s.color} />
                           <div>
@@ -1066,7 +1070,7 @@ export default function Orders() {
                         ].filter(r=>r.value).map(row => (
                           <div key={row.label} style={{ display:'flex', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid #f8fafc', fontSize:13 }}>
                             <span style={{ color:'#94a3b8', fontWeight:600, fontSize:11 }}>{row.label}</span>
-                            <span style={{ color:'#1e293b', fontWeight:500, textAlign:'right' }}>{row.value}</span>
+                            <span style={{ color:'#1e293b', fontWeight:500, textAlign: isRTL ? 'left' : 'right' }}>{row.value}</span>
                           </div>
                         ))}
                       </>
@@ -1091,7 +1095,7 @@ export default function Orders() {
                         {row.link ? (
                           <a href={`tel:${row.value}`} style={{ color:'#f97316', fontWeight:600, textDecoration:'none' }}>{row.value}</a>
                         ) : (
-                          <span style={{ color:'#1e293b', fontWeight:500, textAlign:'right', maxWidth:'60%' }}>{row.value}</span>
+                          <span style={{ color:'#1e293b', fontWeight:500, textAlign: isRTL ? 'left' : 'right', maxWidth:'60%' }}>{row.value}</span>
                         )}
                       </div>
                     ))}
@@ -1158,7 +1162,7 @@ export default function Orders() {
                         return (
                           <div key={i} style={{ display:'flex', gap:12, position:'relative', paddingBottom: i < drawerFull.status_logs.length-1 ? 16 : 0 }}>
                             {i < drawerFull.status_logs.length - 1 && (
-                              <div style={{ position:'absolute', left:11, top:24, bottom:0, width:2, background:'#e2e8f0' }} />
+                              <div style={{ position:'absolute', [isRTL?'right':'left']:11, top:24, bottom:0, width:2, background:'#e2e8f0' }} />
                             )}
                             <div style={{ width:24, height:24, borderRadius:'50%', background:m.bg, flexShrink:0,
                               display:'flex', alignItems:'center', justifyContent:'center', zIndex:1 }}>

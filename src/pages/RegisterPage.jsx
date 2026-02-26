@@ -5,7 +5,8 @@ import SEO from '../components/SEO';
 import './RegisterPage.css';
 
 export default function RegisterPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
   const [formData, setFormData] = useState({
     company_name: '',
     full_name: '',
@@ -333,7 +334,7 @@ This inquiry was submitted through the Free Trial registration form.
                 ) : (
                   <>
                     {t('auth.startFreeTrial')}
-                    <span style={{ marginLeft: '8px' }}>→</span>
+                    <span style={{ [isRTL?'marginRight':'marginLeft']: '8px' }}>→</span>
                   </>
                 )}
               </button>

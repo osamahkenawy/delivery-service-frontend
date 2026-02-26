@@ -15,7 +15,8 @@ const TX_BADGE = {
 const fmtAED = v => `AED ${parseFloat(v || 0).toFixed(2)}`;
 
 export default function Wallet() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
   const fmtAED = v => `${t('wallet.currency_prefix')} ${parseFloat(v || 0).toFixed(2)}`;
   const [wallet,       setWallet]       = useState(null);
   const [transactions, setTransactions] = useState([]);
@@ -134,7 +135,7 @@ export default function Wallet() {
                 <thead>
                   <tr style={{ background: 'var(--bg-hover)' }}>
                     {[t('wallet.col_date'),t('wallet.col_type'),t('wallet.col_order'),t('wallet.col_amount'),t('wallet.col_balance_after'),t('wallet.col_reference'),t('wallet.col_description')].map(h => (
-                      <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{h}</th>
+                      <th key={h} style={{ padding: '10px 14px', textAlign: isRTL ? 'right' : 'left', fontSize: '.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -186,7 +187,7 @@ export default function Wallet() {
                   <thead>
                     <tr style={{ background: 'var(--bg-hover)' }}>
                       {[t('wallet.col_order'),t('wallet.col_recipient'),t('wallet.col_cod_amount'),t('wallet.col_delivery_fee'),t('wallet.col_driver'),t('wallet.col_date'),t('wallet.col_action')].map(h => (
-                        <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{h}</th>
+                        <th key={h} style={{ padding: '10px 14px', textAlign: isRTL ? 'right' : 'left', fontSize: '.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -222,7 +223,7 @@ export default function Wallet() {
                   <thead>
                     <tr style={{ background: 'var(--bg-hover)' }}>
                       {[t('wallet.col_order'),t('wallet.col_recipient'),t('wallet.col_collected'),t('wallet.col_collected_at'),t('wallet.col_driver')].map(h => (
-                        <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{h}</th>
+                        <th key={h} style={{ padding: '10px 14px', textAlign: isRTL ? 'right' : 'left', fontSize: '.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>

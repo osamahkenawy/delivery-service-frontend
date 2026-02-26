@@ -103,7 +103,8 @@ const miniStatus = {
    MAIN COMPONENT
    ═══════════════════════════════════════════════════════════════ */
 export default function Drivers() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
   const { user } = useContext(AuthContext);
   const [drivers,    setDrivers]    = useState([]);
   const [loading,    setLoading]    = useState(true);
@@ -736,7 +737,7 @@ export default function Drivers() {
 
                 {/* Personal */}
                 <div className="form-section-title">
-                  <User width={15} height={15} style={{ verticalAlign: 'middle', marginRight: 6 }} />
+                  <User width={15} height={15} style={{ verticalAlign: 'middle', [isRTL?'marginLeft':'marginRight']: 6 }} />
                   {t('drivers.personal_info')}
                 </div>
                 <div className="form-grid-2">
@@ -789,7 +790,7 @@ export default function Drivers() {
 
                 {/* Vehicle */}
                 <div className="form-section-title" style={{ marginTop: '1.5rem' }}>
-                  <Car width={15} height={15} style={{ verticalAlign: 'middle', marginRight: 6 }} />
+                  <Car width={15} height={15} style={{ verticalAlign: 'middle', [isRTL?'marginLeft':'marginRight']: 6 }} />
                   {t('drivers.vehicle_info')}
                 </div>
                 <div className="form-grid-2">
