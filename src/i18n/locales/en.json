@@ -1446,6 +1446,7 @@
     "all_drivers": "All Drivers",
     "all_statuses": "All Statuses",
     "settle": "Settle",
+    "all_settled": "All Settled",
     "collect": "Collect",
     "reconcile": "Reconcile",
     "outstanding": "Outstanding",
@@ -1490,7 +1491,8 @@
       "collected": "COLLECTED",
       "pending": "PENDING",
       "orders": "ORDERS",
-      "delivered": "DELIVERED"
+      "delivered": "DELIVERED",
+      "already_settled": "Already Settled"
     },
     "col": {
       "order": "Order #",

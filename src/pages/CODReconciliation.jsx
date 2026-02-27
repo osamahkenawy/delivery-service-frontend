@@ -62,13 +62,16 @@ export default function CODReconciliation() {
       const amt = parseFloat(o.cod_amount || 0);
       s.total_cod += amt;
       if (o.status === 'delivered') {
-        s.collected += amt;
         s.delivered_cod++;
+        if (o.cod_collected === 2) {
+          s.settled += amt;
+        } else {
+          s.collected += amt;
+        }
       } else if (['pending','confirmed','assigned','picked_up','in_transit'].includes(o.status)) {
         s.pending += amt;
       }
     });
-    s.settled = s.collected * 0; // settlements tracked separately
     return s;
   }, [orders]);
 
@@ -83,6 +86,7 @@ export default function CODReconciliation() {
           driver_name: o.driver_name || 'Unknown',
           driver_phone: o.driver_phone || '',
           total_collected: 0,
+          total_settled: 0,
           total_pending: 0,
           order_count: 0,
           delivered_count: 0,
@@ -92,8 +96,12 @@ export default function CODReconciliation() {
       const amt = parseFloat(o.cod_amount || 0);
       d.order_count++;
       if (o.status === 'delivered') {
-        d.total_collected += amt;
         d.delivered_count++;
+        if (o.cod_collected === 2) {
+          d.total_settled += amt;
+        } else {
+          d.total_collected += amt;
+        }
       } else if (['assigned','picked_up','in_transit'].includes(o.status)) {
         d.total_pending += amt;
       }
@@ -145,7 +153,7 @@ export default function CODReconciliation() {
     { label: t('cod.stats.total'), value: formatCurrency(stats.total_cod, curr), color: 'primary', bg: '#fff7ed', iconColor: '#f97316', icon: CreditCard },
     { label: t('cod.stats.collected'), value: formatCurrency(stats.collected, curr), color: 'success', bg: '#dcfce7', iconColor: '#16a34a', icon: Check },
     { label: t('cod.stats.pending'), value: formatCurrency(stats.pending, curr), color: 'warning', bg: '#fef3c7', iconColor: '#d97706', icon: Clock },
-    { label: t('cod.stats.orders'), value: stats.total_orders, color: 'info', bg: '#eff6ff', iconColor: '#2563eb', icon: Package },
+    { label: t('cod.stats.orders'), value: orders.filter(o => o.payment_method === 'cod').length, color: 'info', bg: '#eff6ff', iconColor: '#2563eb', icon: Package },
   ];
 
   return (
@@ -245,7 +253,7 @@ export default function CODReconciliation() {
                         <div className="cod-driver-stats">
                           <div className="cod-driver-stat">
                             <div className="cod-driver-stat-label">{t('cod.driver.collected')}</div>
-                            <div className="cod-driver-stat-value" style={{ color: '#16a34a' }}>
+                            <div className="cod-driver-stat-value" style={{ color: d.total_collected > 0 ? '#f97316' : '#16a34a' }}>
                               {formatCurrency(d.total_collected, curr)}
                             </div>
                           </div>
@@ -264,14 +272,23 @@ export default function CODReconciliation() {
                             <div className="cod-driver-stat-value">{d.delivered_count}</div>
                           </div>
                         </div>
+                        {d.total_settled > 0 && (
+                          <div style={{ padding: '6px 16px', fontSize: 12, color: '#16a34a', background: '#f0fdf4', borderRadius: 6, margin: '0 16px 8px', textAlign: 'center', fontWeight: 600 }}>
+                            {t('cod.driver.already_settled')}: {formatCurrency(d.total_settled, curr)}
+                          </div>
+                        )}
                         <div className="cod-driver-actions">
                           <button className="cod-driver-btn" onClick={() => { setDriverFilter(String(d.driver_id)); setActiveTab('orders'); }}>
                             <Eye size={14} /> {t('cod.view_orders')}
                           </button>
-                          {d.total_collected > 0 && (
+                          {d.total_collected > 0 ? (
                             <button className="cod-driver-btn settle" onClick={() => setShowSettleModal(d)}>
                               <Check size={14} /> {t('cod.settle')}
                             </button>
+                          ) : (
+                            <span style={{ padding: '6px 16px', fontSize: 12, color: '#16a34a', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <Check size={14} /> {t('cod.all_settled')}
+                            </span>
                           )}
                         </div>
                       </div>

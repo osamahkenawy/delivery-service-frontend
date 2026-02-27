@@ -1364,6 +1364,7 @@
     "all_drivers": "جميع السائقين",
     "all_statuses": "جميع الحالات",
     "settle": "تسوية",
+    "all_settled": "تمت التسوية بالكامل",
     "collect": "تحصيل",
     "reconcile": "مطابقة",
     "outstanding": "مستحق",
@@ -1408,7 +1409,8 @@
       "collected": "محصَّل",
       "pending": "معلّق",
       "orders": "الطلبات",
-      "delivered": "تم التوصيل"
+      "delivered": "تم التوصيل",
+      "already_settled": "تمت التسوية"
     },
     "col": {
       "order": "رقم الطلب",

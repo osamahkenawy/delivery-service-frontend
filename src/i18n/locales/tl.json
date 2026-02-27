@@ -1440,6 +1440,7 @@
     "all_drivers": "All Drivers",
     "all_statuses": "All Statuses",
     "settle": "Settle",
+    "all_settled": "Lahat Settled",
     "collect": "Collect",
     "reconcile": "Reconcile",
     "outstanding": "Outstanding",
@@ -1484,7 +1485,8 @@
       "collected": "COLLECTED",
       "pending": "PENDING",
       "orders": "ORDERS",
-      "delivered": "DELIVERED"
+      "delivered": "DELIVERED",
+      "already_settled": "Na-settle Na"
     },
     "col": {
       "order": "Order #",

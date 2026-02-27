@@ -1205,6 +1205,7 @@
   "all_drivers": "Todos los Conductores",
   "all_statuses": "Todos los Estados",
   "settle": "Liquidar",
+  "all_settled": "Todo Liquidado",
   "collect": "Cobrar",
   "reconcile": "Conciliar",
   "outstanding": "Pendiente",
@@ -1248,6 +1249,9 @@
     "collected": "Cobrado",
     "pending": "Pendiente",
     "settled": "Liquidado"
+  },
+  "driver": {
+    "already_settled": "Ya Liquidado"
   }
 },
 "dispatch": {
