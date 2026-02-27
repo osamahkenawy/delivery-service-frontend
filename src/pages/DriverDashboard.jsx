@@ -304,6 +304,7 @@ export default function DriverDashboard() {
 
   const stats = data?.stats || {};
   const allTimeStats = data?.allTimeStats || {};
+  const tabCounts = data?.tabCounts || {};
   const orders = data?.orders || [];
   const driver = data?.driver || {};
   const today = new Date().toLocaleDateString('en-AE', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -439,9 +440,9 @@ export default function DriverDashboard() {
       {/* ═══ Tabs ═══ */}
       <div className="dp-tabs">
         {[
-          { key: 'active',    label: t('driverDashboard.tab_active'),    count: stats.active,    color: '#f97316' },
-          { key: 'completed', label: t('driverDashboard.tab_delivered'), count: stats.delivered, color: '#16a34a' },
-          { key: 'failed',    label: t('driverDashboard.tab_failed'),    count: stats.failed,    color: '#dc2626' },
+          { key: 'active',    label: t('driverDashboard.tab_active'),    count: tabCounts.active,    color: '#f97316' },
+          { key: 'completed', label: t('driverDashboard.tab_delivered'), count: tabCounts.delivered, color: '#16a34a' },
+          { key: 'failed',    label: t('driverDashboard.tab_failed'),    count: tabCounts.failed,    color: '#dc2626' },
         ].map(tabItem => (
           <button key={tabItem.key} onClick={() => setTab(tabItem.key)}
             className={`dp-tab ${tab === tabItem.key ? 'active' : ''}`}

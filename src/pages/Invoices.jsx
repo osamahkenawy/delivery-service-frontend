@@ -527,7 +527,8 @@ function ActionBtn({ onClick, color, flex, children, title }) {
 
 /* ── Detail Modal ── */
 function DetailModal({ invoice, loading, onClose, onDownload, onStatusChange, fmtDate, fmtMoney }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
   if (!invoice && !loading) return null;
   const cfg = invoice ? (STATUS_CONFIG[invoice.status] || STATUS_CONFIG.draft) : STATUS_CONFIG.draft;
   const StatusIcon = cfg.Icon;
