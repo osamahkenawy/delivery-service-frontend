@@ -7,6 +7,7 @@ import {
 import { api } from '../lib/api';
 import './CODReconciliation.css';
 import { useTranslation } from 'react-i18next';
+import Toast, { useToast } from '../components/Toast';
 
 function formatCurrency(amount, currency = 'AED') {
   return `${currency} ${parseFloat(amount || 0).toFixed(2)}`;
@@ -32,6 +33,7 @@ export default function CODReconciliation() {
   const [activeTab, setActiveTab] = useState('overview');
   const [showSettleModal, setShowSettleModal] = useState(null);
   const [settling, setSettling] = useState(false);
+  const { toasts, showToast } = useToast();
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -126,10 +128,14 @@ export default function CODReconciliation() {
   const handleSettle = async (driverId) => {
     setSettling(true);
     try {
-      await api.post('/cod/settle', { driver_id: driverId });
+      const res = await api.post('/cod/settle', { driver_id: driverId });
       setShowSettleModal(null);
+      showToast(res?.data?.message || t('cod.modal.success'), 'success');
       loadData();
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+      showToast(err?.response?.data?.error || t('cod.settle_failed', 'Settlement failed'), 'error');
+    }
     finally { setSettling(false); }
   };
 
@@ -157,6 +163,7 @@ export default function CODReconciliation() {
   ];
 
   return (
+    <>
     <div className="cod-page">
       {/* Hero */}
       <div className="module-hero">
@@ -395,5 +402,7 @@ export default function CODReconciliation() {
         </div>
       )}
     </div>
+    <Toast toasts={toasts} />
+  </>
   );
 }

@@ -1470,6 +1470,7 @@
     "orders_label": "orders",
     "unassigned": "Unassigned",
     "settling": "Settling...",
+    "settle_failed": "Settlement failed. Please try again.",
     "confirm_settlement": "Confirm Settlement",
     "cancel": "Cancel",
     "from": "From",

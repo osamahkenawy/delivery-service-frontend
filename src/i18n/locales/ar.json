@@ -1388,6 +1388,7 @@
     "orders_label": "طلبات",
     "unassigned": "غير معيّن",
     "settling": "جاري التسوية...",
+    "settle_failed": "فشلت التسوية. يرجى المحاولة مرة أخرى.",
     "confirm_settlement": "تأكيد التسوية",
     "cancel": "إلغاء",
     "from": "من",
