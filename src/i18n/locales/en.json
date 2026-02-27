@@ -2667,7 +2667,12 @@
       "created": "User created successfully",
       "create_failed": "Failed to create user",
       "deactivate_confirm": "Deactivate this user?",
-      "deactivated": "User deactivated"
+      "deactivated": "User deactivated",
+      "credentials_title": "Account Created",
+      "account_created_for": "Account created for {{name}}",
+      "welcome_email_sent": "A welcome email with credentials has been sent to {{email}}",
+      "credentials_warning": "Save these credentials now. The password cannot be retrieved later.",
+      "copy_close": "Copy Credentials & Close"
     },
     "roles": {
       "superadmin": "Super Admin",

@@ -958,6 +958,7 @@ function UsersTab({ toast }) {
   const [showModal, setShowModal]= useState(false);
   const [saving, setSaving]      = useState(false);
   const [showPw, setShowPw]      = useState(false);
+  const [credentials, setCredentials] = useState(null); // { username, password, email, email_sent }
   const emptyForm = { username:'', full_name:'', email:'', phone:'', password:'', role:'dispatcher', role_id: '' };
   const [form, setForm]          = useState(emptyForm);
 
@@ -985,7 +986,15 @@ function UsersTab({ toast }) {
     const res = await api.post('/settings/users', form);
     if (res.success) {
       toast('success', t('settings.users.created'));
-      setShowModal(false); setForm(emptyForm); load();
+      setShowModal(false);
+      setCredentials({
+        full_name: form.full_name,
+        username: form.username,
+        password: form.password,
+        email: form.email,
+        email_sent: res.email_sent,
+      });
+      setForm(emptyForm); load();
     } else {
       toast('error', res.message || t('settings.users.create_failed'));
     }
@@ -1097,6 +1106,83 @@ function UsersTab({ toast }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Credentials confirmation modal */}
+      {credentials && (
+        <div className="stg-overlay" onClick={e => e.target === e.currentTarget && setCredentials(null)}>
+          <div className="stg-modal" style={{ maxWidth: 440 }}>
+            <div className="stg-modal-head" style={{ background: 'linear-gradient(135deg, #059669, #10b981)', color: '#fff' }}>
+              <span>{t('settings.users.credentials_title')}</span>
+              <button type="button" onClick={() => setCredentials(null)} className="stg-modal-close" style={{ color: '#fff' }}>
+                <Xmark width={18} height={18} />
+              </button>
+            </div>
+            <div style={{ padding: '24px 28px' }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16,
+                padding: '12px 16px', background: '#f0fdf4', borderRadius: 10, border: '1px solid #bbf7d0',
+              }}>
+                <CheckCircle width={20} height={20} style={{ color: '#16a34a', flexShrink: 0 }} />
+                <span style={{ fontSize: 13, color: '#166534', fontWeight: 600 }}>
+                  {t('settings.users.account_created_for', { name: credentials.full_name })}
+                </span>
+              </div>
+
+              <div style={{
+                background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10,
+                overflow: 'hidden', marginBottom: 16,
+              }}>
+                {[
+                  { label: t('settings.users.username'), value: credentials.username },
+                  { label: t('settings.users.password'), value: credentials.password },
+                  { label: t('settings.users.email'), value: credentials.email },
+                ].map((item, i) => (
+                  <div key={i} style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: '10px 16px', borderBottom: i < 2 ? '1px solid #e2e8f0' : 'none',
+                  }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>{item.label}</span>
+                    <span style={{ fontSize: 14, fontFamily: "'Courier New', monospace", color: '#111827', fontWeight: 600 }}>{item.value}</span>
+                  </div>
+                ))}
+              </div>
+
+              {credentials.email_sent && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '10px 14px', background: '#eff6ff', borderRadius: 8, border: '1px solid #bfdbfe',
+                  marginBottom: 16,
+                }}>
+                  <Mail width={16} height={16} style={{ color: '#2563eb', flexShrink: 0 }} />
+                  <span style={{ fontSize: 12, color: '#1e40af' }}>
+                    {t('settings.users.welcome_email_sent', { email: credentials.email })}
+                  </span>
+                </div>
+              )}
+
+              <div style={{
+                padding: '10px 14px', background: '#fffbeb', borderRadius: 8, border: '1px solid #fde68a',
+                marginBottom: 20,
+              }}>
+                <p style={{ margin: 0, fontSize: 12, color: '#92400e' }}>
+                  <WarningCircle width={14} height={14} style={{ verticalAlign: 'middle', marginInlineEnd: 6 }} />
+                  {t('settings.users.credentials_warning')}
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                <button className="stg-btn-primary" onClick={() => {
+                  const text = `Username: ${credentials.username}\nPassword: ${credentials.password}\nEmail: ${credentials.email}`;
+                  navigator.clipboard.writeText(text).then(() => toast('success', t('common.copied')));
+                  setCredentials(null);
+                }}>
+                  {t('settings.users.copy_close')}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

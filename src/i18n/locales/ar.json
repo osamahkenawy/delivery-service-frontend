@@ -2585,7 +2585,12 @@
       "created": "تم إنشاء المستخدم بنجاح",
       "create_failed": "فشل إنشاء المستخدم",
       "deactivate_confirm": "تعطيل هذا المستخدم؟",
-      "deactivated": "تم تعطيل المستخدم"
+      "deactivated": "تم تعطيل المستخدم",
+      "credentials_title": "تم إنشاء الحساب",
+      "account_created_for": "تم إنشاء حساب لـ {{name}}",
+      "welcome_email_sent": "تم إرسال بريد ترحيبي مع بيانات الدخول إلى {{email}}",
+      "credentials_warning": "احفظ بيانات الدخول الآن. لا يمكن استرداد كلمة المرور لاحقاً.",
+      "copy_close": "نسخ البيانات وإغلاق"
     },
     "roles": {
       "superadmin": "مسؤول أعلى",
