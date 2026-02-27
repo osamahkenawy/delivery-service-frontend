@@ -1157,7 +1157,12 @@
     "total": "Total",
     "status_label": "Status",
     "na": "N/A",
-    "prev": "Prev"
+    "prev": "Prev",
+    "generate_invoices": "Generate Missing Invoices",
+    "generating": "Generating...",
+    "generate_success": "Successfully generated {{count}} invoice(s)",
+    "generate_none": "All orders already have invoices - nothing to generate",
+    "generate_failed": "Failed to generate invoices"
   },
   "wallet": {
     "title": "Wallet & COD",
@@ -1594,6 +1599,13 @@
     "sidebar": {
       "unassigned": "Unassigned ({{count}})",
       "active": "Active ({{count}})"
+    },
+    "fee": "Fee",
+    "payment": {
+      "cod": "COD",
+      "prepaid": "Prepaid",
+      "credit": "Credit",
+      "wallet": "Wallet"
     }
   },
   "performance": {

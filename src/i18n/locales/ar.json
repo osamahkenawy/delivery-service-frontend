@@ -1075,7 +1075,12 @@
     "total": "الإجمالي",
     "status_label": "الحالة",
     "na": "غير متوفر",
-    "prev": "السابق"
+    "prev": "السابق",
+    "generate_invoices": "إنشاء الفواتير المفقودة",
+    "generating": "جاري الإنشاء...",
+    "generate_success": "تم إنشاء {{count}} فاتورة بنجاح",
+    "generate_none": "جميع الطلبات لديها فواتير بالفعل - لا توجد فواتير مفقودة",
+    "generate_failed": "فشل إنشاء الفواتير"
   },
   "wallet": {
     "title": "المحفظة والدفع عند الاستلام",
@@ -1512,6 +1517,13 @@
     "sidebar": {
       "unassigned": "غير معيّن ({{count}})",
       "active": "نشط ({{count}})"
+    },
+    "fee": "رسوم",
+    "payment": {
+      "cod": "الدفع عند الاستلام",
+      "prepaid": "مدفوع مسبقاً",
+      "credit": "ائتمان",
+      "wallet": "محفظة"
     }
   },
   "performance": {

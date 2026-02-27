@@ -1,12 +1,42 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Package, DeliveryTruck, MapPin, Refresh, Check, Xmark, WarningTriangle, Map as MapIcon, ViewGrid
+  Package, DeliveryTruck, MapPin, Refresh, Check, Xmark, WarningTriangle, Map as MapIcon, ViewGrid,
+  Weight, Wallet, CreditCard, Box3dPoint,
 } from 'iconoir-react';
+import JsBarcode from 'jsbarcode';
 import api from '../lib/api';
 import MapView from '../components/MapView';
 import './CRMPages.css';
 import { useTranslation } from 'react-i18next';
+
+/* ── Barcode SVG ─────────────────────────────────────────── */
+function OrderBarcode({ value }) {
+  const svgRef = useRef(null);
+  useEffect(() => {
+    if (!svgRef.current || !value) return;
+    try {
+      JsBarcode(svgRef.current, String(value), {
+        format: 'CODE128',
+        width: 1.4,
+        height: 36,
+        displayValue: false,
+        margin: 0,
+        background: 'transparent',
+        lineColor: '#1e293b',
+      });
+    } catch {}
+  }, [value]);
+  if (!value) return null;
+  return (
+    <div style={{ background:'#f8fafc', borderRadius:8, padding:'8px 10px', textAlign:'center',
+      border:'1px solid #e2e8f0', margin:'10px 0 4px' }}>
+      <svg ref={svgRef} style={{ width:'100%', maxWidth:220, height:36 }} />
+      <div style={{ fontFamily:'monospace', fontSize:10, color:'#64748b', letterSpacing:'0.12em',
+        marginTop:2, fontWeight:600 }}>{String(value)}</div>
+    </div>
+  );
+}
 
 const STATUS_STYLE = {
   pending:    { background: '#fef3c7', color: '#d97706' },
@@ -286,22 +316,100 @@ export default function Dispatch() {
   const OrderCard = ({ order, showUnassign, mini }) => {
     const sc = STATUS_STYLE[order.status] || STATUS_STYLE.pending;
     const isSelected = selectedOrder === order.id;
+    const barcodeValue = order.order_number || String(order.id);
+
+    const paymentLabel = {
+      cod: t('dispatch.payment.cod'),
+      prepaid: t('dispatch.payment.prepaid'),
+      credit: t('dispatch.payment.credit'),
+      wallet: t('dispatch.payment.wallet'),
+    }[order.payment_method] || order.payment_method;
+
     return (
       <div className={mini ? 'dispatch-mini-card' : 'dispatch-card'}>
+        {/* Header: order # + status */}
         <div className="dispatch-card-header">
           <div>
-            <div className="dispatch-order-id">#{order.id}</div>
+            <div className="dispatch-order-id">#{order.order_number || order.id}</div>
             <div className="dispatch-recipient">{order.recipient_name}</div>
           </div>
           <span className="status-badge" style={sc}>{t(`dispatch.status.${order.status}`, order.status)}</span>
         </div>
+
+        {/* Barcode */}
+        {!mini && <OrderBarcode value={barcodeValue} />}
+
+        {/* Details rows */}
         {!mini && (
           <div className="dispatch-meta">
-            <span><MapPin width={13} height={13} /> {order.recipient_address}</span>
-            {order.zone_name && <span><MapPin width={13} height={13} /> {order.zone_name}</span>}
-            {order.driver_name && <span><DeliveryTruck width={13} height={13} /> {order.driver_name}</span>}
+            {order.recipient_address && (
+              <span><MapPin width={13} height={13} />
+                {order.recipient_address.length > 50
+                  ? order.recipient_address.slice(0, 50) + '…'
+                  : order.recipient_address}
+              </span>
+            )}
+            {(order.recipient_area || order.recipient_emirate) && (
+              <span style={{ color:'#64748b', fontSize:11 }}>
+                🏙️ {[order.recipient_area, order.recipient_emirate].filter(Boolean).join(', ')}
+              </span>
+            )}
+            {order.zone_name && (
+              <span style={{ color:'#7c3aed', fontWeight:600 }}>
+                <MapPin width={13} height={13} style={{ color:'#7c3aed' }} /> {order.zone_name}
+              </span>
+            )}
+            {order.driver_name && (
+              <span style={{ color:'#16a34a', fontWeight:600 }}>
+                <DeliveryTruck width={13} height={13} style={{ color:'#16a34a' }} /> {order.driver_name}
+              </span>
+            )}
           </div>
         )}
+
+        {/* Extra chips: COD / fee / weight / category */}
+        {!mini && (
+          <div style={{ display:'flex', flexWrap:'wrap', gap:5, margin:'8px 0 4px' }}>
+            {order.payment_method && (
+              <span style={{ display:'inline-flex', alignItems:'center', gap:3,
+                padding:'2px 8px', borderRadius:20, fontSize:11, fontWeight:700,
+                background: order.payment_method === 'cod' ? '#fef3c7' : '#dbeafe',
+                color:       order.payment_method === 'cod' ? '#92400e' : '#1d4ed8' }}>
+                <CreditCard width={11} height={11} /> {paymentLabel}
+              </span>
+            )}
+            {order.cod_amount > 0 && (
+              <span style={{ display:'inline-flex', alignItems:'center', gap:3,
+                padding:'2px 8px', borderRadius:20, fontSize:11, fontWeight:700,
+                background:'#fef9c3', color:'#713f12' }}>
+                <Wallet width={11} height={11} /> AED {parseFloat(order.cod_amount).toFixed(0)}
+              </span>
+            )}
+            {order.delivery_fee > 0 && (
+              <span style={{ display:'inline-flex', alignItems:'center', gap:3,
+                padding:'2px 8px', borderRadius:20, fontSize:11, fontWeight:600,
+                background:'#f0fdf4', color:'#166534' }}>
+                {t('dispatch.fee')}: AED {parseFloat(order.delivery_fee).toFixed(0)}
+              </span>
+            )}
+            {order.weight_kg > 0 && (
+              <span style={{ display:'inline-flex', alignItems:'center', gap:3,
+                padding:'2px 8px', borderRadius:20, fontSize:11, fontWeight:600,
+                background:'#f3f4f6', color:'#374151' }}>
+                <Weight width={11} height={11} /> {order.weight_kg} kg
+              </span>
+            )}
+            {order.category && order.category !== 'other' && (
+              <span style={{ display:'inline-flex', alignItems:'center', gap:3,
+                padding:'2px 8px', borderRadius:20, fontSize:11, fontWeight:600,
+                background:'#ede9fe', color:'#5b21b6' }}>
+                <Box3dPoint width={11} height={11} />
+                {order.category.replace(/_/g,' ')}
+              </span>
+            )}
+          </div>
+        )}
+
         <div className="dispatch-actions">
           {!showUnassign && (
             <button

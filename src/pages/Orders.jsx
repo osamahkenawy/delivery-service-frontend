@@ -38,8 +38,18 @@ const STATUS_META = {
   cancelled:  { label:'Cancelled',  bg:'#f1f5f9', color:'#64748b', icon: Prohibition },
 };
 const ORDER_TYPES   = ['standard','express','same_day','scheduled','return'];
-const CATEGORIES    = ['parcel','document','food','grocery','medicine','electronics','fragile','other'];
 const EMIRATES      = ['Dubai','Abu Dhabi','Sharjah','Ajman','Ras Al Khaimah','Fujairah','Umm Al Quwain'];
+// Fallback used only before categories are fetched from settings
+const DEFAULT_CATEGORIES = [
+  { slug:'parcel',      name:'Parcel',      name_ar:'طرد' },
+  { slug:'document',   name:'Document',    name_ar:'وثيقة' },
+  { slug:'food',       name:'Food',        name_ar:'طعام' },
+  { slug:'grocery',    name:'Grocery',     name_ar:'بقالة' },
+  { slug:'medicine',   name:'Medicine',    name_ar:'دواء' },
+  { slug:'electronics',name:'Electronics', name_ar:'إلكترونيات' },
+  { slug:'fragile',    name:'Fragile',     name_ar:'هشّ' },
+  { slug:'other',      name:'Other',       name_ar:'أخرى' },
+];
 const PAYMENT_MAP   = { cod:'Cash on Delivery', prepaid:'Prepaid', credit:'Credit', wallet:'Wallet' };
 const INPUT  = { width:'100%', padding:'10px 13px', borderRadius:9, border:'1px solid #e2e8f0', fontSize:14, boxSizing:'border-box', outline:'none' };
 const LABEL  = { display:'block', fontSize:12, fontWeight:700, color:'#374151', marginBottom:6, textTransform:'uppercase', letterSpacing:'0.04em' };
@@ -261,8 +271,8 @@ function AddressSearch({ onSelect }) {
           style={{ ...INPUT, [isRTL?'paddingRight':'paddingLeft']:34 }} placeholder={t('orders.placeholders.search_address')} />
       </div>
       {open && results.length > 0 && (
-        <div style={{ position:'absolute', top:'100%', left:0, right:0, background:'#fff', borderRadius:10,
-          boxShadow:'0 8px 30px rgba(0,0,0,0.15)', border:'1px solid #e2e8f0', zIndex:50, maxHeight:220, overflowY:'auto', marginTop:4 }}>
+        <div style={{ position:'absolute', bottom:'100%', left:0, right:0, background:'#fff', borderRadius:10,
+          boxShadow:'0 8px 30px rgba(0,0,0,0.15)', border:'1px solid #e2e8f0', zIndex:50, maxHeight:220, overflowY:'auto', marginBottom:4 }}>
           {results.map((r,i) => (
             <div key={i} onClick={() => { onSelect({ lat:r.lat, lng:r.lon, display:r.display_name }); setQ(r.display_name.split(',')[0]); setOpen(false); }}
               style={{ padding:'10px 14px', cursor:'pointer', borderBottom:'1px solid #f8fafc', fontSize:13, color:'#1e293b' }}
@@ -356,6 +366,7 @@ export default function Orders() {
   const [zones,      setZones]      = useState([]);
   const [clients,    setClients]    = useState([]);
   const [drivers,    setDrivers]    = useState([]);
+  const [categories, setCategories] = useState([]);
   const { toasts, showToast } = useToast();
   const [copied,     setCopied]     = useState('');
   const [cancelConfirm, setCancelConfirm] = useState(null);
@@ -416,12 +427,14 @@ export default function Orders() {
 
   const fetchDropdowns = async () => {
     try {
-      const [zRes, cRes, dRes] = await Promise.all([
-        api.get('/zones'), api.get('/clients?limit=500'), api.get('/drivers?limit=500')
+      const [zRes, cRes, dRes, catRes] = await Promise.all([
+        api.get('/zones'), api.get('/clients?limit=500'), api.get('/drivers?limit=500'),
+        api.get('/settings/categories'),
       ]);
-      if (zRes.success) setZones(zRes.data || []);
-      if (cRes.success) setClients(cRes.data || []);
-      if (dRes.success) setDrivers(dRes.data || []);
+      if (zRes.success)   setZones(zRes.data || []);
+      if (cRes.success)   setClients(cRes.data || []);
+      if (dRes.success)   setDrivers(dRes.data || []);
+      if (catRes.success) setCategories((catRes.data || []).filter(c => c.is_active));
     } catch (e) { console.error(e); }
   };
 
@@ -1141,7 +1154,7 @@ export default function Orders() {
                     {[
                       { label:t('orders.drawer.zone'),       value: drawerFull.zone_name },
                       { label:t('orders.drawer.driver'),     value: drawerFull.driver_name || t('orders.drawer.unassigned'), muted: !drawerFull.driver_name, assignable: !drawerFull.driver_name },
-                      { label:t('orders.drawer.category'),   value: fmtType(drawerFull.category) },
+                      { label:t('orders.drawer.category'),   value: (() => { const cat = categories.find(c=>c.slug===drawerFull.category); return cat ? (isRTL && cat.name_ar ? cat.name_ar : cat.name) : fmtType(drawerFull.category); })() },
                       { label:t('orders.drawer.payment'),    value: t(`orders.payment.${drawerFull.payment_method}`) || drawerFull.payment_method },
                       { label:t('orders.drawer.dimensions'), value: drawerFull.dimensions },
                       { label:t('orders.drawer.scheduled'),  value: drawerFull.scheduled_at ? `${fmtDate(drawerFull.scheduled_at)} ${fmtTime(drawerFull.scheduled_at)}` : null },
@@ -1357,6 +1370,13 @@ export default function Orders() {
                         placeholder={t('orders.placeholders.phone')}
                         readOnly={!!form.client_id} />
                     </div>
+                    {!form.client_id && (
+                      <AddressSearch onSelect={({ lat, lng, display }) => {
+                        set('sender_lat', lat);
+                        set('sender_lng', lng);
+                        if (display) set('sender_address', display);
+                      }} />
+                    )}
                     <div style={{ gridColumn:'1/-1' }}>
                       <label style={LABEL}>{t('orders.form.sender_address')}</label>
                       <input value={form.sender_address} onChange={e=>set('sender_address',e.target.value)}
@@ -1484,7 +1504,11 @@ export default function Orders() {
                     <div>
                       <label style={LABEL}>{t('orders.form.category')}</label>
                       <select value={form.category} onChange={e=>set('category',e.target.value)} style={INPUT}>
-                        {CATEGORIES.map(c => <option key={c} value={c}>{fmtType(c)}</option>)}
+                        {(categories.length > 0 ? categories : DEFAULT_CATEGORIES).map(c => (
+                          <option key={c.slug} value={c.slug}>
+                            {isRTL && c.name_ar ? c.name_ar : c.name}
+                          </option>
+                        ))}
                       </select>
                     </div>
                     <div>
@@ -1618,7 +1642,7 @@ export default function Orders() {
 
       {/* ── Driver Picker Modal ── */}
       {driverPicker && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:1100,
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:2200,
           display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}
           onClick={() => setDriverPicker(null)}>
           <div onClick={e => e.stopPropagation()} style={{ background:'#fff', borderRadius:20, width:440, maxWidth:'96vw',

@@ -27,6 +27,7 @@ export default function Invoices() {
   const isRTL = i18n.language === 'ar';
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(1);
@@ -48,6 +49,29 @@ export default function Invoices() {
       setLoading(false);
     }
   }, []);
+
+  const generateMissing = async () => {
+    try {
+      setGenerating(true);
+      const res = await api.post('/invoices/generate-missing');
+      if (res.success) {
+        const { created, failed } = res.data || {};
+        if (created > 0) {
+          alert(t('invoices.generate_success', { count: created }));
+          fetchInvoices();
+        } else {
+          alert(t('invoices.generate_none'));
+        }
+      } else {
+        alert(res.message || t('invoices.generate_failed'));
+      }
+    } catch (err) {
+      console.error('Failed to generate missing invoices:', err);
+      alert(t('invoices.generate_failed'));
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   const handleStatusChange = async (invoiceId, newStatus) => {
     try {
@@ -146,6 +170,13 @@ export default function Invoices() {
           </div>
         </div>
         <div className="module-hero-actions">
+          <button className="module-btn module-btn-primary" onClick={generateMissing} disabled={generating}
+            style={{ background: generating ? '#94a3b8' : undefined }}>
+            {generating
+              ? <><span className="trk-spinner" style={{ width:14, height:14, borderWidth:2 }} /> {t('invoices.generating')}</>
+              : <><FlashSolid width={16} height={16} /> {t('invoices.generate_invoices')}</>
+            }
+          </button>
           <button className="module-btn module-btn-outline" onClick={fetchInvoices}>
             <RefreshDouble width={16} height={16} /> {t('common.refresh')}
           </button>
