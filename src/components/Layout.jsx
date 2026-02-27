@@ -56,78 +56,87 @@ const navSections = [
   {
     titleKey: 'main',
     items: [
-      { path: '/dashboard',          labelKey: 'dashboard',       iconKey: 'dashboard',        roles: ['admin', 'dispatcher'] },
-      { path: '/driver/dashboard',   labelKey: 'driver_home',     iconKey: 'driver-dashboard', roles: ['driver'] },
+      { path: '/dashboard',          labelKey: 'dashboard',       iconKey: 'dashboard',        moduleKey: 'dashboard',         roles: ['admin', 'dispatcher'] },
+      { path: '/driver/dashboard',   labelKey: 'driver_home',     iconKey: 'driver-dashboard', moduleKey: 'driver-dashboard',  roles: ['driver'] },
     ]
   },
   /* ── OPERATIONS ───────────────────────────────────── */
   {
     titleKey: 'operations',
     items: [
-      { path: '/orders',             labelKey: 'orders',          iconKey: 'orders',           roles: ['admin', 'dispatcher'] },
-      { path: '/dispatch',           labelKey: 'dispatch',        iconKey: 'dispatch',         roles: ['admin', 'dispatcher'] },
-      { path: '/drivers',            labelKey: 'drivers',         iconKey: 'drivers',          roles: ['admin', 'dispatcher'] },
-      { path: '/clients',            labelKey: 'clients',         iconKey: 'clients',          roles: ['admin', 'dispatcher'] },
-      { path: '/live-map',           labelKey: 'livemap',         iconKey: 'live-map',         roles: ['admin', 'dispatcher'] },
-      { path: '/shipment-tracking',  labelKey: 'tracking',        iconKey: 'shipment-tracking', roles: ['admin', 'dispatcher'] },
-      { path: '/bulk-import',        labelKey: 'bulk_import',     iconKey: 'bulk-import',      roles: ['admin', 'dispatcher'] },
-      { path: '/returns',            labelKey: 'returns',         iconKey: 'returns',          roles: ['admin', 'dispatcher'] },
+      { path: '/orders',             labelKey: 'orders',          iconKey: 'orders',           moduleKey: 'orders',            roles: ['admin', 'dispatcher'] },
+      { path: '/dispatch',           labelKey: 'dispatch',        iconKey: 'dispatch',         moduleKey: 'dispatch',          roles: ['admin', 'dispatcher'] },
+      { path: '/drivers',            labelKey: 'drivers',         iconKey: 'drivers',          moduleKey: 'drivers',           roles: ['admin', 'dispatcher'] },
+      { path: '/clients',            labelKey: 'clients',         iconKey: 'clients',          moduleKey: 'clients',           roles: ['admin', 'dispatcher'] },
+      { path: '/live-map',           labelKey: 'livemap',         iconKey: 'live-map',         moduleKey: 'live-map',          roles: ['admin', 'dispatcher'] },
+      { path: '/shipment-tracking',  labelKey: 'tracking',        iconKey: 'shipment-tracking', moduleKey: 'shipment-tracking', roles: ['admin', 'dispatcher'] },
+      { path: '/bulk-import',        labelKey: 'bulk_import',     iconKey: 'bulk-import',      moduleKey: 'bulk-import',       roles: ['admin', 'dispatcher'] },
+      { path: '/returns',            labelKey: 'returns',         iconKey: 'returns',          moduleKey: 'returns',           roles: ['admin', 'dispatcher'] },
     ]
   },
   /* ── DRIVER TOOLS ─────────────────────────────────── */
   {
     titleKey: 'tools',
     items: [
-      { path: '/driver/orders',      labelKey: 'my_deliveries',   iconKey: 'my-deliveries',    roles: ['driver'] },
-      { path: '/driver/scan',        labelKey: 'scan_shipment',   iconKey: 'driver-scan',      roles: ['driver'] },
-      { path: '/barcode',            labelKey: 'barcode',         iconKey: 'barcode',          roles: ['driver'] },
+      { path: '/driver/orders',      labelKey: 'my_deliveries',   iconKey: 'my-deliveries',    moduleKey: 'my-deliveries',     roles: ['driver'] },
+      { path: '/driver/scan',        labelKey: 'scan_shipment',   iconKey: 'driver-scan',      moduleKey: 'driver-scan',       roles: ['driver'] },
+      { path: '/barcode',            labelKey: 'barcode',         iconKey: 'barcode',          moduleKey: 'barcode',           roles: ['driver'] },
     ]
   },
   /* ── FINANCE ──────────────────────────────────────── */
   {
     titleKey: 'finance',
     items: [
-      { path: '/wallet',             labelKey: 'wallet',          iconKey: 'wallet',           roles: ['admin', 'dispatcher'] },
-      { path: '/invoices',           labelKey: 'invoices',        iconKey: 'invoices',         roles: ['admin', 'dispatcher'] },
-      { path: '/cod',                labelKey: 'cod_reconciliation', iconKey: 'cod',            roles: ['admin', 'dispatcher'] },
+      { path: '/wallet',             labelKey: 'wallet',          iconKey: 'wallet',           moduleKey: 'wallet',            roles: ['admin', 'dispatcher'] },
+      { path: '/invoices',           labelKey: 'invoices',        iconKey: 'invoices',         moduleKey: 'invoices',          roles: ['admin', 'dispatcher'] },
+      { path: '/cod',                labelKey: 'cod_reconciliation', iconKey: 'cod',            moduleKey: 'cod',               roles: ['admin', 'dispatcher'] },
     ]
   },
   /* ── ANALYTICS ────────────────────────────────────── */
   {
     titleKey: 'analytics',
     items: [
-      { path: '/reports',            labelKey: 'reports',         iconKey: 'reports',          roles: ['admin', 'dispatcher'] },
-      { path: '/performance',        labelKey: 'performance',     iconKey: 'performance',      roles: ['admin', 'dispatcher'] },
+      { path: '/reports',            labelKey: 'reports',         iconKey: 'reports',          moduleKey: 'reports',           roles: ['admin', 'dispatcher'] },
+      { path: '/performance',        labelKey: 'performance',     iconKey: 'performance',      moduleKey: 'performance',       roles: ['admin', 'dispatcher'] },
     ]
   },
   /* ── CONFIGURATION (admin-only) ───────────────────── */
   {
     titleKey: 'config',
     items: [
-      { path: '/zones',              labelKey: 'zones',           iconKey: 'zones',            roles: ['admin'] },
-      { path: '/pricing',            labelKey: 'pricing',         iconKey: 'pricing',          roles: ['admin'] },
+      { path: '/zones',              labelKey: 'zones',           iconKey: 'zones',            moduleKey: 'zones',             roles: ['admin'] },
+      { path: '/pricing',            labelKey: 'pricing',         iconKey: 'pricing',          moduleKey: 'pricing',           roles: ['admin'] },
     ]
   },
   /* ── SYSTEM (admin-only) ──────────────────────────── */
   {
     titleKey: 'system',
     items: [
-      { path: '/notifications',      labelKey: 'notifications',   iconKey: 'notifications',    roles: ['admin'] },
-      { path: '/settings',           labelKey: 'settings',        iconKey: 'settings',         roles: ['admin'] },
-      { path: '/api-keys',           labelKey: 'integrations',    iconKey: 'api-keys',         roles: ['admin'] },
+      { path: '/notifications',      labelKey: 'notifications',   iconKey: 'notifications',    moduleKey: 'notifications',     roles: ['admin'] },
+      { path: '/settings',           labelKey: 'settings',        iconKey: 'settings',         moduleKey: 'settings',          roles: ['admin'] },
+      { path: '/api-keys',           labelKey: 'integrations',    iconKey: 'api-keys',         moduleKey: 'integrations',      roles: ['admin'] },
     ]
   },
 ];
 
 /**
- * Filter nav sections based on user role.
- * Returns only sections that have at least one visible item.
+ * Filter nav sections based on user's permitted modules (dynamic roles).
+ * If permittedModules is null/undefined → unrestricted (show all for that legacy role).
+ * If permittedModules is an array → show only items whose moduleKey is included.
+ * Falls back to legacy role-based filtering when no permittedModules.
  */
-function getNavForRole(role) {
+function getNavForRole(role, permittedModules) {
   return navSections
     .map(section => ({
       ...section,
-      items: section.items.filter(item => item.roles.includes(role)),
+      items: section.items.filter(item => {
+        // Dynamic: if user has permittedModules array, use it
+        if (Array.isArray(permittedModules)) {
+          return permittedModules.includes(item.moduleKey);
+        }
+        // Legacy fallback: use hardcoded roles array
+        return item.roles.includes(role);
+      }),
     }))
     .filter(section => section.items.length > 0);
 }
@@ -215,7 +224,7 @@ export default function Layout({ children }) {
         </div>
 
         <nav className="sidebar-nav">
-          {getNavForRole(user?.role || 'admin').map((section) => (
+          {getNavForRole(user?.role || 'admin', user?.permitted_modules).map((section) => (
             <div key={section.titleKey} className="nav-section">
               <div className="sidebar-nav-label">
                 {t(`common.${section.titleKey}`)}

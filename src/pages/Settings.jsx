@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback, useContext } from 'react';
+import { useState, useEffect, useCallback, useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AuthContext } from '../App';
 import {
   Settings as SettingsIcon, User, Building, DeliveryTruck, Mail, Bell,
   Label as Tag, Plus, Trash, CheckCircle, WarningCircle, Globe, Phone,
   MapPin, Wallet, Clock, EditPencil, Xmark, Upload, Eye, EyeClosed,
-  NavArrowRight, SwitchOn as ToggleOn,
+  NavArrowRight, SwitchOn as ToggleOn, ShieldCheck,
 } from 'iconoir-react';
 import api from '../lib/api';
 import Toast, { useToast } from '../components/Toast';
@@ -595,6 +595,357 @@ function CategoriesTab({ toast }) {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   ROLES & PERMISSIONS TAB
+═══════════════════════════════════════════════════════════════ */
+
+const MODULE_SECTIONS = {
+  main:       { label: 'Main', icon: '🏠' },
+  operations: { label: 'Operations', icon: '📦' },
+  finance:    { label: 'Finance', icon: '💰' },
+  analytics:  { label: 'Analytics', icon: '📊' },
+  config:     { label: 'Configuration', icon: '⚙️' },
+  system:     { label: 'System', icon: '🔧' },
+  driver:     { label: 'Driver Tools', icon: '🚗' },
+};
+
+function RolesTab({ toast }) {
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
+  const [roles, setRoles]         = useState([]);
+  const [modules, setModules]     = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [editRole, setEditRole]   = useState(null);   // null = list view, object = editing
+  const [showCreate, setShowCreate] = useState(false);
+  const [saving, setSaving]       = useState(false);
+
+  const emptyForm = { name: '', name_ar: '', slug: '', description: '', modules: [] };
+  const [form, setForm] = useState(emptyForm);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const [rolesRes, modsRes] = await Promise.all([
+      api.get('/settings/roles'),
+      api.get('/settings/modules'),
+    ]);
+    if (rolesRes.success) setRoles(rolesRes.data || []);
+    if (modsRes.success) setModules(modsRes.data || []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const grouped = useMemo(() => {
+    const g = {};
+    for (const m of modules) {
+      if (!g[m.section]) g[m.section] = [];
+      g[m.section].push(m);
+    }
+    return g;
+  }, [modules]);
+
+  const toggleModule = (key) => {
+    setForm(f => ({
+      ...f,
+      modules: f.modules.includes(key) ? f.modules.filter(k => k !== key) : [...f.modules, key],
+    }));
+  };
+
+  const toggleSection = (sectionModules) => {
+    const keys = sectionModules.map(m => m.key);
+    const allSelected = keys.every(k => form.modules.includes(k));
+    setForm(f => ({
+      ...f,
+      modules: allSelected
+        ? f.modules.filter(k => !keys.includes(k))
+        : [...new Set([...f.modules, ...keys])],
+    }));
+  };
+
+  const selectAll = () => {
+    setForm(f => ({ ...f, modules: modules.map(m => m.key) }));
+  };
+  const clearAll = () => {
+    setForm(f => ({ ...f, modules: [] }));
+  };
+
+  const startEdit = (role) => {
+    setForm({
+      name: role.name,
+      name_ar: role.name_ar || '',
+      slug: role.slug,
+      description: role.description || '',
+      modules: Array.isArray(role.modules) ? [...role.modules] : [],
+    });
+    setEditRole(role);
+    setShowCreate(false);
+  };
+
+  const startCreate = () => {
+    setForm(emptyForm);
+    setEditRole(null);
+    setShowCreate(true);
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    if (editRole) {
+      const res = await api.put('/settings/roles/' + editRole.id, form);
+      if (res.success) {
+        toast('success', t('settings.roles_tab.saved'));
+        setEditRole(null);
+        load();
+      } else {
+        toast('error', res.message || t('settings.roles_tab.save_failed'));
+      }
+    } else {
+      const res = await api.post('/settings/roles', form);
+      if (res.success) {
+        toast('success', t('settings.roles_tab.created'));
+        setShowCreate(false);
+        load();
+      } else {
+        toast('error', res.message || t('settings.roles_tab.create_failed'));
+      }
+    }
+    setSaving(false);
+  };
+
+  const handleDelete = async (id) => {
+    if (!confirm(t('settings.roles_tab.delete_confirm'))) return;
+    const res = await api.delete('/settings/roles/' + id);
+    if (res.success) {
+      toast('success', t('settings.roles_tab.deleted'));
+      load();
+    } else {
+      toast('error', res.message || t('settings.roles_tab.delete_failed'));
+    }
+  };
+
+  if (loading) return <div className="stg-loader">{t('settings.loading')}</div>;
+
+  // Editing / creating form view
+  if (editRole || showCreate) {
+    return (
+      <div className="stg-content">
+        <div className="stg-section">
+          <div className="stg-section-head" style={{ justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div className="stg-section-icon" style={{ background: '#7c3aed20', color: '#7c3aed' }}>
+                <ShieldCheck width={18} height={18} />
+              </div>
+              <div>
+                <div className="stg-section-title">
+                  {editRole ? t('settings.roles_tab.edit_role') : t('settings.roles_tab.new_role')}
+                </div>
+                <div className="stg-section-sub">
+                  {editRole ? editRole.name : t('settings.roles_tab.new_role_sub')}
+                </div>
+              </div>
+            </div>
+            <button className="stg-btn-ghost" type="button" onClick={() => { setEditRole(null); setShowCreate(false); }}>
+              ← {t('settings.roles_tab.back')}
+            </button>
+          </div>
+
+          <form onSubmit={handleSave}>
+            <div className="stg-grid" style={{ padding: '0 0 20px' }}>
+              <div className="stg-field">
+                <label>{t('settings.roles_tab.role_name')}</label>
+                <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                       placeholder="e.g. Manager" />
+              </div>
+              <div className="stg-field">
+                <label>{t('settings.roles_tab.role_name_ar')}</label>
+                <input value={form.name_ar} onChange={e => setForm(f => ({ ...f, name_ar: e.target.value }))}
+                       placeholder="e.g. مدير" dir="rtl" />
+              </div>
+              {!editRole && (
+                <div className="stg-field">
+                  <label>{t('settings.roles_tab.slug')}</label>
+                  <input required value={form.slug} onChange={e => setForm(f => ({ ...f, slug: e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, '-') }))}
+                         placeholder="e.g. manager" style={{ fontFamily: 'monospace' }} />
+                </div>
+              )}
+              <div className="stg-field" style={{ gridColumn: '1/-1' }}>
+                <label>{t('settings.roles_tab.description')}</label>
+                <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                       placeholder={t('settings.roles_tab.description_placeholder')} />
+              </div>
+            </div>
+
+            {/* Module permissions */}
+            <div style={{ padding: '0 0 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontWeight: 700, fontSize: 15, color: '#1e293b' }}>
+                {t('settings.roles_tab.module_permissions')} ({form.modules.length}/{modules.length})
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button type="button" className="stg-btn-ghost" style={{ fontSize: 12, padding: '4px 10px' }} onClick={selectAll}>
+                  {t('settings.roles_tab.select_all')}
+                </button>
+                <button type="button" className="stg-btn-ghost" style={{ fontSize: 12, padding: '4px 10px' }} onClick={clearAll}>
+                  {t('settings.roles_tab.clear_all')}
+                </button>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gap: 16 }}>
+              {Object.entries(grouped).map(([section, mods]) => {
+                const sectionMeta = MODULE_SECTIONS[section] || { label: section, icon: '📄' };
+                const allChecked = mods.every(m => form.modules.includes(m.key));
+                const someChecked = mods.some(m => form.modules.includes(m.key));
+                return (
+                  <div key={section} style={{
+                    border: '1px solid #e2e8f0', borderRadius: 12,
+                    overflow: 'hidden', background: '#fff'
+                  }}>
+                    <div
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 10,
+                        padding: '10px 16px', background: '#f8fafc',
+                        borderBottom: '1px solid #e2e8f0', cursor: 'pointer',
+                      }}
+                      onClick={() => toggleSection(mods)}
+                    >
+                      <input type="checkbox" checked={allChecked} readOnly
+                             style={{ accentColor: '#7c3aed', width: 16, height: 16 }}
+                             ref={el => { if (el) el.indeterminate = someChecked && !allChecked; }} />
+                      <span style={{ fontSize: 16 }}>{sectionMeta.icon}</span>
+                      <span style={{ fontWeight: 700, fontSize: 13, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        {t('settings.roles_tab.section_' + section, sectionMeta.label)}
+                      </span>
+                      <span style={{ marginInlineStart: 'auto', fontSize: 12, color: '#94a3b8' }}>
+                        {mods.filter(m => form.modules.includes(m.key)).length}/{mods.length}
+                      </span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 4, padding: '8px 12px' }}>
+                      {mods.map(m => (
+                        <label key={m.key} style={{
+                          display: 'flex', alignItems: 'center', gap: 8,
+                          padding: '6px 8px', borderRadius: 8, cursor: 'pointer',
+                          background: form.modules.includes(m.key) ? '#7c3aed10' : 'transparent',
+                          transition: 'background 0.15s',
+                        }}>
+                          <input type="checkbox" checked={form.modules.includes(m.key)}
+                                 onChange={() => toggleModule(m.key)}
+                                 style={{ accentColor: '#7c3aed', width: 15, height: 15 }} />
+                          <span style={{ fontSize: 13, fontWeight: form.modules.includes(m.key) ? 600 : 400, color: '#334155' }}>
+                            {m.label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20, paddingBottom: 20 }}>
+              <button type="button" className="stg-btn-ghost" onClick={() => { setEditRole(null); setShowCreate(false); }}>
+                {t('settings.roles_tab.cancel')}
+              </button>
+              <button type="submit" className="stg-btn-primary" disabled={saving}>
+                {saving ? t('settings.roles_tab.saving') : editRole ? t('settings.roles_tab.save_changes') : t('settings.roles_tab.create_role')}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // List view
+  return (
+    <div className="stg-content">
+      <div className="stg-section">
+        <div className="stg-section-head" style={{ justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div className="stg-section-icon" style={{ background: '#7c3aed20', color: '#7c3aed' }}>
+              <ShieldCheck width={18} height={18} />
+            </div>
+            <div>
+              <div className="stg-section-title">{t('settings.roles_tab.title')}</div>
+              <div className="stg-section-sub">{t('settings.roles_tab.count', { count: roles.length })}</div>
+            </div>
+          </div>
+          <button className="stg-btn-primary" type="button" onClick={startCreate}>
+            <Plus width={15} height={15} /> {t('settings.roles_tab.add_role')}
+          </button>
+        </div>
+
+        <div style={{ display: 'grid', gap: 12 }}>
+          {roles.map(role => {
+            const mCount = Array.isArray(role.modules) ? role.modules.length : 0;
+            return (
+              <div key={role.id} style={{
+                display: 'flex', alignItems: 'center', gap: 16,
+                padding: '16px 20px', border: '1px solid #e2e8f0',
+                borderRadius: 12, background: '#fff',
+                transition: 'box-shadow 0.15s',
+              }}>
+                <div style={{
+                  width: 42, height: 42, borderRadius: 10,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: role.is_system ? 'linear-gradient(135deg, #7c3aed33, #7c3aed66)' : 'linear-gradient(135deg, #f9731633, #f9731666)',
+                  fontSize: 18, fontWeight: 800,
+                  color: role.is_system ? '#7c3aed' : '#f97316',
+                }}>
+                  {(role.name || '?')[0].toUpperCase()}
+                </div>
+
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: '#1e293b' }}>
+                    {isRTL && role.name_ar ? role.name_ar : role.name}
+                    {role.is_system && (
+                      <span style={{
+                        marginInlineStart: 8, fontSize: 10, fontWeight: 700,
+                        padding: '2px 8px', borderRadius: 20,
+                        background: '#ede9fe', color: '#7c3aed',
+                        textTransform: 'uppercase', letterSpacing: '0.5px',
+                      }}>
+                        {t('settings.roles_tab.system')}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>
+                    {role.description || role.slug}
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 6, background: '#f1f5f9', color: '#64748b', fontWeight: 600 }}>
+                      {t('settings.roles_tab.users_count', { count: role.user_count || 0 })}
+                    </span>
+                    <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 6, background: '#f0fdf4', color: '#16a34a', fontWeight: 600 }}>
+                      {t('settings.roles_tab.modules_count', { count: mCount })}
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button className="stg-icon-btn" onClick={() => startEdit(role)} title={t('settings.roles_tab.edit')}>
+                    <EditPencil width={14} height={14} />
+                  </button>
+                  {!role.is_system && (
+                    <button className="stg-icon-btn red" onClick={() => handleDelete(role.id)} title={t('settings.roles_tab.delete')}>
+                      <Trash width={14} height={14} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+          {roles.length === 0 && (
+            <div className="stg-empty">
+              <ShieldCheck width={36} height={36} />
+              <p>{t('settings.roles_tab.empty')}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
    USERS TAB
 ═══════════════════════════════════════════════════════════════ */
 function UsersTab({ toast }) {
@@ -602,17 +953,28 @@ function UsersTab({ toast }) {
   const isRTL = i18n.language === 'ar';
   const { user: currentUser } = useContext(AuthContext);
   const [users, setUsers]        = useState([]);
+  const [roles, setRoles]        = useState([]);
   const [loading, setLoading]    = useState(true);
   const [showModal, setShowModal]= useState(false);
   const [saving, setSaving]      = useState(false);
   const [showPw, setShowPw]      = useState(false);
-  const emptyForm = { username:'', full_name:'', email:'', phone:'', password:'', role:'dispatcher' };
+  const emptyForm = { username:'', full_name:'', email:'', phone:'', password:'', role:'dispatcher', role_id: '' };
   const [form, setForm]          = useState(emptyForm);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await api.get('/settings/users');
-    if (res.success) setUsers(res.data || []);
+    const [usersRes, rolesRes] = await Promise.all([
+      api.get('/settings/users'),
+      api.get('/settings/roles'),
+    ]);
+    if (usersRes.success) setUsers(usersRes.data || []);
+    if (rolesRes.success) {
+      const r = rolesRes.data || [];
+      setRoles(r);
+      // Set default role_id to first non-admin role
+      const defaultRole = r.find(x => x.slug === 'dispatcher') || r[0];
+      if (defaultRole) setForm(f => ({ ...f, role: defaultRole.slug, role_id: defaultRole.id }));
+    }
     setLoading(false);
   }, []);
 
@@ -657,6 +1019,8 @@ function UsersTab({ toast }) {
         <div className="stg-user-list">
           {users.map(u => {
             const meta = ROLE_META[u.role] || ROLE_META.client;
+            const roleObj = roles.find(r => r.slug === u.role);
+            const roleName = roleObj ? (isRTL && roleObj.name_ar ? roleObj.name_ar : roleObj.name) : (u.role || 'unknown');
             return (
               <div key={u.id} className="stg-user-row">
                 <div className="stg-user-avatar" style={{background:'linear-gradient(135deg,'+meta.badge+'33,'+meta.badge+'66)'}}>
@@ -669,7 +1033,7 @@ function UsersTab({ toast }) {
                   <div className="stg-user-meta">{u.email}{u.phone?' · '+u.phone:''}</div>
                 </div>
                 <div style={{display:'flex',alignItems:'center',gap:10,flexShrink:0}}>
-                  <span className="stg-role-badge" style={{background:meta.bg,color:meta.badge}}>{t('settings.roles.' + u.role)}</span>
+                  <span className="stg-role-badge" style={{background:meta.bg,color:meta.badge}}>{roleName}</span>
                   <span className="stg-user-date">{fmtDate(u.created_at)}</span>
                   {u.role !== 'superadmin' && !u.is_owner && String(u.id) !== String(currentUser?.id) && (
                     <button className="stg-icon-btn red" onClick={()=>del(u.id)} title="Deactivate"><Trash width={13} height={13}/></button>
@@ -718,8 +1082,11 @@ function UsersTab({ toast }) {
                 </div>
                 <div className="stg-field">
                   <label>{t('settings.users.role')}</label>
-                  <select value={form.role} onChange={e=>setForm(f=>({...f,role:e.target.value}))}>
-                    {['admin','dispatcher','driver','client'].map(r=><option key={r} value={r}>{t('settings.roles.' + r)}</option>)}
+                  <select value={form.role_id} onChange={e => {
+                    const selectedRole = roles.find(r => String(r.id) === e.target.value);
+                    setForm(f => ({ ...f, role_id: Number(e.target.value), role: selectedRole?.slug || f.role }));
+                  }}>
+                    {roles.map(r => <option key={r.id} value={r.id}>{isRTL && r.name_ar ? r.name_ar : r.name}</option>)}
                   </select>
                 </div>
               </div>
@@ -745,6 +1112,7 @@ const TABS = [
   { id:'delivery',      icon: DeliveryTruck, color:'#3b82f6' },
   { id:'notifications', icon: Bell,          color:'#8b5cf6' },
   { id:'categories',    icon: Tag,           color:'#0d9488' },
+  { id:'roles',         icon: ShieldCheck,   color:'#7c3aed' },
   { id:'users',         icon: User,          color:'#f43f5e' },
 ];
 
@@ -834,6 +1202,7 @@ export default function Settings() {
             {tab==='delivery'      && <DeliveryTab      data={data} setData={setData} onSave={handleSave} saving={saving}/>}
             {tab==='notifications' && <NotificationsTab data={data} setData={setData} onSave={handleSave} saving={saving}/>}
             {tab==='categories'    && <CategoriesTab    toast={toast}/>}
+            {tab==='roles'         && <RolesTab         toast={toast}/>}
             {tab==='users'         && <UsersTab         toast={toast}/>}
           </div>
         </div>

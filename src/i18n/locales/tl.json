@@ -2479,6 +2479,7 @@
       "delivery": "Delivery",
       "notifications": "Notifications",
       "categories": "Categories",
+      "roles": "Mga Tungkulin",
       "users": "Users"
     },
     "tab_descriptions": {
@@ -2486,6 +2487,7 @@
       "delivery": "Delivery defaults, COD rules and feature toggles",
       "notifications": "Email SMTP and SMS gateway configuration",
       "categories": "Manage order categories and shipment types",
+      "roles": "Tukuyin ang mga tungkulin at i-configure ang mga pahintulot ng module",
       "users": "Manage team members and their roles"
     },
     "general": {

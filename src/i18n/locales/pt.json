@@ -2479,6 +2479,7 @@
       "delivery": "Delivery",
       "notifications": "Notifications",
       "categories": "Categories",
+      "roles": "Funções",
       "users": "Users"
     },
     "tab_descriptions": {
@@ -2486,6 +2487,7 @@
       "delivery": "Delivery defaults, COD rules and feature toggles",
       "notifications": "Email SMTP and SMS gateway configuration",
       "categories": "Manage order categories and shipment types",
+      "roles": "Definir funções e configurar permissões de módulos",
       "users": "Manage team members and their roles"
     },
     "general": {
