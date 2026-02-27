@@ -106,17 +106,17 @@ export default function Performance() {
     <div className="perf-page">
       {/* Hero */}
       <div className="module-hero">
-        <div className="hero-content">
-          <h1 className="hero-title">{t("performance.title")}</h1>
-          <p className="hero-subtitle">
+        <div className="module-hero-left">
+          <h1 className="module-hero-title">{t("performance.title")}</h1>
+          <p className="module-hero-sub">
             {t('performance.subtitle')}
           </p>
         </div>
-        <div className="hero-actions">
-          <button onClick={exportCSV} className="hero-btn secondary" title={t('performance.export_title')}>
+        <div className="module-hero-actions">
+          <button onClick={exportCSV} className="module-btn module-btn-outline" title={t('performance.export_title')}>
             <Download width={16} height={16} /> {t('performance.export_btn')}
           </button>
-          <button onClick={load} className="hero-btn secondary">
+          <button onClick={load} className="module-btn module-btn-outline">
             <Refresh width={16} height={16} /> {t('performance.refresh_btn')}
           </button>
         </div>

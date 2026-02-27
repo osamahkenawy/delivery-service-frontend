@@ -368,13 +368,15 @@ export default function DriverScan() {
   /* ─── Render ─────────────────────────────────────────────────── */
   return (
     <div className="page-container" style={{ maxWidth: 640, margin: '0 auto' }}>
-      <div className="page-header-row" style={{ marginBottom: 20 }}>
-        <div>
-          <h2 className="page-heading" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><ScanBarcode width={22} height={22} /> {t('driverScan.title')}</h2>
-          <p className="page-subheading">{t("driverScan.scan_hint")}</p>
+      <div className="module-hero" style={{ marginBottom: 20 }}>
+        <div className="module-hero-left">
+          <h2 className="module-hero-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><ScanBarcode width={22} height={22} /> {t('driverScan.title')}</h2>
+          <p className="module-hero-sub">{t("driverScan.scan_hint")}</p>
         </div>
         {order && (
-          <button onClick={reset} className="btn-outline-action">{t("driverScan.scan_another")}</button>
+          <div className="module-hero-actions">
+            <button onClick={reset} className="module-btn module-btn-outline">{t("driverScan.scan_another")}</button>
+          </div>
         )}
       </div>
 

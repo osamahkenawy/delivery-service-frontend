@@ -169,10 +169,20 @@ function App() {
   const isDriver = user?.role === 'driver';
   const homeRoute = isDriver ? '/driver/dashboard' : '/dashboard';
 
+  /** Any authenticated user */
   const PrivateRoute = ({ children }) => user ? <Layout>{children}</Layout> : <Navigate to="/login" />;
+
+  /** Admin + Dispatcher (staff). Drivers get redirected. */
+  const StaffRoute = ({ children }) => {
+    if (!user) return <Navigate to="/login" />;
+    if (isDriver) return <Navigate to="/driver/dashboard" />;
+    return <Layout>{children}</Layout>;
+  };
+
+  /** Admin only. Dispatchers & drivers get redirected. */
   const AdminRoute = ({ children }) => {
     if (!user) return <Navigate to="/login" />;
-    if (isDriver) return <Navigate to="/driver/orders" />;
+    if (user.role !== 'admin' && user.role !== 'super_admin') return <Navigate to={homeRoute} />;
     return <Layout>{children}</Layout>;
   };
 
@@ -192,28 +202,30 @@ function App() {
         <Route path="/driver/orders"    element={<PrivateRoute><DriverDashboard /></PrivateRoute>} />
         <Route path="/driver/scan"      element={<PrivateRoute><DriverScan /></PrivateRoute>} />
 
-        {/* Admin-only routes (drivers get redirected) */}
-        <Route path="/dashboard"      element={<AdminRoute><Dashboard /></AdminRoute>} />
-        <Route path="/orders"         element={<AdminRoute><Orders /></AdminRoute>} />
-        <Route path="/orders/:id"     element={<AdminRoute><OrderDetail /></AdminRoute>} />
-        <Route path="/drivers"        element={<AdminRoute><Drivers /></AdminRoute>} />
-        <Route path="/dispatch"       element={<AdminRoute><Dispatch /></AdminRoute>} />
-        <Route path="/clients"        element={<AdminRoute><Clients /></AdminRoute>} />
+        {/* Staff routes — Admin + Dispatcher */}
+        <Route path="/dashboard"      element={<StaffRoute><Dashboard /></StaffRoute>} />
+        <Route path="/orders"         element={<StaffRoute><Orders /></StaffRoute>} />
+        <Route path="/orders/:id"     element={<StaffRoute><OrderDetail /></StaffRoute>} />
+        <Route path="/drivers"        element={<StaffRoute><Drivers /></StaffRoute>} />
+        <Route path="/dispatch"       element={<StaffRoute><Dispatch /></StaffRoute>} />
+        <Route path="/clients"        element={<StaffRoute><Clients /></StaffRoute>} />
+        <Route path="/live-map"       element={<StaffRoute><LiveMap /></StaffRoute>} />
+        <Route path="/barcode"        element={<PrivateRoute><Barcode /></PrivateRoute>} />
+        <Route path="/shipment-tracking" element={<StaffRoute><ShipmentTracking /></StaffRoute>} />
+        <Route path="/bulk-import"    element={<StaffRoute><BulkImport /></StaffRoute>} />
+        <Route path="/returns"        element={<StaffRoute><Returns /></StaffRoute>} />
+        <Route path="/wallet"         element={<StaffRoute><Wallet /></StaffRoute>} />
+        <Route path="/invoices"       element={<StaffRoute><Invoices /></StaffRoute>} />
+        <Route path="/reports"        element={<StaffRoute><Reports /></StaffRoute>} />
+        <Route path="/cod"            element={<StaffRoute><CODReconciliation /></StaffRoute>} />
+        <Route path="/performance"    element={<StaffRoute><Performance /></StaffRoute>} />
+
+        {/* Admin-only routes — Configuration & System */}
         <Route path="/zones"          element={<AdminRoute><Zones /></AdminRoute>} />
         <Route path="/pricing"        element={<AdminRoute><Pricing /></AdminRoute>} />
         <Route path="/notifications"  element={<AdminRoute><Notifications /></AdminRoute>} />
-        <Route path="/wallet"         element={<AdminRoute><Wallet /></AdminRoute>} />
-        <Route path="/invoices"       element={<AdminRoute><Invoices /></AdminRoute>} />
-        <Route path="/reports"        element={<AdminRoute><Reports /></AdminRoute>} />
-        <Route path="/live-map"       element={<AdminRoute><LiveMap /></AdminRoute>} />
-        <Route path="/barcode"        element={<AdminRoute><Barcode /></AdminRoute>} />
         <Route path="/settings"       element={<AdminRoute><Settings /></AdminRoute>} />
         <Route path="/api-keys"       element={<AdminRoute><Integrations /></AdminRoute>} />
-        <Route path="/shipment-tracking" element={<AdminRoute><ShipmentTracking /></AdminRoute>} />
-        <Route path="/bulk-import"    element={<AdminRoute><BulkImport /></AdminRoute>} />
-        <Route path="/returns"        element={<AdminRoute><Returns /></AdminRoute>} />
-        <Route path="/cod"            element={<AdminRoute><CODReconciliation /></AdminRoute>} />
-        <Route path="/performance"    element={<AdminRoute><Performance /></AdminRoute>} />
 
         {/* Super Admin Routes */}
         <Route path="/super-admin/login" element={<SuperAdminLogin />} />

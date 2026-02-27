@@ -148,6 +148,22 @@
   width: 6px; height: 6px; border-radius: 50%; background: currentColor;
 }
 
+/* ── Order Status Badge ────────────────────────────────── */
+.cod-order-status {
+  display: inline-block;
+  font-size: 11px; font-weight: 600; padding: 3px 8px;
+  border-radius: 6px; text-transform: capitalize; white-space: nowrap;
+  background: #f1f5f9; color: #475569;
+}
+.cod-order-status.delivered   { background: #dcfce7; color: #16a34a; }
+.cod-order-status.in_transit  { background: #dbeafe; color: #2563eb; }
+.cod-order-status.picked_up   { background: #e0e7ff; color: #4f46e5; }
+.cod-order-status.assigned    { background: #fef3c7; color: #d97706; }
+.cod-order-status.pending     { background: #f1f5f9; color: #64748b; }
+.cod-order-status.confirmed   { background: #ecfdf5; color: #059669; }
+.cod-order-status.cancelled   { background: #fee2e2; color: #dc2626; }
+.cod-order-status.returned    { background: #fef3c7; color: #92400e; }
+
 /* ── Driver Card ───────────────────────────────────────── */
 .cod-driver-grid {
   display: grid;

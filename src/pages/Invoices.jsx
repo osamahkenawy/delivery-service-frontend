@@ -248,7 +248,7 @@ export default function Invoices() {
           border: '2px dashed #e2e8f0'
         }}>
           <Page width={44} height={44} color="#94a3b8" style={{ marginBottom: 14 }} />
-          <h3 style={{ margin: '0 0 8px', fontSize: 17, fontWeight: 700, color: '#1e293b' }}>{t("invoices.no_invoices")}</h3>
+          <h3 style={{textAlign: 'center', margin: '0 0 8px', fontSize: 17, fontWeight: 700, color: '#1e293b' }}>{t("invoices.no_invoices")}</h3>
           <p style={{ margin: 0, fontSize: 13, color: '#94a3b8', maxWidth: 380, marginInline: 'auto', lineHeight: 1.6 }}>
             {t('invoices.empty_hint')}
           </p>

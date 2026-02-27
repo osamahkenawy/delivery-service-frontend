@@ -326,12 +326,12 @@ export default function Dispatch() {
   return (
     <div className="page-container">
       {/* ── Header ── */}
-      <div className="page-header-row">
-        <div>
-          <h2 className="page-heading">{t('dispatch.title')}</h2>
-          <p className="page-subheading">{t('dispatch.subtitle')}</p>
+      <div className="module-hero">
+        <div className="module-hero-left">
+          <h2 className="module-hero-title">{t('dispatch.title')}</h2>
+          <p className="module-hero-sub">{t('dispatch.subtitle')}</p>
         </div>
-        <div style={{ display:'flex', gap: 10, alignItems:'center' }}>
+        <div className="module-hero-actions">
           <button onClick={() => navigate('/orders')} style={{
             padding: '8px 14px', borderRadius: 10, border: '1px solid #e2e8f0', background: '#fff',
             cursor: 'pointer', fontWeight: 600, fontSize: 13, color: '#475569',
@@ -361,7 +361,7 @@ export default function Dispatch() {
               <MapIcon width={15} height={15} /> {t('dispatch.view.map')}
             </button>
           </div>
-          <button className="btn-outline-action" onClick={fetchBoard}>
+          <button className="module-btn module-btn-outline" onClick={fetchBoard}>
             <Refresh width={16} height={16} /> {t('dispatch.refresh')}
           </button>
         </div>
@@ -389,11 +389,11 @@ export default function Dispatch() {
               </option>
             ))}
           </select>
-          <button className="btn-primary-action" onClick={handleAssign}
+          <button className="module-btn module-btn-primary" onClick={handleAssign}
             disabled={!selectedDriver || assigning}>
             {assigning ? t('dispatch.assigning') : t('dispatch.assign_driver')}
           </button>
-          <button className="btn-outline-action"
+          <button className="module-btn module-btn-outline"
             onClick={() => { setSelectedOrder(null); setSelectedDriver(''); }}>
             {t('dispatch.cancel')}
           </button>

@@ -421,7 +421,7 @@ export default function LiveMap() {
       {/* ── Header ───────────────────────────────────────────── */}
       <div className="lm-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <h2 className="page-heading" style={{ margin: 0 }}>{t("liveMap.title")}</h2>
+          <h2 className="module-hero-title" style={{ margin: 0 }}>{t("liveMap.title")}</h2>
           <span style={{
             display: 'flex', alignItems: 'center', gap: 6, fontSize: '.75rem',
             padding: '4px 10px', borderRadius: 99, fontWeight: 600,

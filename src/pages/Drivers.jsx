@@ -251,16 +251,16 @@ export default function Drivers() {
     <div className="page-container">
 
       {/* ── Header ── */}
-      <div className="page-header-row">
-        <div>
-          <h2 className="page-heading">{t('drivers.title')}</h2>
-          <p className="page-subheading">{t('drivers.registered_drivers', { count: stats.total })}</p>
+      <div className="module-hero">
+        <div className="module-hero-left">
+          <h2 className="module-hero-title">{t('drivers.title')}</h2>
+          <p className="module-hero-sub">{t('drivers.registered_drivers', { count: stats.total })}</p>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button className="btn-outline-action" onClick={fetchDrivers}>
+        <div className="module-hero-actions">
+          <button className="module-btn module-btn-outline" onClick={fetchDrivers}>
             <Refresh width={15} height={15} /> {t('common.refresh')}
           </button>
-          <button className="btn-primary-action" onClick={openNew}>
+          <button className="module-btn module-btn-primary" onClick={openNew}>
             <Plus width={16} height={16} /> {t('drivers.add_driver')}
           </button>
         </div>
@@ -318,7 +318,7 @@ export default function Drivers() {
           ))}
         </select>
         {hasFilters && (
-          <button className="btn-outline-action" onClick={clearFilters}>
+          <button className="module-btn module-btn-outline" onClick={clearFilters}>
             <Xmark width={14} height={14} /> {t('common.clear')}
           </button>
         )}
@@ -332,7 +332,7 @@ export default function Drivers() {
           <h3>{t("drivers.no_drivers")}</h3>
           <p>{hasFilters ? t('drivers.adjust_filters') : t('drivers.no_drivers_hint')}</p>
           {!hasFilters && (
-            <button className="btn-primary-action" onClick={openNew}>
+            <button className="module-btn module-btn-primary" onClick={openNew}>
               <Plus width={16} height={16} /> {t('drivers.add_driver')}
             </button>
           )}
@@ -699,15 +699,15 @@ export default function Drivers() {
 
             {/* Footer */}
             <div className="ord-drawer-footer">
-              <button className="btn-outline-action drv-deactivate"
+              <button className="module-btn module-btn-outline drv-deactivate"
                 onClick={() => handleToggleActive(viewDriver)}
                 style={{ color: viewDriver.is_active === 0 ? '#16a34a' : '#dc2626',
                          borderColor: viewDriver.is_active === 0 ? '#bbf7d0' : '#fecaca' }}>
                 {viewDriver.is_active === 0 ? <><Check width={14} height={14} /> {t('drivers.activate')}</> : <><Prohibition width={14} height={14} /> {t('drivers.deactivate')}</>}
               </button>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button className="btn-outline-action" onClick={() => setViewDriver(null)}>{t('common.close')}</button>
-                <button className="btn-primary-action"
+                <button className="module-btn module-btn-outline" onClick={() => setViewDriver(null)}>{t('common.close')}</button>
+                <button className="module-btn module-btn-primary"
                   onClick={() => { setViewDriver(null); openEdit(viewDriver); }}>
                   <EditPencil width={14} height={14} /> {t('drivers.edit_driver')}
                 </button>
@@ -845,8 +845,8 @@ export default function Drivers() {
               </div>
 
               <div className="modal-footer">
-                <button type="button" className="btn-outline-action" onClick={closeForm}>{t('common.cancel')}</button>
-                <button type="submit" className="btn-primary-action" disabled={saving}>
+                <button type="button" className="module-btn module-btn-outline" onClick={closeForm}>{t('common.cancel')}</button>
+                <button type="submit" className="module-btn module-btn-primary" disabled={saving}>
                   {saving ? t('common.loading') : selected ? t('drivers.update_driver') : t('drivers.add_driver')}
                 </button>
               </div>

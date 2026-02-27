@@ -353,8 +353,8 @@ export default function Zones() {
             <p>{t('zones.form_subtitle')}</p>
           </div>
           <div className="zf-header-actions">
-            <button type="button" className="btn-outline-action" onClick={closeForm}>{t("zones.discard")}</button>
-            <button className="btn-primary-action" onClick={handleSubmit} disabled={saving || !canSubmit}
+            <button type="button" className="module-btn module-btn-outline" onClick={closeForm}>{t("zones.discard")}</button>
+            <button className="module-btn module-btn-primary" onClick={handleSubmit} disabled={saving || !canSubmit}
               title={!canSubmit ? t('zones.validation_hint') : ''}>
               {saving ? t('zones.saving') : selected ? t('zones.save_changes') : t('zones.create_btn')}
             </button>
@@ -531,14 +531,14 @@ export default function Zones() {
      ═══════════════════════════════════════════════════════════════ */
   return (
     <div className="page-container">
-      <div className="page-header-row">
-        <div>
-          <h2 className="page-heading">{t('zones.title')}</h2>
-          <p className="page-subheading">{t('zones.zones_configured', { count: zones.length })}</p>
+      <div className="module-hero">
+        <div className="module-hero-left">
+          <h2 className="module-hero-title">{t('zones.title')}</h2>
+          <p className="module-hero-sub">{t('zones.zones_configured', { count: zones.length })}</p>
         </div>
-        <div style={{ display:'flex', gap:10 }}>
-          <button className="btn-outline-action" onClick={fetchZones}><Refresh width={15} height={15} /> {t('zones.refresh_btn')}</button>
-          <button className="btn-primary-action" onClick={openNew}><Plus width={16} height={16} /> {t('zones.add_btn')}</button>
+        <div className="module-hero-actions">
+          <button className="module-btn module-btn-outline" onClick={fetchZones}><Refresh width={15} height={15} /> {t('zones.refresh_btn')}</button>
+          <button className="module-btn module-btn-primary" onClick={openNew}><Plus width={16} height={16} /> {t('zones.add_btn')}</button>
         </div>
       </div>
 
@@ -575,7 +575,7 @@ export default function Zones() {
               <div className="zl-empty">
                 <MapPin width={36} height={36} />
                 <p>{t("zones.no_zones")}</p>
-                <button className="btn-primary-action" onClick={openNew}><Plus width={15} height={15} /> {t('zones.add_btn')}</button>
+                <button className="module-btn module-btn-primary" onClick={openNew}><Plus width={15} height={15} /> {t('zones.add_btn')}</button>
               </div>
             ) : filtered.map((zone, i) => {
               const c = zone.color || ZONE_COLORS[i % 8];

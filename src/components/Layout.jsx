@@ -6,112 +6,133 @@ import {
   HomeSimple, Package, DeliveryTruck, Map, User, MapPin,
   DollarCircle, Bell, Wallet, Page, StatsUpSquare, Settings,
   Network, Menu, LogOut, Language, Dashboard, Upload,
-  RefreshDouble, CreditCard, Medal, Search
+  RefreshDouble, CreditCard, Medal, Search, QrCode, ScanBarcode
 } from 'iconoir-react';
 import NotificationBell from './NotificationBell';
 import './Layout.css';
 
 const iconMap = {
-  'dashboard':      HomeSimple,
-  'orders':         Package,
-  'drivers':        DeliveryTruck,
-  'dispatch':       Map,
-  'live-map':       Map,
-  'barcode':         Package,
-  'driver-scan':     DeliveryTruck,
-  'my-deliveries':   Package,
+  'dashboard':        HomeSimple,
+  'orders':           Package,
+  'drivers':          DeliveryTruck,
+  'dispatch':         Map,
+  'live-map':         Map,
+  'barcode':          QrCode,
+  'driver-scan':      ScanBarcode,
+  'my-deliveries':    Package,
   'driver-dashboard': HomeSimple,
   'my-orders':        Package,
-  'clients':        User,
-  'zones':          MapPin,
-  'pricing':        DollarCircle,
-  'notifications':  Bell,
-  'wallet':         Wallet,
-  'invoices':       Page,
-  'reports':        StatsUpSquare,
-  'settings':       Settings,
-  'api-keys':       Network,
+  'clients':          User,
+  'zones':            MapPin,
+  'pricing':          DollarCircle,
+  'notifications':    Bell,
+  'wallet':           Wallet,
+  'invoices':         Page,
+  'reports':          StatsUpSquare,
+  'settings':         Settings,
+  'api-keys':         Network,
   'shipment-tracking': Search,
-  'bulk-import':    Upload,
-  'returns':        RefreshDouble,
-  'cod':            CreditCard,
-  'performance':    Medal,
+  'bulk-import':      Upload,
+  'returns':          RefreshDouble,
+  'cod':              CreditCard,
+  'performance':      Medal,
 };
 
-/* ── Admin navigation ── */
-const adminNavSections = [
+/*
+ * ═══════════════════════════════════════════════════════════
+ * ROLE-BASED SIDEBAR NAVIGATION
+ *
+ * Each nav item has a `roles` array defining who can see it.
+ * Roles: admin, dispatcher (staff), driver
+ *
+ * Admin        → Full access to everything
+ * Dispatcher   → Operations + Finance (no config/system)
+ * Driver       → Only driver-specific pages
+ * ═══════════════════════════════════════════════════════════
+ */
+
+const navSections = [
+  /* ── MAIN ─────────────────────────────────────────── */
   {
     titleKey: 'main',
     items: [
-      { path: '/dashboard',     labelKey: 'dashboard',     iconKey: 'dashboard' },
+      { path: '/dashboard',          labelKey: 'dashboard',       iconKey: 'dashboard',        roles: ['admin', 'dispatcher'] },
+      { path: '/driver/dashboard',   labelKey: 'driver_home',     iconKey: 'driver-dashboard', roles: ['driver'] },
     ]
   },
+  /* ── OPERATIONS ───────────────────────────────────── */
   {
     titleKey: 'operations',
     items: [
-      { path: '/orders',        labelKey: 'orders',        iconKey: 'orders' },
-      { path: '/drivers',       labelKey: 'drivers',       iconKey: 'drivers' },
-      { path: '/dispatch',      labelKey: 'dispatch',      iconKey: 'dispatch' },
-      { path: '/live-map',      labelKey: 'livemap',      iconKey: 'live-map' },
-      { path: '/barcode',       labelKey: 'barcode',      iconKey: 'barcode' },
-      { path: '/driver/scan',   labelKey: 'scan_shipment',  iconKey: 'driver-scan' },
-      { path: '/driver/orders', labelKey: 'my_deliveries',  iconKey: 'my-deliveries' },
-      { path: '/clients',       labelKey: 'clients',       iconKey: 'clients' },
-      { path: '/shipment-tracking', labelKey: 'tracking', iconKey: 'shipment-tracking' },
-      { path: '/bulk-import',   labelKey: 'bulk_import',   iconKey: 'bulk-import' },
-      { path: '/returns',       labelKey: 'returns',       iconKey: 'returns' },
+      { path: '/orders',             labelKey: 'orders',          iconKey: 'orders',           roles: ['admin', 'dispatcher'] },
+      { path: '/dispatch',           labelKey: 'dispatch',        iconKey: 'dispatch',         roles: ['admin', 'dispatcher'] },
+      { path: '/drivers',            labelKey: 'drivers',         iconKey: 'drivers',          roles: ['admin', 'dispatcher'] },
+      { path: '/clients',            labelKey: 'clients',         iconKey: 'clients',          roles: ['admin', 'dispatcher'] },
+      { path: '/live-map',           labelKey: 'livemap',         iconKey: 'live-map',         roles: ['admin', 'dispatcher'] },
+      { path: '/shipment-tracking',  labelKey: 'tracking',        iconKey: 'shipment-tracking', roles: ['admin', 'dispatcher'] },
+      { path: '/bulk-import',        labelKey: 'bulk_import',     iconKey: 'bulk-import',      roles: ['admin', 'dispatcher'] },
+      { path: '/returns',            labelKey: 'returns',         iconKey: 'returns',          roles: ['admin', 'dispatcher'] },
     ]
   },
-  {
-    titleKey: 'config',
-    items: [
-      { path: '/zones',         labelKey: 'zones',         iconKey: 'zones' },
-      { path: '/pricing',       labelKey: 'pricing',       iconKey: 'pricing' },
-    ]
-  },
-  {
-    titleKey: 'finance',
-    items: [
-      { path: '/wallet',        labelKey: 'wallet',        iconKey: 'wallet' },
-      { path: '/invoices',      labelKey: 'invoices',      iconKey: 'invoices' },
-      { path: '/cod',           labelKey: 'cod_reconciliation', iconKey: 'cod' },
-    ]
-  },
-  {
-    titleKey: 'analytics',
-    items: [
-      { path: '/reports',       labelKey: 'reports',       iconKey: 'reports' },
-      { path: '/performance',   labelKey: 'performance',   iconKey: 'performance' },
-    ]
-  },
-  {
-    titleKey: 'system',
-    items: [
-      { path: '/notifications', labelKey: 'notifications', iconKey: 'notifications' },
-      { path: '/settings',      labelKey: 'settings',      iconKey: 'settings' },
-      { path: '/api-keys',      labelKey: 'integrations',      iconKey: 'api-keys' },
-    ]
-  },
-];
-
-/* ── Driver navigation (minimal) ── */
-const driverNavSections = [
-  {
-    titleKey: 'main',
-    items: [
-      { path: '/driver/dashboard', labelKey: 'driver_home',    iconKey: 'driver-dashboard' },
-      { path: '/driver/orders',    labelKey: 'my_orders',      iconKey: 'my-orders' },
-    ]
-  },
+  /* ── DRIVER TOOLS ─────────────────────────────────── */
   {
     titleKey: 'tools',
     items: [
-      { path: '/driver/scan',      labelKey: 'scan_shipment',  iconKey: 'driver-scan' },
+      { path: '/driver/orders',      labelKey: 'my_deliveries',   iconKey: 'my-deliveries',    roles: ['driver'] },
+      { path: '/driver/scan',        labelKey: 'scan_shipment',   iconKey: 'driver-scan',      roles: ['driver'] },
+      { path: '/barcode',            labelKey: 'barcode',         iconKey: 'barcode',          roles: ['driver'] },
+    ]
+  },
+  /* ── FINANCE ──────────────────────────────────────── */
+  {
+    titleKey: 'finance',
+    items: [
+      { path: '/wallet',             labelKey: 'wallet',          iconKey: 'wallet',           roles: ['admin', 'dispatcher'] },
+      { path: '/invoices',           labelKey: 'invoices',        iconKey: 'invoices',         roles: ['admin', 'dispatcher'] },
+      { path: '/cod',                labelKey: 'cod_reconciliation', iconKey: 'cod',            roles: ['admin', 'dispatcher'] },
+    ]
+  },
+  /* ── ANALYTICS ────────────────────────────────────── */
+  {
+    titleKey: 'analytics',
+    items: [
+      { path: '/reports',            labelKey: 'reports',         iconKey: 'reports',          roles: ['admin', 'dispatcher'] },
+      { path: '/performance',        labelKey: 'performance',     iconKey: 'performance',      roles: ['admin', 'dispatcher'] },
+    ]
+  },
+  /* ── CONFIGURATION (admin-only) ───────────────────── */
+  {
+    titleKey: 'config',
+    items: [
+      { path: '/zones',              labelKey: 'zones',           iconKey: 'zones',            roles: ['admin'] },
+      { path: '/pricing',            labelKey: 'pricing',         iconKey: 'pricing',          roles: ['admin'] },
+    ]
+  },
+  /* ── SYSTEM (admin-only) ──────────────────────────── */
+  {
+    titleKey: 'system',
+    items: [
+      { path: '/notifications',      labelKey: 'notifications',   iconKey: 'notifications',    roles: ['admin'] },
+      { path: '/settings',           labelKey: 'settings',        iconKey: 'settings',         roles: ['admin'] },
+      { path: '/api-keys',           labelKey: 'integrations',    iconKey: 'api-keys',         roles: ['admin'] },
     ]
   },
 ];
 
-const allNavItems = [...adminNavSections, ...driverNavSections].flatMap(s => s.items);
+/**
+ * Filter nav sections based on user role.
+ * Returns only sections that have at least one visible item.
+ */
+function getNavForRole(role) {
+  return navSections
+    .map(section => ({
+      ...section,
+      items: section.items.filter(item => item.roles.includes(role)),
+    }))
+    .filter(section => section.items.length > 0);
+}
+
+const allNavItems = navSections.flatMap(s => s.items);
 
 export default function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -148,7 +169,10 @@ export default function Layout({ children }) {
   };
 
   const changeLanguage = (lng) => {
+    const rtlLangs = ['ar'];
     i18n.changeLanguage(lng);
+    document.documentElement.dir = rtlLangs.includes(lng) ? 'rtl' : 'ltr';
+    document.documentElement.lang = lng;
     setShowLangMenu(false);
   };
 
@@ -191,7 +215,7 @@ export default function Layout({ children }) {
         </div>
 
         <nav className="sidebar-nav">
-          {(user?.role === 'driver' ? driverNavSections : adminNavSections).map((section) => (
+          {getNavForRole(user?.role || 'admin').map((section) => (
             <div key={section.titleKey} className="nav-section">
               <div className="sidebar-nav-label">
                 {t(`common.${section.titleKey}`)}
@@ -243,26 +267,31 @@ export default function Layout({ children }) {
             </button>
             {showLangMenu && (
               <div className="lang-dropdown">
-                <button
-                  className={`lang-option ${i18n.language === 'en' ? 'active' : ''}`}
-                  onClick={() => changeLanguage('en')}
-                >
-                  EN &mdash; English
-                </button>
-                <button
-                  className={`lang-option ${i18n.language === 'ar' ? 'active' : ''}`}
-                  onClick={() => changeLanguage('ar')}
-                >
-                  AR &mdash; &#1575;&#1604;&#1593;&#1585;&#1576;&#1610;&#1577;
-                </button>
+                {[
+                  { code: 'en', label: 'English' },
+                  { code: 'ar', label: 'العربية' },
+                  { code: 'es', label: 'Español' },
+                  { code: 'pt', label: 'Português' },
+                  { code: 'hi', label: 'हिन्दी' },
+                  { code: 'tl', label: 'Tagalog' },
+                ].map(lang => (
+                  <button
+                    key={lang.code}
+                    className={`lang-option ${i18n.language === lang.code ? 'active' : ''}`}
+                    onClick={() => changeLanguage(lang.code)}
+                  >
+                    {lang.code.toUpperCase()} &mdash; {lang.label}
+                  </button>
+                ))}
               </div>
             )}
           </div>
 
-          {user?.role === 'superadmin' && <span className="role-badge super-admin">SUPER ADMIN</span>}
-          {user?.role === 'admin'      && <span className="role-badge admin">ADMIN</span>}
-          {user?.role === 'dispatcher' && <span className="role-badge staff">DISPATCHER</span>}
-          {user?.role === 'driver'     && <span className="role-badge staff" style={{ background: '#f973161a', color: '#f97316', borderColor: '#f97316' }}>DRIVER</span>}
+          {user?.role === 'superadmin'  && <span className="role-badge super-admin">SUPER ADMIN</span>}
+          {user?.role === 'super_admin' && <span className="role-badge super-admin">SUPER ADMIN</span>}
+          {user?.role === 'admin'       && <span className="role-badge admin">ADMIN</span>}
+          {user?.role === 'dispatcher'  && <span className="role-badge staff">STAFF</span>}
+          {user?.role === 'driver'      && <span className="role-badge staff" style={{ background: '#f973161a', color: '#f97316', borderColor: '#f97316' }}>DRIVER</span>}
 
           <div className="user-menu-wrapper">
             <button className="user-avatar-toggle" onClick={() => setShowUserMenu(!showUserMenu)}>

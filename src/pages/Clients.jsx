@@ -684,7 +684,7 @@ export default function Clients() {
                       style={{ padding:'7px 11px', borderRadius:8, border:'1px solid #e2e8f0',
                         background:page===1?'#f8fafc':'#fff', cursor:page===1?'not-allowed':'pointer',
                         fontSize:12, fontWeight:600, opacity:page===1?0.5:1, display:'flex', alignItems:'center', gap:4 }}>
-                      <NavArrowLeft width={13} height={13} /> {t('common.prev')}
+                      {isRTL ? <NavArrowRight width={13} height={13} /> : <NavArrowLeft width={13} height={13} />} {t('common.prev')}
                     </button>
                     {pageNumbers.map((p, i) => p === '...' ? (
                       <span key={i} style={{ padding:'4px 8px', color:'#94a3b8', fontSize:12 }}>…</span>
@@ -701,7 +701,7 @@ export default function Clients() {
                       style={{ padding:'7px 11px', borderRadius:8, border:'1px solid #e2e8f0',
                         background:page*LIMIT>=total?'#f8fafc':'#fff', cursor:page*LIMIT>=total?'not-allowed':'pointer',
                         fontSize:12, fontWeight:600, opacity:page*LIMIT>=total?0.5:1, display:'flex', alignItems:'center', gap:4 }}>
-                      {t('common.next')} <NavArrowRight width={13} height={13} />
+                      {t('common.next')} {isRTL ? <NavArrowLeft width={13} height={13} /> : <NavArrowRight width={13} height={13} />}
                     </button>
                   </div>
                 </div>

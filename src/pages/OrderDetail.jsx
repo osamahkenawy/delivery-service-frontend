@@ -197,7 +197,7 @@ export default function OrderDetail() {
       <div className="ord-empty">
         <Package width={48} height={48} />
         <h3>{t("orderDetail.order_not_found")}</h3>
-        <button className="btn-primary-action" onClick={() => navigate('/orders')}>
+        <button className="module-btn module-btn-primary" onClick={() => navigate('/orders')}>
           <ArrowLeft width={15} height={15} /> {t('orderDetail.back_to_orders')}
         </button>
       </div>
@@ -224,26 +224,26 @@ export default function OrderDetail() {
             </div>
           </div>
           <div className="od-header-actions">
-            <button className="btn-outline-action" onClick={fetchOrder}>
+            <button className="module-btn module-btn-outline" onClick={fetchOrder}>
               <Refresh width={14} height={14} /> {t('orderDetail.refresh')}
             </button>
-            <button className="btn-outline-action" title={t('orderDetail.copy_tracking_link')} onClick={copyToken}>
+            <button className="module-btn module-btn-outline" title={t('orderDetail.copy_tracking_link')} onClick={copyToken}>
               <Copy width={14} height={14} /> {copied ? t('orderDetail.copied') : order.tracking_token}
             </button>
             <a
               href={`/track/${order.tracking_token}`}
               target="_blank"
               rel="noreferrer"
-              className="btn-outline-action"
+              className="module-btn module-btn-outline"
               style={{ textDecoration: 'none' }}
             >
               <Box3dPoint width={14} height={14} /> {t('orderDetail.track')}
             </a>
-            <button className="btn-outline-action" onClick={() => navigate('/dispatch')}
+            <button className="module-btn module-btn-outline" onClick={() => navigate('/dispatch')}
               style={{ color: '#16a34a', borderColor: '#bbf7d0' }}>
               <DeliveryTruck width={14} height={14} /> {t('orderDetail.dispatch')}
             </button>
-            <button className="btn-outline-action" onClick={() => navigate('/shipment-tracking')}
+            <button className="module-btn module-btn-outline" onClick={() => navigate('/shipment-tracking')}
               style={{ color: '#2563eb', borderColor: '#bfdbfe' }}>
               <MapPin width={14} height={14} /> {t('orderDetail.all_tracking')}
             </button>
@@ -383,10 +383,10 @@ export default function OrderDetail() {
                       </option>
                     ))}
                   </select>
-                  <button className="btn-primary-action" onClick={handleReassign} disabled={!reassignDriver || reassigning}>
+                  <button className="module-btn module-btn-primary" onClick={handleReassign} disabled={!reassignDriver || reassigning}>
                     {reassigning ? t('orderDetail.assigning') : t('orderDetail.confirm')}
                   </button>
-                  <button className="btn-outline-action" onClick={() => setShowReassign(false)}>{t("common.cancel")}</button>
+                  <button className="module-btn module-btn-outline" onClick={() => setShowReassign(false)}>{t("common.cancel")}</button>
                 </div>
               )}
             </div>
@@ -432,7 +432,7 @@ export default function OrderDetail() {
                       value={statusNote}
                       onChange={e => setStatusNote(e.target.value)}
                     />
-                    <button className="btn-primary-action" onClick={handleStatusUpdate} disabled={savingStatus}>
+                    <button className="module-btn module-btn-primary" onClick={handleStatusUpdate} disabled={savingStatus}>
                       {savingStatus ? t('orderDetail.saving') : t('orderDetail.mark_as', { status: t(`orderDetail.status.${newStatus}`) })}
                     </button>
                   </div>

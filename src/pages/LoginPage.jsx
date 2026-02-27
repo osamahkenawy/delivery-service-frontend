@@ -1,11 +1,20 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Eye, EyeClosed, WarningTriangle, Mail, ArrowLeft, CheckCircle } from 'iconoir-react';
+import { Eye, EyeClosed, WarningTriangle, Mail, ArrowLeft, CheckCircle, Language } from 'iconoir-react';
 import { AuthContext } from '../App';
 import './LoginPage.css';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
+
+const LANGUAGES = [
+  { code: 'en', label: 'English',    dir: 'ltr' },
+  { code: 'ar', label: 'العربية',    dir: 'rtl' },
+  { code: 'es', label: 'Español',    dir: 'ltr' },
+  { code: 'pt', label: 'Português',  dir: 'ltr' },
+  { code: 'hi', label: 'हिन्दी',       dir: 'ltr' },
+  { code: 'tl', label: 'Tagalog',    dir: 'ltr' },
+];
 
 export default function LoginPage() {
   const { t, i18n } = useTranslation();
@@ -82,9 +91,51 @@ export default function LoginPage() {
     </div>
   );
 
+  const [langOpen, setLangOpen] = useState(false);
+  const langRef = useRef(null);
+
+  const switchLanguage = (code) => {
+    const lang = LANGUAGES.find(l => l.code === code);
+    i18n.changeLanguage(code);
+    document.documentElement.dir = lang?.dir || 'ltr';
+    document.documentElement.lang = code;
+    setLangOpen(false);
+  };
+
+  useEffect(() => {
+    const handleClick = (e) => { if (langRef.current && !langRef.current.contains(e.target)) setLangOpen(false); };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  const currentLang = LANGUAGES.find(l => l.code === i18n.language) || LANGUAGES[0];
+
   return (
     <div className="login-page">
       <div className="login-left">
+        <div className="lp-lang-dropdown" ref={langRef}>
+          <button type="button" className="lp-lang-toggle" onClick={() => setLangOpen(o => !o)}>
+            <Language width={18} height={18} />
+            <span>{currentLang.label}</span>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ marginLeft: 2, transform: langOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+              <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+          {langOpen && (
+            <div className="lp-lang-menu">
+              {LANGUAGES.map(lang => (
+                <button
+                  key={lang.code}
+                  type="button"
+                  className={`lp-lang-option${lang.code === i18n.language ? ' active' : ''}`}
+                  onClick={() => switchLanguage(lang.code)}
+                >
+                  {lang.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <div className="login-content">
           <Logo />
 

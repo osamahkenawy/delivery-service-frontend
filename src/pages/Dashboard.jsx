@@ -80,14 +80,20 @@ export default function Dashboard() {
     } catch (e) {
       console.error('Stats error:', e);
     } finally {
-      if (!silent) setLoading(false);
+      if (!silent) {
+        setLoading(false);
+        // After loading finishes and charts render, trigger resize for Chart.js
+        setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
+      }
     }
   }, []);
 
   useEffect(() => {
     fetchStats();
     const clockTimer = setInterval(() => setCurrentTime(new Date()), 60000);
-    return () => clearInterval(clockTimer);
+    // Trigger resize so Chart.js recalculates canvas size after CSS layout settles
+    const resizeTimer = setTimeout(() => window.dispatchEvent(new Event('resize')), 150);
+    return () => { clearInterval(clockTimer); clearTimeout(resizeTimer); };
   }, [fetchStats]);
 
   // Auto-refresh (#44)

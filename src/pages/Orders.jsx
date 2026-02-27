@@ -14,7 +14,6 @@ import Toast, { useToast } from '../components/Toast';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import './CRMPages.css';
 
 /* Fix leaflet marker icon paths (Vite) */
 delete L.Icon.Default.prototype._getIconUrl;
@@ -360,6 +359,9 @@ export default function Orders() {
   const { toasts, showToast } = useToast();
   const [copied,     setCopied]     = useState('');
   const [cancelConfirm, setCancelConfirm] = useState(null);
+  const [driverPicker, setDriverPicker] = useState(null); // { orderId } when open
+  const [driverSearch, setDriverSearch] = useState('');
+  const [assigningDriver, setAssigningDriver] = useState(null); // driver.id being assigned
   const debounceRef = useRef(null);
   const didAutoOpen = useRef(false);
 
@@ -596,6 +598,15 @@ export default function Orders() {
   };
 
   const handleStatusChange = async (orderId, newStatus, note = '') => {
+    // If changing to "assigned", show driver picker instead of direct status change
+    if (newStatus === 'assigned') {
+      const order = drawerFull || drawer;
+      if (!order?.driver_id) {
+        setDriverPicker({ orderId });
+        setDriverSearch('');
+        return;
+      }
+    }
     try {
       const res = await api.patch(`/orders/${orderId}/status`, { status: newStatus, note });
       if (res.success) {
@@ -608,6 +619,26 @@ export default function Orders() {
         showToast(res.message || t('orders.toast.status_failed'), 'error');
       }
     } catch { showToast(t('orders.toast.status_network_error'), 'error'); }
+  };
+
+  const handleAssignDriver = async (driverId) => {
+    if (!driverPicker) return;
+    setAssigningDriver(driverId);
+    try {
+      const res = await api.patch(`/orders/${driverPicker.orderId}/assign-driver`, { driver_id: driverId });
+      if (res.success) {
+        fetchOrders(); fetchStats();
+        const driver = drivers.find(d => d.id === driverId);
+        showToast(t('orders.toast.driver_assigned', { name: driver?.full_name || '' }));
+        if (drawerFull && drawerFull.id === driverPicker.orderId) {
+          setDrawerFull(prev => ({ ...prev, status: 'assigned', driver_id: driverId, driver_name: driver?.full_name }));
+        }
+        setDriverPicker(null);
+      } else {
+        showToast(res.message || t('orders.toast.assign_failed'), 'error');
+      }
+    } catch { showToast(t('orders.toast.status_network_error'), 'error'); }
+    finally { setAssigningDriver(null); }
   };
 
   const handleCancel = async () => {
@@ -918,7 +949,7 @@ export default function Orders() {
                     <button disabled={page===1} onClick={() => setPage(p=>p-1)}
                       style={{ ...btnBase, background:page===1?'#f8fafc':'#fff', cursor:page===1?'not-allowed':'pointer',
                         display:'flex', alignItems:'center', gap:4, opacity:page===1?0.5:1 }}>
-                      <NavArrowLeft width={14} height={14} /> {t('orders.pagination.prev')}
+                      {isRTL ? <NavArrowRight width={14} height={14} /> : <NavArrowLeft width={14} height={14} />} {t('orders.pagination.prev')}
                     </button>
                     {pages.map((p2, i) => {
                       const prev = pages[i - 1];
@@ -941,7 +972,7 @@ export default function Orders() {
                     <button disabled={page>=totalPages} onClick={() => setPage(p=>p+1)}
                       style={{ ...btnBase, background:page>=totalPages?'#f8fafc':'#fff', cursor:page>=totalPages?'not-allowed':'pointer',
                         display:'flex', alignItems:'center', gap:4, opacity:page>=totalPages?0.5:1 }}>
-                      {t('orders.pagination.next')} <NavArrowRight width={14} height={14} />
+                      {t('orders.pagination.next')} {isRTL ? <NavArrowLeft width={14} height={14} /> : <NavArrowRight width={14} height={14} />}
                     </button>
                   </div>
                 </div>
@@ -1109,7 +1140,7 @@ export default function Orders() {
                     </div>
                     {[
                       { label:t('orders.drawer.zone'),       value: drawerFull.zone_name },
-                      { label:t('orders.drawer.driver'),     value: drawerFull.driver_name || t('orders.drawer.unassigned'), muted: !drawerFull.driver_name },
+                      { label:t('orders.drawer.driver'),     value: drawerFull.driver_name || t('orders.drawer.unassigned'), muted: !drawerFull.driver_name, assignable: !drawerFull.driver_name },
                       { label:t('orders.drawer.category'),   value: fmtType(drawerFull.category) },
                       { label:t('orders.drawer.payment'),    value: t(`orders.payment.${drawerFull.payment_method}`) || drawerFull.payment_method },
                       { label:t('orders.drawer.dimensions'), value: drawerFull.dimensions },
@@ -1117,7 +1148,16 @@ export default function Orders() {
                     ].filter(r=>r.value).map(row => (
                       <div key={row.label} style={{ display:'flex', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid #f8fafc', fontSize:13 }}>
                         <span style={{ color:'#94a3b8', fontWeight:600, fontSize:11 }}>{row.label}</span>
-                        <span style={{ color: row.muted ? '#94a3b8' : '#1e293b', fontWeight:500, fontStyle: row.muted ? 'italic' : 'normal' }}>{row.value}</span>
+                        {row.assignable ? (
+                          <button onClick={() => { setDriverPicker({ orderId: drawerFull.id }); setDriverSearch(''); }}
+                            style={{ background:'#ede9fe', color:'#7c3aed', border:'none', borderRadius:6,
+                              padding:'3px 10px', fontSize:12, fontWeight:700, cursor:'pointer',
+                              display:'flex', alignItems:'center', gap:4 }}>
+                            <Plus width={11} height={11} /> {t('orders.driver_picker.title')}
+                          </button>
+                        ) : (
+                          <span style={{ color: row.muted ? '#94a3b8' : '#1e293b', fontWeight:500, fontStyle: row.muted ? 'italic' : 'normal' }}>{row.value}</span>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -1510,7 +1550,7 @@ export default function Orders() {
                     fontSize: window.innerWidth <= 768 ? 13 : 14,
                     display:'flex', alignItems:'center', gap: window.innerWidth <= 768 ? 6 : 7, 
                     color:'#475569', flex: window.innerWidth <= 768 ? '1' : 'none' }}>
-                  <NavArrowLeft width={15} height={15} />
+                  {isRTL ? <NavArrowRight width={15} height={15} /> : <NavArrowLeft width={15} height={15} />}
                   {step > 1 ? t('orders.form.back') : t('orders.form.cancel')}
                 </button>
 
@@ -1523,7 +1563,7 @@ export default function Orders() {
                       display:'flex', alignItems:'center', gap: window.innerWidth <= 768 ? 6 : 7,
                       boxShadow:'0 4px 14px rgba(249,115,22,0.35)',
                       flex: window.innerWidth <= 768 ? '2' : 'none' }}>
-                    {t('orders.form.next')} <NavArrowRight width={15} height={15} />
+                    {t('orders.form.next')} {isRTL ? <NavArrowLeft width={15} height={15} /> : <NavArrowRight width={15} height={15} />}
                   </button>
                 ) : (
                   <button type="submit" disabled={saving}
@@ -1571,6 +1611,103 @@ export default function Orders() {
                   background:'#dc2626', color:'#fff', cursor:'pointer', fontWeight:700, fontSize:14 }}>
                 {t('orders.cancel.confirm')}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Driver Picker Modal ── */}
+      {driverPicker && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:1100,
+          display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}
+          onClick={() => setDriverPicker(null)}>
+          <div onClick={e => e.stopPropagation()} style={{ background:'#fff', borderRadius:20, width:440, maxWidth:'96vw',
+            maxHeight:'80vh', display:'flex', flexDirection:'column', boxShadow:'0 24px 70px rgba(0,0,0,0.22)',
+            overflow:'hidden', animation:'fadeInUp 0.25s ease' }}>
+            {/* Header */}
+            <div style={{ padding:'22px 24px 16px', borderBottom:'1px solid #f1f5f9' }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                  <div style={{ width:40, height:40, borderRadius:10, background:'#ede9fe',
+                    display:'flex', alignItems:'center', justifyContent:'center' }}>
+                    <User width={20} height={20} color="#7c3aed" />
+                  </div>
+                  <div>
+                    <h3 style={{ margin:0, fontSize:17, fontWeight:800, color:'#1e293b' }}>{t('orders.driver_picker.title')}</h3>
+                    <p style={{ margin:0, fontSize:12, color:'#94a3b8' }}>{t('orders.driver_picker.subtitle')}</p>
+                  </div>
+                </div>
+                <button onClick={() => setDriverPicker(null)}
+                  style={{ width:32, height:32, borderRadius:'50%', border:'none', background:'#f1f5f9',
+                    cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  <Xmark width={14} height={14} color="#64748b" />
+                </button>
+              </div>
+              {/* Search */}
+              <div style={{ position:'relative' }}>
+                <Search width={14} height={14} style={{ position:'absolute', [isRTL?'right':'left']:11, top:'50%', transform:'translateY(-50%)', color:'#94a3b8' }} />
+                <input value={driverSearch} onChange={e => setDriverSearch(e.target.value)}
+                  placeholder={t('orders.driver_picker.search_placeholder')}
+                  style={{ width:'100%', padding:'9px 12px', [isRTL?'paddingRight':'paddingLeft']:34, borderRadius:10,
+                    border:'1px solid #e2e8f0', fontSize:13, outline:'none', boxSizing:'border-box' }}
+                  autoFocus />
+              </div>
+            </div>
+            {/* Driver List */}
+            <div style={{ overflowY:'auto', padding:'8px 12px', flex:1 }}>
+              {drivers
+                .filter(d => d.is_active)
+                .filter(d => {
+                  if (!driverSearch) return true;
+                  const q = driverSearch.toLowerCase();
+                  return (d.full_name||'').toLowerCase().includes(q) || (d.phone||'').includes(q) || (d.zone_name||'').toLowerCase().includes(q);
+                })
+                .map(d => {
+                  const statusColor = d.status === 'available' ? '#16a34a' : d.status === 'busy' ? '#f59e0b' : '#94a3b8';
+                  const statusBg    = d.status === 'available' ? '#dcfce7' : d.status === 'busy' ? '#fef3c7' : '#f1f5f9';
+                  const isAssigning = assigningDriver === d.id;
+                  return (
+                    <button key={d.id} onClick={() => handleAssignDriver(d.id)} disabled={isAssigning}
+                      style={{ width:'100%', display:'flex', alignItems:'center', gap:12, padding:'12px 14px',
+                        borderRadius:12, border:'1px solid #f1f5f9', background: isAssigning ? '#f8fafc' : '#fff',
+                        cursor: isAssigning ? 'wait' : 'pointer', marginBottom:6, textAlign: isRTL ? 'right' : 'left',
+                        transition:'all 0.15s', opacity: isAssigning ? 0.7 : 1 }}
+                      onMouseOver={e => { if (!isAssigning) e.currentTarget.style.background='#f8fafc'; e.currentTarget.style.borderColor='#e2e8f0'; }}
+                      onMouseOut={e => { if (!isAssigning) e.currentTarget.style.background='#fff'; e.currentTarget.style.borderColor='#f1f5f9'; }}>
+                      {/* Avatar */}
+                      <div style={{ width:42, height:42, borderRadius:12, background:'linear-gradient(135deg,#244066,#334155)',
+                        display:'flex', alignItems:'center', justifyContent:'center', color:'#fff',
+                        fontWeight:800, fontSize:14, flexShrink:0 }}>
+                        {(d.full_name || '?')[0].toUpperCase()}
+                      </div>
+                      {/* Info */}
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontWeight:700, fontSize:14, color:'#1e293b', marginBottom:2 }}>{d.full_name}</div>
+                        <div style={{ display:'flex', alignItems:'center', gap:8, fontSize:11, color:'#94a3b8', flexWrap:'wrap' }}>
+                          <span>{d.phone}</span>
+                          {d.vehicle_type && <span style={{ background:'#f1f5f9', padding:'1px 6px', borderRadius:4 }}>{d.vehicle_type}</span>}
+                          {d.zone_name && <span>{d.zone_name}</span>}
+                        </div>
+                      </div>
+                      {/* Status + Orders */}
+                      <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4, flexShrink:0 }}>
+                        <span style={{ fontSize:10, fontWeight:700, padding:'2px 8px', borderRadius:20,
+                          background: statusBg, color: statusColor, textTransform:'capitalize' }}>
+                          {t(`orders.driver_picker.status_${d.status}`) || d.status}
+                        </span>
+                        {d.orders_today > 0 && (
+                          <span style={{ fontSize:10, color:'#94a3b8' }}>{d.orders_today} {t('orders.driver_picker.today')}</span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              {drivers.filter(d => d.is_active).length === 0 && (
+                <div style={{ textAlign:'center', padding:'30px 0', color:'#94a3b8' }}>
+                  <User width={36} height={36} style={{ marginBottom:8, opacity:0.4 }} />
+                  <p style={{ fontSize:14, fontWeight:600 }}>{t('orders.driver_picker.no_drivers')}</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -180,23 +180,23 @@ export default function Barcode() {
       <div className="page-container bc-screen">
 
         {/* Header */}
-        <div className="page-header-row">
-          <div>
-            <h2 className="page-heading">{t('barcode.title')}</h2>
-            <p className="page-subheading">
+        <div className="module-hero">
+          <div className="module-hero-left">
+            <h2 className="module-hero-title">{t('barcode.title')}</h2>
+            <p className="module-hero-sub">
               {selected.size > 0
                 ? t('barcode.subtitle', { total: filtered.length, selected: selected.size })
                 : t('barcode.subtitle_none', { total: filtered.length })}
             </p>
           </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-            <button className="btn-outline-action" onClick={toggleAll}>
+          <div className="module-hero-actions">
+            <button className="module-btn module-btn-outline" onClick={toggleAll}>
               {allSelected
                 ? <><CheckSquareSolid width={15} height={15} /> {t('barcode.deselect_all')}</>
                 : <><Square width={15} height={15} /> {t('barcode.select_all')}</>}
             </button>
             <button
-              className="btn-primary-action"
+              className="module-btn module-btn-primary"
               onClick={printSelected}
               disabled={printing || (!loading && filtered.length === 0)}
               style={{ background: '#f97316', borderColor: '#f97316' }}
@@ -262,7 +262,7 @@ export default function Barcode() {
             ))}
           </select>
           {(search || status) && (
-            <button className="btn-outline-action" onClick={() => { setSearch(''); setStatus(''); }}>
+            <button className="module-btn module-btn-outline" onClick={() => { setSearch(''); setStatus(''); }}>
               <XmarkCircle width={14} height={14} /> {t('common.clear')}
             </button>
           )}

@@ -1,0 +1,677 @@
+/* ═══════════════════════════════════════════════════════════
+   PRICING PAGE — Professional Delivery CRM Styling
+   ═══════════════════════════════════════════════════════════ */
+
+.prc-page {
+  padding: 0;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+/* ── Header ────────────────────────────────────────────── */
+.prc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 28px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.prc-header-left h2 {
+  margin: 0 0 4px;
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+}
+.prc-header-left p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+.prc-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #244066 0%, #1a3050 100%);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 11px 22px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(36,64,102,0.18);
+}
+.prc-add-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(36,64,102,0.28);
+}
+.prc-add-btn svg { flex-shrink: 0; }
+
+/* ── Layout grid ───────────────────────────────────────── */
+.prc-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 24px;
+  align-items: start;
+}
+@media (max-width: 960px) {
+  .prc-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Rules card ────────────────────────────────────────── */
+.prc-rules-card {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e9edf2;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  overflow: hidden;
+}
+.prc-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.prc-table thead th {
+  padding: 13px 16px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid #f1f5f9;
+  background: #fafbfc;
+  white-space: nowrap;
+}
+.prc-table tbody td {
+  padding: 14px 16px;
+  font-size: 0.85rem;
+  color: #334155;
+  border-bottom: 1px solid #f8fafc;
+  vertical-align: middle;
+}
+.prc-table tbody tr:hover {
+  background: #f8fafc;
+}
+.prc-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Empty state */
+.prc-empty {
+  text-align: center;
+  padding: 56px 24px;
+  color: #94a3b8;
+}
+.prc-empty-icon {
+  width: 56px;
+  height: 56px;
+  background: #f1f5f9;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 14px;
+  font-size: 24px;
+}
+.prc-empty h4 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #475569;
+}
+.prc-empty p {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+/* Rule name + zone */
+.prc-rule-name {
+  font-weight: 600;
+  color: #0f172a;
+  font-size: 0.88rem;
+}
+.prc-rule-zone {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+/* Badges */
+.prc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.prc-badge-type {
+  background: #eff6ff;
+  color: #3b82f6;
+}
+.prc-badge-type.express {
+  background: #fef3c7;
+  color: #d97706;
+}
+.prc-badge-type.same_day {
+  background: #fce7f3;
+  color: #db2777;
+}
+.prc-badge-type.scheduled {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+.prc-badge-type.return {
+  background: #f5f3ff;
+  color: #7c3aed;
+}
+.prc-badge-active {
+  background: #dcfce7;
+  color: #16a34a;
+}
+.prc-badge-inactive {
+  background: #f1f5f9;
+  color: #94a3b8;
+}
+
+/* Client type badge */
+.prc-client-badge {
+  background: #f1f5f9;
+  color: #475569;
+  padding: 2px 8px;
+  border-radius: 5px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+/* Fee cells */
+.prc-fee {
+  font-weight: 700;
+  color: #0f172a;
+  font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
+}
+.prc-fee-secondary {
+  font-size: 0.82rem;
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Actions */
+.prc-actions {
+  display: flex;
+  gap: 6px;
+}
+.prc-act-btn {
+  padding: 5px 12px;
+  border-radius: 7px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #475569;
+  transition: all 0.15s;
+}
+.prc-act-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+.prc-act-btn.delete {
+  color: #dc2626;
+  border-color: #fecaca;
+}
+.prc-act-btn.delete:hover {
+  background: #fef2f2;
+}
+
+/* ── Calculator card ───────────────────────────────────── */
+.prc-calc-card {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e9edf2;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  overflow: hidden;
+}
+.prc-calc-header {
+  padding: 20px 24px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.prc-calc-icon {
+  width: 38px;
+  height: 38px;
+  background: linear-gradient(135deg, #fff7ed, #ffedd5);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+.prc-calc-header h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+.prc-calc-body {
+  padding: 20px 24px 24px;
+}
+.prc-calc-field {
+  margin-bottom: 14px;
+}
+.prc-calc-field label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 6px;
+}
+.prc-calc-field input,
+.prc-calc-field select {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 9px;
+  border: 1.5px solid #e2e8f0;
+  font-size: 0.88rem;
+  color: #1e293b;
+  background: #fff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+.prc-calc-field input:focus,
+.prc-calc-field select:focus {
+  outline: none;
+  border-color: #f97316;
+  box-shadow: 0 0 0 3px rgba(249,115,22,0.08);
+}
+.prc-calc-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* COD checkbox */
+.prc-cod-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  cursor: pointer;
+}
+.prc-cod-check input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #f97316;
+  cursor: pointer;
+}
+.prc-cod-check span {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #334155;
+}
+
+/* Calculate button */
+.prc-calc-btn {
+  width: 100%;
+  padding: 12px 0;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(249,115,22,0.2);
+  position: relative;
+  overflow: hidden;
+}
+.prc-calc-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(249,115,22,0.3);
+}
+.prc-calc-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Result */
+.prc-calc-result {
+  margin-top: 18px;
+  background: linear-gradient(135deg, #fff7ed 0%, #fffbeb 100%);
+  border-radius: 12px;
+  border: 1px solid #fed7aa;
+  overflow: hidden;
+}
+.prc-calc-result-top {
+  padding: 18px 20px 12px;
+  text-align: center;
+}
+.prc-calc-result-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #92400e;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+.prc-calc-result-value {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #ea580c;
+  font-variant-numeric: tabular-nums;
+}
+.prc-calc-result-free {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #16a34a;
+}
+.prc-calc-breakdown {
+  padding: 0 20px 16px;
+}
+.prc-calc-breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  font-size: 0.82rem;
+}
+.prc-calc-breakdown-row span:first-child {
+  color: #78716c;
+  text-transform: capitalize;
+}
+.prc-calc-breakdown-row span:last-child {
+  font-weight: 600;
+  color: #44403c;
+  font-variant-numeric: tabular-nums;
+}
+.prc-calc-breakdown-divider {
+  height: 1px;
+  background: #fde68a;
+  margin: 4px 0;
+}
+
+/* ── Form Modal ────────────────────────────────────────── */
+.prc-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15,23,42,0.45);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.prc-modal {
+  background: #fff;
+  border-radius: 18px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+}
+.prc-modal-header {
+  padding: 24px 28px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.prc-modal-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+.prc-modal-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  transition: all 0.15s;
+}
+.prc-modal-close:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+.prc-modal-body {
+  padding: 20px 28px 28px;
+}
+.prc-modal-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 10px 14px;
+  border-radius: 9px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+/* Form grid */
+.prc-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.prc-form-grid .full-width {
+  grid-column: 1 / -1;
+}
+.prc-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.prc-form-field label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #475569;
+}
+.prc-form-field label .req {
+  color: #ef4444;
+}
+.prc-form-field input,
+.prc-form-field select {
+  padding: 10px 14px;
+  border-radius: 9px;
+  border: 1.5px solid #e2e8f0;
+  font-size: 0.88rem;
+  color: #1e293b;
+  background: #fff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  font-family: inherit;
+  box-sizing: border-box;
+  width: 100%;
+}
+.prc-form-field input:focus,
+.prc-form-field select:focus {
+  outline: none;
+  border-color: #244066;
+  box-shadow: 0 0 0 3px rgba(36,64,102,0.08);
+}
+
+/* Section dividers in form */
+.prc-form-section {
+  grid-column: 1 / -1;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 8px 0 0;
+  border-top: 1px solid #f1f5f9;
+  margin-top: 4px;
+}
+
+/* Active toggle in form */
+.prc-form-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 8px;
+}
+.prc-form-toggle input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #244066;
+  cursor: pointer;
+}
+.prc-form-toggle label {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #334155;
+  cursor: pointer;
+}
+
+/* Form footer */
+.prc-form-footer {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  justify-content: flex-end;
+}
+.prc-form-cancel {
+  padding: 10px 22px;
+  border-radius: 9px;
+  border: 1.5px solid #e2e8f0;
+  background: #fff;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: #475569;
+  transition: all 0.15s;
+}
+.prc-form-cancel:hover {
+  background: #f8fafc;
+}
+.prc-form-submit {
+  padding: 10px 28px;
+  border-radius: 9px;
+  border: none;
+  background: linear-gradient(135deg, #244066 0%, #1a3050 100%);
+  color: #fff;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.88rem;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(36,64,102,0.18);
+}
+.prc-form-submit:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(36,64,102,0.28);
+}
+.prc-form-submit:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* ── Loading ───────────────────────────────────────────── */
+.prc-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  gap: 10px;
+}
+.prc-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2.5px solid #e2e8f0;
+  border-top-color: #244066;
+  border-radius: 50%;
+  animation: prcSpin 0.7s linear infinite;
+}
+@keyframes prcSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Surge section ─────────────────────────────────────── */
+.prc-surge-section {
+  margin-top: 28px;
+}
+.prc-surge-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.prc-surge-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.prc-surge-card {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e9edf2;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  overflow: hidden;
+}
+.prc-surge-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  padding: 20px;
+}
+.prc-surge-item {
+  background: #fafbfc;
+  border: 1px solid #f1f5f9;
+  border-radius: 12px;
+  padding: 16px;
+  position: relative;
+}
+.prc-surge-item-name {
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+.prc-surge-item-detail {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+.prc-surge-multiplier {
+  display: inline-block;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
+  font-weight: 800;
+  font-size: 0.82rem;
+  padding: 4px 10px;
+  border-radius: 6px;
+  margin-top: 8px;
+}
+.prc-surge-actions {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  gap: 4px;
+}
+[dir="rtl"] .prc-surge-actions {
+  right: auto;
+  left: 12px;
+}

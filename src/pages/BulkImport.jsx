@@ -343,10 +343,10 @@ export default function BulkImport() {
 
           <div className="blk-action-bar">
             <button className="blk-btn-secondary" onClick={resetImport}>
-              <NavArrowLeft size={14} /> {t('bulkImport.back')}
+              {isRTL ? <NavArrowRight size={14} /> : <NavArrowLeft size={14} />} {t('bulkImport.back')}
             </button>
             <button className="blk-btn-primary" disabled={!requiredMapped} onClick={() => setStep(3)}>
-              {t('bulkImport.next_preview')} <NavArrowRight size={14} />
+              {t('bulkImport.next_preview')} {isRTL ? <NavArrowLeft size={14} /> : <NavArrowRight size={14} />}
             </button>
           </div>
         </>
@@ -416,7 +416,7 @@ export default function BulkImport() {
 
           <div className="blk-action-bar">
             <button className="blk-btn-secondary" onClick={() => setStep(2)}>
-              <NavArrowLeft size={14} /> {t('bulkImport.back_to_mapping')}
+              {isRTL ? <NavArrowRight size={14} /> : <NavArrowLeft size={14} />} {t('bulkImport.back_to_mapping')}
             </button>
             <button className="blk-btn-primary" disabled={validCount === 0} onClick={runImport}>
               <Upload size={14} /> {t('bulkImport.import_orders', { count: validCount })}

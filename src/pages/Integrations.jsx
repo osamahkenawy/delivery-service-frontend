@@ -401,10 +401,10 @@ export default function Integrations() {
   const [tab, setTab] = useState('api-keys');
   return (
     <div className="page-container">
-      <div className="page-header-row">
-        <div>
-          <h2 className="page-heading">{t("integrations.title")}</h2>
-          <p className="page-subheading">{t("integrations.subtitle")}</p>
+      <div className="module-hero">
+        <div className="module-hero-left">
+          <h2 className="module-hero-title">{t("integrations.title")}</h2>
+          <p className="module-hero-sub">{t("integrations.subtitle")}</p>
         </div>
       </div>
       <div className="intg-tab-bar">
