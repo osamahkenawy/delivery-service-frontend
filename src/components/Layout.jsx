@@ -209,12 +209,16 @@ export default function Layout({ children }) {
         <div className="sidebar-brand">
           <Link to="/dashboard">
             <img
-              src="/assets/images/logos/full_logo_white.png"
-              alt="Trasealla Solutions"
+              src={user?.tenant_logo_white || tenant?.logo_url_white || '/assets/images/logos/trasealla_white_without_bg.png'}
+              alt={user?.tenant_name || tenant?.name || 'Trasealla Solutions'}
               style={{ height: '100px' }}
               onError={e => {
-                e.target.style.display = 'none';
-                e.target.nextSibling.style.display = 'block';
+                if (e.target.src !== window.location.origin + '/assets/images/logos/trasealla_white_without_bg.png') {
+                  e.target.src = '/assets/images/logos/trasealla_white_without_bg.png';
+                } else {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'block';
+                }
               }}
             />
             <span style={{ display: 'none', fontSize: 20, fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>
@@ -255,8 +259,8 @@ export default function Layout({ children }) {
           {!sidebarOpen && (
             <div className="topbar-brand-mobile">
               <img
-                src="/logo-icon.png"
-                alt="T"
+                src={user?.tenant_logo || '/assets/images/logos/trasealla_logo_logistics_without_bg.png'}
+                alt={user?.tenant_name || 'Trasealla'}
                 style={{ height: '35px', marginRight: '10px' }}
                 onError={e => { e.target.style.display = 'none'; }}
               />

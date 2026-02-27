@@ -55,6 +55,37 @@ function GeneralTab({ data, setData, onSave, saving }) {
   const set = (k, v) => setData(d => ({ ...d, settings: { ...d.settings, [k]: v } }));
   const setTenant = (k, v) => setData(d => ({ ...d, [k]: v }));
 
+  const [uploadingColored, setUploadingColored] = useState(false);
+  const [uploadingWhite, setUploadingWhite] = useState(false);
+
+  const API_URL = import.meta.env.VITE_API_URL || '/api';
+
+  const handleLogoUpload = async (file, variant) => {
+    const isWhite = variant === 'white';
+    isWhite ? setUploadingWhite(true) : setUploadingColored(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const token = localStorage.getItem('crm_token');
+      const res = await fetch(`${API_URL}/uploads/logo/${variant}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const result = await res.json();
+      if (result.success) {
+        const key = isWhite ? 'logo_url_white' : 'logo_url';
+        setData(d => ({ ...d, [key]: result.url }));
+      }
+    } catch (e) { console.error('Logo upload failed:', e); }
+    isWhite ? setUploadingWhite(false) : setUploadingColored(false);
+  };
+
+  const removeLogo = (variant) => {
+    const key = variant === 'white' ? 'logo_url_white' : 'logo_url';
+    setData(d => ({ ...d, [key]: '' }));
+  };
+
   return (
     <form onSubmit={onSave} className="stg-content">
       <div className="stg-section">
@@ -106,10 +137,98 @@ function GeneralTab({ data, setData, onSave, saving }) {
               <input value={s.vat_number||''} onChange={e=>set('vat_number',e.target.value)} placeholder="100XXXXXXXXX003" />
             </div>
           </div>
-          <div className="stg-field">
-            <label>{t('settings.general.logo_url')}</label>
-            <div className="stg-input-wrap"><Upload width={15} height={15} className="stg-input-icon"/>
-              <input value={data.logo_url||''} onChange={e=>setTenant('logo_url',e.target.value)} placeholder="https://cdn.example.com/logo.png" />
+        </div>
+      </div>
+
+      {/* ── Logo Upload Section ── */}
+      <div className="stg-section">
+        <div className="stg-section-head">
+          <div className="stg-section-icon orange"><Upload width={18} height={18}/></div>
+          <div>
+            <div className="stg-section-title">{t('settings.general.company_logos')}</div>
+            <div className="stg-section-sub">{t('settings.general.company_logos_sub')}</div>
+          </div>
+        </div>
+        <div className="stg-grid">
+          {/* Colored Logo */}
+          <div className="stg-field stg-span">
+            <label>{t('settings.general.logo_colored')}</label>
+            <div className="stg-logo-upload-area">
+              {data.logo_url ? (
+                <div className="stg-logo-preview">
+                  <div className="stg-logo-preview-img" style={{ background: '#f8fafc' }}>
+                    <img src={data.logo_url} alt="Colored Logo" onError={e => { e.target.style.display='none'; }} />
+                  </div>
+                  <div className="stg-logo-preview-info">
+                    <span className="stg-logo-filename">{t('settings.general.logo_uploaded')}</span>
+                    <div className="stg-logo-actions">
+                      <label className="stg-logo-change-btn">
+                        {t('settings.general.change_logo')}
+                        <input type="file" accept="image/png,image/jpeg,image/webp" hidden
+                          onChange={e => e.target.files[0] && handleLogoUpload(e.target.files[0], 'colored')} />
+                      </label>
+                      <button type="button" className="stg-logo-remove-btn" onClick={() => removeLogo('colored')}>
+                        <Trash width={14} height={14} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <label className="stg-logo-dropzone">
+                  <input type="file" accept="image/png,image/jpeg,image/webp" hidden
+                    onChange={e => e.target.files[0] && handleLogoUpload(e.target.files[0], 'colored')} />
+                  {uploadingColored ? (
+                    <div className="stg-logo-uploading"><div className="stg-spinner" /> {t('settings.general.uploading')}</div>
+                  ) : (
+                    <>
+                      <Upload width={24} height={24} style={{ color: '#94a3b8' }} />
+                      <span>{t('settings.general.upload_colored_hint')}</span>
+                      <small>PNG, JPG, WEBP — {t('settings.general.max_2mb')}</small>
+                    </>
+                  )}
+                </label>
+              )}
+            </div>
+          </div>
+
+          {/* White Logo */}
+          <div className="stg-field stg-span">
+            <label>{t('settings.general.logo_white')}</label>
+            <div className="stg-logo-upload-area">
+              {data.logo_url_white ? (
+                <div className="stg-logo-preview">
+                  <div className="stg-logo-preview-img" style={{ background: '#1e293b' }}>
+                    <img src={data.logo_url_white} alt="White Logo" onError={e => { e.target.style.display='none'; }} />
+                  </div>
+                  <div className="stg-logo-preview-info">
+                    <span className="stg-logo-filename">{t('settings.general.logo_uploaded')}</span>
+                    <div className="stg-logo-actions">
+                      <label className="stg-logo-change-btn">
+                        {t('settings.general.change_logo')}
+                        <input type="file" accept="image/png,image/jpeg,image/webp" hidden
+                          onChange={e => e.target.files[0] && handleLogoUpload(e.target.files[0], 'white')} />
+                      </label>
+                      <button type="button" className="stg-logo-remove-btn" onClick={() => removeLogo('white')}>
+                        <Trash width={14} height={14} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <label className="stg-logo-dropzone">
+                  <input type="file" accept="image/png,image/jpeg,image/webp" hidden
+                    onChange={e => e.target.files[0] && handleLogoUpload(e.target.files[0], 'white')} />
+                  {uploadingWhite ? (
+                    <div className="stg-logo-uploading"><div className="stg-spinner" /> {t('settings.general.uploading')}</div>
+                  ) : (
+                    <>
+                      <Upload width={24} height={24} style={{ color: '#94a3b8' }} />
+                      <span>{t('settings.general.upload_white_hint')}</span>
+                      <small>PNG, JPG, WEBP — {t('settings.general.max_2mb')}</small>
+                    </>
+                  )}
+                </label>
+              )}
             </div>
           </div>
         </div>
@@ -1225,9 +1344,9 @@ export default function Settings() {
   const handleSave = async e => {
     e.preventDefault();
     setSaving(true);
-    const { settings = {}, name, logo_url, phone, email, address, city, country, currency, timezone } = data;
+    const { settings = {}, name, logo_url, logo_url_white, phone, email, address, city, country, currency, timezone } = data;
     const res = await api.put('/settings', {
-      tenant: { name, logo_url, phone, email, address, city, country, currency, timezone },
+      tenant: { name, logo_url, logo_url_white, phone, email, address, city, country, currency, timezone },
       settings,
     });
     if (res.success) showToast(t('settings.save_success'), 'success');

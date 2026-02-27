@@ -78,18 +78,9 @@ export default function LoginPage() {
     }
   };
 
-  const Logo = () => (
-    <div className="login-header">
-      <div className="logo">
-        <img
-          src="/assets/images/logos/full_logo_colored.png"
-          alt="Trasealla Solutions"
-          onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
-        />
-        <span style={{ display: 'none', fontSize: 28, fontWeight: 800, color: '#244066' }}>Trasealla</span>
-      </div>
-    </div>
-  );
+  /* ── Login page always shows the Trasealla platform logo ── */
+  const logoSrc = '/assets/images/logos/trasealla_with_bg.jpg';
+  const logoAlt = 'Trasealla Solutions';
 
   const [langOpen, setLangOpen] = useState(false);
   const langRef = useRef(null);
@@ -137,7 +128,12 @@ export default function LoginPage() {
           )}
         </div>
         <div className="login-content">
-          <Logo />
+          <div className="login-header">
+            <div className="logo">
+              <img src={logoSrc} alt={logoAlt} />
+              <span style={{ display: 'none', fontSize: 28, fontWeight: 800, color: '#244066' }}>{logoAlt}</span>
+            </div>
+          </div>
 
           {/* ── LOGIN VIEW ── */}
           {view === 'login' && (
