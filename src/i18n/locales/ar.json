@@ -8,6 +8,8 @@
     "system": "النظام",
     "tools": "الأدوات",
     "my_deliveries": "توصيلاتي",
+    "my_orders": "طلباتي",
+    "driver_home": "لوحة التحكم",
     "scan_shipment": "مسح الشحنة",
     "dashboard": "لوحة التحكم",
     "orders": "الطلبات",
@@ -167,6 +169,7 @@
   },
   "dashboard": {
     "title": "لوحة التحكم",
+    "loading": "جارٍ تحميل لوحة التحكم",
     "welcome": "مرحباً بعودتك",
     "good_morning": "صباح الخير",
     "good_afternoon": "مساء الخير",
@@ -1572,6 +1575,16 @@
     "driver_status_on_break": "في استراحة",
     "driver_status_offline": "غير متصل"
   },
+  "driverHome": {
+    "welcome": "مرحباً بعودتك!",
+    "my_orders": "طلباتي",
+    "recent_orders": "الطلبات الأخيرة",
+    "view_all": "عرض الكل",
+    "active_orders_count": "{{count}} طلب نشط",
+    "no_active_orders": "لا توجد طلبات نشطة حالياً",
+    "scan_shipment": "مسح الشحنة",
+    "scan_sub": "استخدم الكاميرا لمسح الباركود"
+  },
   "orderDetail": {
     "title": "تفاصيل الطلب",
     "order_not_found": "الطلب غير موجود",
@@ -1637,7 +1650,8 @@
       "order_info": "معلومات الطلب",
       "driver": "السائق",
       "location": "الموقع",
-      "notes": "الملاحظات"
+      "notes": "الملاحظات",
+      "financial": "التفاصيل المالية"
     },
     "status": {
       "pending": "معلق",
@@ -1655,6 +1669,15 @@
       "prepaid": "مدفوع مسبقاً",
       "credit": "بطاقة ائتمان",
       "wallet": "المحفظة"
+    },
+    "fin": {
+      "subtotal": "الإجمالي الفرعي (رسوم التوصيل)",
+      "discount": "الخصم",
+      "commission": "عمولة المنصة",
+      "vat": "ضريبة القيمة المضافة",
+      "platform_fee": "رسوم المنصة",
+      "net_payable": "صافي المستحق للتاجر",
+      "total": "المبلغ الإجمالي"
     }
   },
   "notifications": {
@@ -2324,7 +2347,27 @@
       "email_tracking": "إشعارات تتبع البريد الإلكتروني",
       "email_tracking_desc": "إرسال بريد إلكتروني تلقائي عند تغيير الحالة",
       "driver_tips": "إكراميات السائق",
-      "driver_tips_desc": "السماح للمستلمين بإعطاء إكرامية للسائق"
+      "driver_tips_desc": "السماح للمستلمين بإعطاء إكرامية للسائق",
+      "platform_commission": "عمولة المنصة (%)"
+    },
+    "tax": {
+      "title": "إعدادات الضريبة والقيمة المضافة",
+      "subtitle": "تكوين معدلات ضريبة القيمة المضافة والتسجيل الضريبي",
+      "vat_enabled": "تفعيل ضريبة القيمة المضافة",
+      "vat_enabled_desc": "تطبيق ضريبة القيمة المضافة على رسوم التوصيل والفواتير (الإمارات: 5%)",
+      "apply_on_delivery": "تطبيق الضريبة على رسوم التوصيل",
+      "apply_on_delivery_desc": "تضمين حساب ضريبة القيمة المضافة على رسوم التوصيل",
+      "vat_rate": "نسبة ضريبة القيمة المضافة (%)",
+      "vat_trn": "رقم التسجيل الضريبي (TRN)"
+    },
+    "financial": {
+      "title": "الإعدادات المالية والعمولات",
+      "subtitle": "تكوين نسب العمولة والرسوم والمعاملات المالية",
+      "commission_rate": "نسبة العمولة (%)",
+      "platform_fee": "رسوم المنصة (%)",
+      "payment_gateway_fee": "رسوم بوابة الدفع (%)",
+      "free_delivery_min": "الحد الأدنى للتوصيل المجاني",
+      "late_settlement_fee": "غرامة التأخر في التسوية (%)"
     },
     "notifications": {
       "email_smtp": "البريد الإلكتروني / SMTP",

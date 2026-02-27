@@ -204,6 +204,12 @@ function DeliveryTab({ data, setData, onSave, saving }) {
             </div>
           </div>
           <div className="stg-field">
+            <label>{t('settings.delivery.platform_commission')}</label>
+            <div className="stg-input-wrap"><span className="stg-prefix">%</span>
+              <input type="number" min="0" max="100" step="0.1" value={s.platform_commission_percent||''} onChange={e=>set('platform_commission_percent',e.target.value)} placeholder="15" style={{[isRTL?'paddingRight':'paddingLeft']:36}} />
+            </div>
+          </div>
+          <div className="stg-field">
             <label>{t('settings.delivery.expected_days')}</label>
             <div className="stg-input-wrap"><Clock width={15} height={15} className="stg-input-icon"/>
               <input type="number" min="1" value={s.expected_delivery_days||''} onChange={e=>set('expected_delivery_days',e.target.value)} placeholder="1" />
@@ -213,6 +219,94 @@ function DeliveryTab({ data, setData, onSave, saving }) {
             <label>{t('settings.delivery.max_weight')}</label>
             <div className="stg-input-wrap"><span className="stg-prefix">kg</span>
               <input type="number" min="0" step="0.1" value={s.max_weight_kg||''} onChange={e=>set('max_weight_kg',e.target.value)} placeholder="30" style={{[isRTL?'paddingRight':'paddingLeft']:38}} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Tax & VAT Configuration (#61 #73) ── */}
+      <div className="stg-section">
+        <div className="stg-section-head">
+          <div className="stg-section-icon green" style={{background:'#dcfce7'}}><Wallet width={18} height={18} style={{color:'#16a34a'}}/></div>
+          <div>
+            <div className="stg-section-title">{t('settings.tax.title')}</div>
+            <div className="stg-section-sub">{t('settings.tax.subtitle')}</div>
+          </div>
+        </div>
+        <div className="stg-toggles" style={{marginBottom:16}}>
+          <div className="stg-toggle-row">
+            <div>
+              <div className="stg-toggle-label">{t('settings.tax.vat_enabled')}</div>
+              <div className="stg-toggle-desc">{t('settings.tax.vat_enabled_desc')}</div>
+            </div>
+            <Toggle on={!!s.vat_enabled} onChange={v => set('vat_enabled', v)} />
+          </div>
+          {s.vat_enabled && (
+            <div className="stg-toggle-row">
+              <div>
+                <div className="stg-toggle-label">{t('settings.tax.apply_on_delivery')}</div>
+                <div className="stg-toggle-desc">{t('settings.tax.apply_on_delivery_desc')}</div>
+              </div>
+              <Toggle on={s.apply_vat_on_delivery_fee !== false} onChange={v => set('apply_vat_on_delivery_fee', v)} />
+            </div>
+          )}
+        </div>
+        {s.vat_enabled && (
+          <div className="stg-grid">
+            <div className="stg-field">
+              <label>{t('settings.tax.vat_rate')}</label>
+              <div className="stg-input-wrap"><span className="stg-prefix">%</span>
+                <input type="number" min="0" max="100" step="0.01" value={s.vat_rate||''} onChange={e=>set('vat_rate',e.target.value)} placeholder="5" style={{[isRTL?'paddingRight':'paddingLeft']:36}} />
+              </div>
+            </div>
+            <div className="stg-field">
+              <label>{t('settings.tax.vat_trn')}</label>
+              <div className="stg-input-wrap"><Wallet width={15} height={15} className="stg-input-icon"/>
+                <input value={s.vat_number||''} onChange={e=>set('vat_number',e.target.value)} placeholder="100XXXXXXXXX003" />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── NEW FINANCIAL SETTINGS (#63–#109) ────────────────── */}
+      <div className="stg-section">
+        <div className="stg-section-head">
+          <div className="stg-section-icon purple"><Wallet width={18} height={18}/></div>
+          <div>
+            <div className="stg-section-title">{t('settings.financial.title')}</div>
+            <div className="stg-section-sub">{t('settings.financial.subtitle')}</div>
+          </div>
+        </div>
+        <div className="stg-grid">
+          <div className="stg-field">
+            <label>{t('settings.financial.commission_rate')}</label>
+            <div className="stg-input-wrap"><span className="stg-prefix">%</span>
+              <input type="number" min="0" max="100" step="0.01" value={s.commission_rate||''} onChange={e=>set('commission_rate',e.target.value)} placeholder="10" style={{[isRTL?'paddingRight':'paddingLeft']:36}} />
+            </div>
+          </div>
+          <div className="stg-field">
+            <label>{t('settings.financial.platform_fee')}</label>
+            <div className="stg-input-wrap"><span className="stg-prefix">%</span>
+              <input type="number" min="0" max="100" step="0.01" value={s.platform_fee_pct||''} onChange={e=>set('platform_fee_pct',e.target.value)} placeholder="2" style={{[isRTL?'paddingRight':'paddingLeft']:36}} />
+            </div>
+          </div>
+          <div className="stg-field">
+            <label>{t('settings.financial.payment_gateway_fee')}</label>
+            <div className="stg-input-wrap"><span className="stg-prefix">%</span>
+              <input type="number" min="0" max="10" step="0.01" value={s.payment_gateway_fee_pct||''} onChange={e=>set('payment_gateway_fee_pct',e.target.value)} placeholder="2.5" style={{[isRTL?'paddingRight':'paddingLeft']:36}} />
+            </div>
+          </div>
+          <div className="stg-field">
+            <label>{t('settings.financial.free_delivery_min')}</label>
+            <div className="stg-input-wrap"><Wallet width={15} height={15} className="stg-input-icon"/>
+              <input type="number" min="0" step="1" value={s.free_delivery_min_order||''} onChange={e=>set('free_delivery_min_order',e.target.value)} placeholder="100" />
+            </div>
+          </div>
+          <div className="stg-field">
+            <label>{t('settings.financial.late_settlement_fee')}</label>
+            <div className="stg-input-wrap"><span className="stg-prefix">%</span>
+              <input type="number" min="0" max="50" step="0.1" value={s.late_settlement_fee_pct||''} onChange={e=>set('late_settlement_fee_pct',e.target.value)} placeholder="5" style={{[isRTL?'paddingRight':'paddingLeft']:36}} />
             </div>
           </div>
         </div>

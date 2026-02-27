@@ -8,6 +8,8 @@
     "system": "System",
     "tools": "Tools",
     "my_deliveries": "My Deliveries",
+    "my_orders": "My Orders",
+    "driver_home": "Dashboard",
     "scan_shipment": "Scan Shipment",
     "dashboard": "Dashboard",
     "orders": "Orders",
@@ -188,6 +190,7 @@
   },
   "dashboard": {
     "title": "Dashboard",
+    "loading": "Loading your dashboard",
     "welcome": "Welcome back",
     "good_morning": "Good morning",
     "good_afternoon": "Good afternoon",
@@ -374,6 +377,7 @@
       "name": "Name",
       "area": "Area",
       "emirate": "Emirate",
+      "no_limit": "No limit",
       "delivery_details": "Delivery Details",
       "zone": "Zone",
       "driver": "Driver",
@@ -529,7 +533,7 @@
     "loading": "Loading clients...",
     "loading_details": "Loading details...",
     "no_clients": "No clients found",
-    "no_limit": "0 = No limit",
+    "no_limit": "0 No limit",
     "search_location": "Search Location",
     "no_results": "No clients match your filters",
     "empty_title": "No clients yet",
@@ -605,7 +609,22 @@
       "credit_limit": "Credit Limit"
     },
     "drawer": {
-      "recent_orders": "Recent Orders"
+      "recent_orders": "Recent Orders",
+      "profile_information": "Profile Information",
+      "total_orders": "Total Orders",
+      "delivered": "Delivered",
+      "credit_limit": "Credit Limit",
+      "no_limit": "No Limit"
+    },
+    "profile": {
+      "phone": "Phone",
+      "alt_phone": "Alternate Phone",
+      "email": "Email",
+      "emirate": "Emirate",
+      "zone": "Zone",
+      "address": "Address",
+      "notes": "Notes",
+      "joined": "Joined"
     },
     "form": {
       "edit_title": "Edit Client",
@@ -1648,6 +1667,16 @@
     "driver_status_on_break": "On Break",
     "driver_status_offline": "Offline"
   },
+  "driverHome": {
+    "welcome": "Welcome back!",
+    "my_orders": "My Orders",
+    "recent_orders": "Recent Orders",
+    "view_all": "View All",
+    "active_orders_count": "{{count}} active order(s)",
+    "no_active_orders": "No active orders right now",
+    "scan_shipment": "Scan Shipment",
+    "scan_sub": "Use camera to scan a barcode"
+  },
   "orderDetail": {
     "title": "Order Details",
     "order_not_found": "Order not found",
@@ -1713,7 +1742,8 @@
       "order_info": "Order Info",
       "driver": "Driver",
       "location": "Location",
-      "notes": "Notes"
+      "notes": "Notes",
+      "financial": "Financial Breakdown"
     },
     "status": {
       "pending": "Pending",
@@ -1731,6 +1761,15 @@
       "prepaid": "Prepaid",
       "credit": "Credit Card",
       "wallet": "Wallet"
+    },
+    "fin": {
+      "subtotal": "Subtotal (Delivery Fee)",
+      "discount": "Discount",
+      "commission": "Platform Commission",
+      "vat": "VAT",
+      "platform_fee": "Platform Fee",
+      "net_payable": "Net Payable to Merchant",
+      "total": "Total Amount"
     }
   },
   "notifications": {
@@ -2400,7 +2439,27 @@
       "email_tracking": "Email Tracking Notifications",
       "email_tracking_desc": "Send automated emails when status changes",
       "driver_tips": "Driver Tips",
-      "driver_tips_desc": "Allow recipients to tip the driver"
+      "driver_tips_desc": "Allow recipients to tip the driver",
+      "platform_commission": "Platform Commission (%)"
+    },
+    "tax": {
+      "title": "Tax & VAT Configuration",
+      "subtitle": "Configure VAT rates and tax registration",
+      "vat_enabled": "Enable VAT",
+      "vat_enabled_desc": "Apply VAT to delivery fees and invoices (UAE standard: 5%)",
+      "apply_on_delivery": "Apply VAT on Delivery Fee",
+      "apply_on_delivery_desc": "Include VAT calculation on delivery fee charges",
+      "vat_rate": "VAT Rate (%)",
+      "vat_trn": "VAT Registration Number (TRN)"
+    },
+    "financial": {
+      "title": "Financial & Commission Settings",
+      "subtitle": "Configure commission rates, fees, and financial parameters",
+      "commission_rate": "Commission Rate (%)",
+      "platform_fee": "Platform Fee (%)",
+      "payment_gateway_fee": "Payment Gateway Fee (%)",
+      "free_delivery_min": "Free Delivery Min. Order",
+      "late_settlement_fee": "Late Settlement Penalty (%)"
     },
     "notifications": {
       "email_smtp": "Email / SMTP",

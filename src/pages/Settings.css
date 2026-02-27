@@ -179,7 +179,7 @@
 
 .stg-section-head > div:last-child,
 .stg-section-head > button:last-child {
-  margin-left: auto;
+  /* margin-left: auto; */
 }
 
 .stg-section-body {

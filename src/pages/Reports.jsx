@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import ReactApexChart from 'react-apexcharts';
 import {
   StatsReport, Calendar, MapPin, DeliveryTruck,
@@ -10,6 +10,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import api from '../lib/api';
 import './CRMPages.css';
+import './Reports.css';
 import { useTranslation } from 'react-i18next';
 
 /* ── Helpers ──────────────────────────────────────────────────── */
@@ -51,6 +52,29 @@ export default function Reports() {
   const [scheduleForm, setScheduleForm] = useState({ frequency: 'daily', recipients: '' });
   const [loading,  setLoading]  = useState(true);
   const [activeSection, setActiveSection] = useState('overview');
+  const tabsRef = useRef(null);
+  const [tabsScroll, setTabsScroll] = useState({ start: false, end: true });
+
+  const handleTabsScroll = useCallback(() => {
+    const el = tabsRef.current;
+    if (!el) return;
+    setTabsScroll({
+      start: el.scrollLeft > 8,
+      end: el.scrollLeft + el.clientWidth < el.scrollWidth - 8,
+    });
+  }, []);
+
+  useEffect(() => {
+    const el = tabsRef.current;
+    if (!el) return;
+    handleTabsScroll();
+    el.addEventListener('scroll', handleTabsScroll, { passive: true });
+    window.addEventListener('resize', handleTabsScroll);
+    return () => {
+      el.removeEventListener('scroll', handleTabsScroll);
+      window.removeEventListener('resize', handleTabsScroll);
+    };
+  }, [handleTabsScroll]);
 
   useEffect(() => { fetchAll(); }, [period, dateFrom, dateTo]);
   useEffect(() => { if (activeSection === 'financial') fetchFinancial(); }, [activeSection, period, dateFrom, dateTo]);
@@ -235,16 +259,21 @@ export default function Reports() {
     d.payment_method?.replace('_', ' ')?.replace(/\b\w/g, c => c.toUpperCase()) || '') || [];
 
   return (
-    <div className="page-container">
-      <div className="page-header-row">
-        <div>
-          <h2 className="page-heading">{t('reports.title')}</h2>
-          <p className="page-subheading">{t("reports.subtitle")}</p>
+    <div className="rpt-page">
+      <div className="rpt-header">
+        <div className="rpt-header-left">
+          <div className="rpt-header-icon">
+            <StatsReport width={24} height={24} />
+          </div>
+          <div className="rpt-header-text">
+            <h1>{t('reports.title')}</h1>
+            <p>{t("reports.subtitle")}</p>
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className="rpt-header-actions">
           <input type="date" className="filter-date" value={dateFrom}
             onChange={e => setDateFrom(e.target.value)} />
-          <span className="date-sep">{t('reports.date_separator')}</span>
+          <span className="rpt-date-sep">{t('reports.date_separator')}</span>
           <input type="date" className="filter-date" value={dateTo}
             onChange={e => setDateTo(e.target.value)} />
           <select className="rpt-period-select" value={period}
@@ -254,40 +283,47 @@ export default function Reports() {
             <option value="90">{t("reports.last_90_days")}</option>
             <option value="365">{t('reports.last_year')}</option>
           </select>
-          <button className="btn-outline-action" onClick={fetchAll}>
+          <button className="rpt-btn" onClick={fetchAll}>
             <Refresh width={14} height={14} /> {t('reports.refresh')}
           </button>
-          <button className="btn-outline-action" onClick={exportPDF} style={{ background: '#244066', color: '#fff', border: 'none' }}>
+          <button className="rpt-btn rpt-btn-accent" onClick={exportPDF}>
             <Page width={14} height={14} /> {t('reports.pdf_report')}
           </button>
         </div>
       </div>
 
-      <div className="od-tabs" style={{ marginBottom: 24 }}>
-        {[
-          { key: 'overview', label: t('reports.tabs.overview') },
-          { key: 'volume',   label: t('reports.tabs.daily_volume') },
-          { key: 'zones',    label: t('reports.tabs.by_zone') },
-          { key: 'drivers',  label: t('reports.tabs.driver_performance') },
-          { key: 'clients',  label: t('reports.tabs.clients') },
-          { key: 'types',    label: t('reports.tabs.order_types') },
-          { key: 'delivery_time', label: t('reports.tabs.delivery_time') },
-          { key: 'payments', label: t('reports.tabs.payments') },
-          { key: 'financial', label: t('reports.tabs.financial') },
-          { key: 'schedules', label: t('reports.tabs.schedules') },
-        ].map(s => (
-          <button key={s.key} className={`od-tab ${activeSection === s.key ? 'active' : ''}`}
-            onClick={() => setActiveSection(s.key)}>{s.label}</button>
-        ))}
+      <div className={`rpt-tabs-wrap${tabsScroll.start ? ' scrolled-start' : ''}${!tabsScroll.end ? ' scrolled-end' : ''}`}>
+        <div className="rpt-tabs" ref={tabsRef}>
+          {[
+            { key: 'overview',      icon: StatsReport,    label: t('reports.tabs.overview') },
+            { key: 'volume',        icon: Calendar,       label: t('reports.tabs.daily_volume') },
+            { key: 'zones',         icon: MapPin,         label: t('reports.tabs.by_zone') },
+            { key: 'drivers',       icon: DeliveryTruck,  label: t('reports.tabs.driver_performance') },
+            { key: 'clients',       icon: User,           label: t('reports.tabs.clients') },
+            { key: 'types',         icon: Package,        label: t('reports.tabs.order_types') },
+            { key: 'delivery_time', icon: Timer,          label: t('reports.tabs.delivery_time') },
+            { key: 'payments',      icon: CreditCard,     label: t('reports.tabs.payments') },
+            { key: 'financial',     icon: DollarCircle,   label: t('reports.tabs.financial') },
+            { key: 'schedules',     icon: Mail,           label: t('reports.tabs.schedules') },
+          ].map(s => (
+            <button key={s.key} className={`rpt-tab ${activeSection === s.key ? 'active' : ''}`}
+              onClick={(e) => { setActiveSection(s.key); e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }); }}>
+              <s.icon width={15} height={15} className="rpt-tab-icon" />
+              {s.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {loading ? (
         <div className="rpt-loading">
-          {[1,2,3,4].map(i => <div key={i} className="skeleton-pulse" style={{ height: 120, borderRadius: 12 }} />)}
+          {[1,2,3,4].map(i => <div key={i} className="skeleton-pulse" style={{ height: 120, borderRadius: 16 }} />)}
         </div>
       ) : !data ? (
-        <div className="ord-empty">
-          <StatsReport width={48} height={48} />
+        <div className="rpt-empty">
+          <div className="rpt-empty-icon">
+            <StatsReport width={36} height={36} />
+          </div>
           <h3>{t('reports.no_data')}</h3>
           <p>{t('reports.no_orders_period')}</p>
         </div>
@@ -295,7 +331,7 @@ export default function Reports() {
         <>
           {/* OVERVIEW */}
           {activeSection === 'overview' && (
-            <div>
+            <div className="rpt-section">
               <div className="rpt-kpi-grid">
                 <KPI icon={Package}      label={t('reports.kpi.total_orders')}  value={ov.total_orders || 0}    color="#244066" />
                 <KPI icon={Check}        label={t('reports.kpi.delivered')}     value={ov.delivered || 0}         color="#16a34a" sub={pct(ov.delivered, ov.total_orders) + ' ' + t('reports.success_rate_suffix')} />
@@ -380,10 +416,10 @@ export default function Reports() {
 
           {/* DAILY VOLUME */}
           {activeSection === 'volume' && (
-            <div className="rpt-chart-card">
+            <div className="rpt-section rpt-chart-card">
               <div className="rpt-chart-header">
                 <h4>{t("reports.daily_volume")}</h4>
-                <button className="btn-outline-action" onClick={() => exportCSV(data?.volume_by_day, 'volume-by-day')}>
+                <button className="rpt-export-btn" onClick={() => exportCSV(data?.volume_by_day, 'volume-by-day')}>
                   <Download width={13} height={13} /> {t('reports.export_csv')}
                 </button>
               </div>
@@ -401,13 +437,13 @@ export default function Reports() {
                     grid: { borderColor: '#f1f5f9' },
                   }}
                 />
-              ) : <p className="od-empty-tab">{t('reports.no_daily_data')}</p>}
+              ) : <p style={{ textAlign: 'center', color: '#94a3b8', padding: '40px 0' }}>{t('reports.no_daily_data')}</p>}
             </div>
           )}
 
           {/* BY ZONE */}
           {activeSection === 'zones' && (
-            <div>
+            <div className="rpt-section">
               {/* Zone Heatmap (#57) */}
               {data?.by_zone?.length > 0 && (() => {
                 const maxOrders = Math.max(...data.by_zone.map(z => z.orders || 0), 1);
@@ -450,7 +486,7 @@ export default function Reports() {
               <div className="rpt-chart-card" style={{ marginBottom: 20 }}>
                 <div className="rpt-chart-header">
                   <h4>{t('reports.chart.orders_by_zone')}</h4>
-                  <button className="btn-outline-action" onClick={() => exportCSV(data?.by_zone, 'orders-by-zone')}>
+                  <button className="rpt-export-btn" onClick={() => exportCSV(data?.by_zone, 'orders-by-zone')}>
                     <Download width={13} height={13} /> {t('reports.export_csv')}
                   </button>
                 </div>
@@ -466,7 +502,7 @@ export default function Reports() {
                       grid: { borderColor: '#f1f5f9' },
                     }}
                   />
-                ) : <p className="od-empty-tab">{t('reports.no_zone_data')}</p>}
+                ) : <p style={{ textAlign: 'center', color: '#94a3b8', padding: '40px 0' }}>{t('reports.no_zone_data')}</p>}
               </div>
               {data?.by_zone?.length > 0 && (
                 <div className="rpt-table-card">
@@ -491,12 +527,12 @@ export default function Reports() {
 
           {/* DRIVER PERFORMANCE */}
           {activeSection === 'drivers' && (
-            <div>
+            <div className="rpt-section">
               {data?.driver_performance?.length > 0 && (
                 <div className="rpt-chart-card" style={{ marginBottom: 20 }}>
                   <div className="rpt-chart-header">
                     <h4>{t('reports.chart.top_drivers')}</h4>
-                    <button className="btn-outline-action" onClick={() => exportCSV(data?.driver_performance, 'driver-performance')}>
+                    <button className="rpt-export-btn" onClick={() => exportCSV(data?.driver_performance, 'driver-performance')}>
                       <Download width={13} height={13} /> {t('reports.export_csv')}
                     </button>
                   </div>
@@ -543,7 +579,7 @@ export default function Reports() {
 
           {/* PAYMENTS */}
           {activeSection === 'payments' && (
-            <div className="rpt-chart-row">
+            <div className="rpt-section rpt-chart-row">
               {paymentSeries.length > 0 && (
                 <div className="rpt-chart-card">
                   <div className="rpt-chart-header"><h4>{t('reports.chart.payment_distribution')}</h4></div>
@@ -580,7 +616,7 @@ export default function Reports() {
 
           {/* CLIENTS (#46) */}
           {activeSection === 'clients' && (
-            <div>
+            <div className="rpt-section">
               {data?.top_clients?.length > 0 && (
                 <>
                   <div className="rpt-chart-row" style={{ marginBottom: 20 }}>
@@ -620,7 +656,7 @@ export default function Reports() {
                   <div className="rpt-table-card">
                     <div className="rpt-chart-header" style={{ marginBottom: 16 }}>
                       <h4>{t("reports.client_analytics")}</h4>
-                      <button className="btn-outline-action" onClick={() => exportCSV(data?.top_clients, 'client-analytics')}>
+                      <button className="rpt-export-btn" onClick={() => exportCSV(data?.top_clients, 'client-analytics')}>
                         <Download width={13} height={13} /> {t('reports.export_csv')}
                       </button>
                     </div>
@@ -646,8 +682,8 @@ export default function Reports() {
                 </>
               )}
               {(!data?.top_clients || data.top_clients.length === 0) && (
-                <div className="ord-empty">
-                  <User width={48} height={48} />
+                <div className="rpt-empty">
+                  <div className="rpt-empty-icon"><User width={36} height={36} /></div>
                   <h3>{t('reports.no_client_data')}</h3>
                   <p>{t('reports.no_client_orders')}</p>
                 </div>
@@ -657,7 +693,7 @@ export default function Reports() {
 
           {/* ORDER TYPES (#49) */}
           {activeSection === 'types' && (
-            <div className="rpt-chart-row">
+            <div className="rpt-section rpt-chart-row">
               {data?.by_order_type?.length > 0 ? (
                 <>
                   <div className="rpt-chart-card">
@@ -691,8 +727,8 @@ export default function Reports() {
                   </div>
                 </>
               ) : (
-                <div className="ord-empty" style={{ gridColumn: '1 / -1' }}>
-                  <Package width={48} height={48} />
+                <div className="rpt-empty" style={{ gridColumn: '1 / -1' }}>
+                  <div className="rpt-empty-icon"><Package width={36} height={36} /></div>
                   <h3>{t('reports.no_order_type_data')}</h3>
                   <p>{t('reports.no_order_type_sub')}</p>
                 </div>
@@ -702,13 +738,13 @@ export default function Reports() {
 
           {/* DELIVERY TIME BY ZONE (#51) */}
           {activeSection === 'delivery_time' && (
-            <div>
+            <div className="rpt-section">
               {data?.delivery_time_by_zone?.length > 0 ? (
                 <>
                   <div className="rpt-chart-card" style={{ marginBottom: 20 }}>
                     <div className="rpt-chart-header">
                       <h4>{t("reports.avg_delivery_time")}</h4>
-                      <button className="btn-outline-action" onClick={() => exportCSV(data?.delivery_time_by_zone, 'delivery-time-by-zone')}>
+                      <button className="rpt-export-btn" onClick={() => exportCSV(data?.delivery_time_by_zone, 'delivery-time-by-zone')}>
                         <Download width={13} height={13} /> {t('reports.export_csv')}
                       </button>
                     </div>
@@ -748,8 +784,8 @@ export default function Reports() {
                   </div>
                 </>
               ) : (
-                <div className="ord-empty">
-                  <Timer width={48} height={48} />
+                <div className="rpt-empty">
+                  <div className="rpt-empty-icon"><Timer width={36} height={36} /></div>
                   <h3>{t('reports.no_delivery_time')}</h3>
                   <p>{t('reports.no_delivery_time_sub')}</p>
                 </div>
@@ -759,7 +795,7 @@ export default function Reports() {
 
           {/* FINANCIAL SUMMARY (#55) */}
           {activeSection === 'financial' && (
-            <div>
+            <div className="rpt-section">
               {finData ? (() => {
                 const fk = finData.kpis || {};
                 return (
@@ -779,7 +815,7 @@ export default function Reports() {
                       <div className="rpt-chart-card" style={{ marginBottom: 20 }}>
                         <div className="rpt-chart-header">
                           <h4>{t('reports.chart.revenue_trend')}</h4>
-                          <button className="btn-outline-action" onClick={() => exportCSV(finData.revenue_by_day, 'revenue-by-day')}>
+                          <button className="rpt-export-btn" onClick={() => exportCSV(finData.revenue_by_day, 'revenue-by-day')}>
                             <Download width={13} height={13} /> {t('reports.export_csv')}
                           </button>
                         </div>
@@ -847,7 +883,7 @@ export default function Reports() {
                       <div className="rpt-table-card" style={{ marginBottom: 20 }}>
                         <div className="rpt-chart-header" style={{ marginBottom: 16 }}>
                           <h4>{t('reports.chart.top_clients_revenue')}</h4>
-                          <button className="btn-outline-action" onClick={() => exportCSV(finData.top_clients, 'top-clients-revenue')}>
+                          <button className="rpt-export-btn" onClick={() => exportCSV(finData.top_clients, 'top-clients-revenue')}>
                             <Download width={13} height={13} /> {t('reports.export_csv')}
                           </button>
                         </div>
@@ -873,7 +909,7 @@ export default function Reports() {
                       <div className="rpt-table-card">
                         <div className="rpt-chart-header" style={{ marginBottom: 16 }}>
                           <h4>{t('reports.chart.driver_settlements')}</h4>
-                          <button className="btn-outline-action" onClick={() => exportCSV(finData.driver_settlements, 'driver-settlements')}>
+                          <button className="rpt-export-btn" onClick={() => exportCSV(finData.driver_settlements, 'driver-settlements')}>
                             <Download width={13} height={13} /> {t('reports.export_csv')}
                           </button>
                         </div>
@@ -908,12 +944,12 @@ export default function Reports() {
 
           {/* EMAIL SCHEDULES (#58) */}
           {activeSection === 'schedules' && (
-            <div>
+            <div className="rpt-section">
               <div className="rpt-chart-card" style={{ marginBottom: 20 }}>
                 <div className="rpt-chart-header">
                   <h4><Mail width={18} height={18} /> {t('reports.schedules.title')}</h4>
-                  <button className="btn-outline-action" onClick={() => setShowScheduleForm(v => !v)}
-                    style={{ background: '#244066', color: '#fff', border: 'none' }}>
+                  <button className="rpt-btn rpt-btn-accent" onClick={() => setShowScheduleForm(v => !v)}
+                    style={{ fontSize: '0.82rem' }}>
                     <Plus width={14} height={14} /> {t('reports.schedules.new')}
                   </button>
                 </div>
@@ -923,11 +959,11 @@ export default function Reports() {
               </div>
 
               {showScheduleForm && (
-                <div className="rpt-table-card" style={{ marginBottom: 20, padding: 24 }}>
-                  <h4 style={{ margin: '0 0 16px', fontWeight: 600 }}>{t("reports.create_schedule")}</h4>
+                <div className="rpt-schedule-form">
+                  <h4>{t("reports.create_schedule")}</h4>
                   <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: '#475569' }}>{t("reports.frequency")}</label>
+                      <label>{t("reports.frequency")}</label>
                       <select className="rpt-period-select" value={scheduleForm.frequency}
                         onChange={e => setScheduleForm(f => ({ ...f, frequency: e.target.value }))}>
                         <option value="daily">{t('reports.schedules.daily')}</option>
@@ -935,7 +971,7 @@ export default function Reports() {
                       </select>
                     </div>
                     <div style={{ flex: 1, minWidth: 280 }}>
-                      <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: '#475569' }}>
+                      <label>
                         {t('reports.schedules.recipients_label')}
                       </label>
                       <input type="text" className="filter-date" style={{ width: '100%' }}
@@ -943,8 +979,8 @@ export default function Reports() {
                         value={scheduleForm.recipients}
                         onChange={e => setScheduleForm(f => ({ ...f, recipients: e.target.value }))} />
                     </div>
-                    <button className="btn-outline-action" onClick={createSchedule}
-                      style={{ background: '#16a34a', color: '#fff', border: 'none', height: 40 }}>
+                    <button className="rpt-action-btn success" onClick={createSchedule}
+                      style={{ height: 40 }}>
                       <Check width={14} height={14} /> {t('reports.schedules.create_btn')}
                     </button>
                   </div>
@@ -976,25 +1012,21 @@ export default function Reports() {
                             <td style={{ color: '#64748b', fontSize: 13 }}>{s.cron_expression}</td>
                             <td>{s.last_sent ? new Date(s.last_sent).toLocaleString() : '—'}</td>
                             <td>
-                              <span style={{
-                                padding: '4px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600,
-                                background: s.is_active ? '#dcfce7' : '#fee2e2',
-                                color: s.is_active ? '#16a34a' : '#dc2626',
-                              }}>
+                              <span className={`rpt-badge ${s.is_active ? 'rpt-badge-active' : 'rpt-badge-paused'}`}>
                                 {s.is_active ? t('common.active') : t('reports.schedules.paused')}
                               </span>
                             </td>
                             <td>
                               <div style={{ display: 'flex', gap: 6 }}>
-                                <button className="btn-outline-action" onClick={() => toggleSchedule(s)} title={s.is_active ? t('reports.schedules.pause') : t('reports.schedules.activate')}>
+                                <button className="rpt-action-btn" onClick={() => toggleSchedule(s)} title={s.is_active ? t('reports.schedules.pause') : t('reports.schedules.activate')}>
                                   {s.is_active ? t('reports.schedules.pause') : t('reports.schedules.activate')}
                                 </button>
-                                <button className="btn-outline-action" onClick={() => sendNow(s.id)}
+                                <button className="rpt-action-btn" onClick={() => sendNow(s.id)}
                                   title={t('reports.schedules.send_now')} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                                   <SendMail width={13} height={13} /> {t('reports.schedules.send_now')}
                                 </button>
-                                <button className="btn-outline-action" onClick={() => deleteSchedule(s.id)}
-                                  style={{ color: '#dc2626', borderColor: '#fecaca' }} title={t('common.delete')}>
+                                <button className="rpt-action-btn danger" onClick={() => deleteSchedule(s.id)}
+                                  title={t('common.delete')}>
                                   <Trash width={13} height={13} />
                                 </button>
                               </div>
@@ -1006,8 +1038,8 @@ export default function Reports() {
                   </table>
                 </div>
               ) : !showScheduleForm ? (
-                <div className="ord-empty">
-                  <Mail width={48} height={48} />
+                <div className="rpt-empty">
+                  <div className="rpt-empty-icon"><Mail width={36} height={36} /></div>
                   <h3>{t('reports.schedules.empty_title')}</h3>
                   <p>{t('reports.schedules.empty_sub')}</p>
                 </div>

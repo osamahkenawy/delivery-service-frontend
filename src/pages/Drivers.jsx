@@ -3,7 +3,7 @@ import {
   User, Phone, Mail, MapPin, Star, Package, DeliveryTruck, Check, Xmark,
   Plus, Search, EditPencil, Eye, Refresh, NavArrowLeft, NavArrowRight,
   StatsReport, Medal, Timer, TruckLength, Clock, Calendar, Bicycle, XmarkCircle,
-  MoreHoriz, Prohibition, Gps, DollarCircle, ArrowRight,
+  MoreHoriz, Prohibition, Gps, DollarCircle, ArrowRight, Copy,
   Motorcycle, Car, Truck, Bus
 } from 'iconoir-react';
 import { AuthContext } from '../App';
@@ -857,83 +857,208 @@ export default function Drivers() {
 
       {/* ── Driver Credentials Modal ── */}
       {credentialsModal && (
-        <div className="modal-overlay" onClick={() => setCredentialsModal(null)}>
-          <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: 440, borderRadius: 16 }}>
-            {/* Success header */}
+        <div
+          onClick={() => setCredentialsModal(null)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(10,18,35,0.72)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '20px',
+            animation: 'cred-fade-in 0.22s ease',
+          }}
+        >
+          <style>{`
+            @keyframes cred-fade-in { from { opacity:0 } to { opacity:1 } }
+            @keyframes cred-slide-up { from { opacity:0; transform:translateY(28px) scale(0.97) } to { opacity:1; transform:translateY(0) scale(1) } }
+            @keyframes cred-ring-pulse { 0%,100% { transform:scale(1); opacity:0.35 } 50% { transform:scale(1.18); opacity:0.12 } }
+            @keyframes cred-check-pop { 0% { transform:scale(0) } 60% { transform:scale(1.15) } 100% { transform:scale(1) } }
+            @keyframes cred-shimmer { 0% { background-position:-200% 0 } 100% { background-position:200% 0 } }
+            .cred-row-copy:hover { background: rgba(36,64,102,0.08) !important; }
+            .cred-btn-copy:hover { background: #1e3a5f !important; }
+            .cred-btn-close:hover { background: #f1f5f9 !important; border-color: #cbd5e1 !important; }
+          `}</style>
+
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              width: '100%', maxWidth: 420,
+              background: '#fff',
+              borderRadius: 24,
+              overflow: 'hidden',
+              boxShadow: '0 32px 80px rgba(0,0,0,0.35), 0 8px 24px rgba(0,0,0,0.12)',
+              animation: 'cred-slide-up 0.3s cubic-bezier(0.34,1.36,0.64,1)',
+            }}
+          >
+            {/* ── Gradient header ── */}
             <div style={{
-              background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
-              padding: '28px 24px 22px',
-              borderRadius: '16px 16px 0 0',
+              background: 'linear-gradient(135deg, #0d2137 0%, #1a3d5c 50%, #0f4c2a 100%)',
+              padding: '36px 28px 28px',
               textAlign: 'center',
-              color: '#fff',
+              position: 'relative',
+              overflow: 'hidden',
             }}>
-              <div style={{
-                width: 56, height: 56, borderRadius: '50%', background: 'rgba(255,255,255,0.2)',
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                marginBottom: 12, fontSize: 28,
-              }}>
-                <Check width={32} height={32} strokeWidth={2.5} />
+              {/* Decorative orbs */}
+              <div style={{ position:'absolute', top:-40, right:-40, width:160, height:160, borderRadius:'50%', background:'rgba(34,197,94,0.12)', pointerEvents:'none' }} />
+              <div style={{ position:'absolute', bottom:-30, left:-30, width:120, height:120, borderRadius:'50%', background:'rgba(36,64,102,0.25)', pointerEvents:'none' }} />
+
+              {/* Truck + check icon combo */}
+              <div style={{ position:'relative', display:'inline-flex', alignItems:'center', justifyContent:'center', marginBottom:16 }}>
+                {/* Pulsing ring */}
+                <div style={{
+                  position:'absolute', width:84, height:84, borderRadius:'50%',
+                  border:'2px solid rgba(34,197,94,0.4)',
+                  animation:'cred-ring-pulse 2s ease-in-out infinite',
+                }} />
+                <div style={{
+                  position:'absolute', width:68, height:68, borderRadius:'50%',
+                  border:'2px solid rgba(34,197,94,0.25)',
+                  animation:'cred-ring-pulse 2s ease-in-out infinite 0.4s',
+                }} />
+                {/* Main icon circle */}
+                <div style={{
+                  width:58, height:58, borderRadius:'50%',
+                  background:'linear-gradient(135deg, #16a34a, #22c55e)',
+                  display:'flex', alignItems:'center', justifyContent:'center',
+                  boxShadow:'0 8px 24px rgba(34,197,94,0.45)',
+                  animation:'cred-check-pop 0.5s cubic-bezier(0.34,1.36,0.64,1) 0.1s both',
+                  position:'relative', zIndex:1,
+                }}>
+                  <Check width={28} height={28} color="#fff" strokeWidth={2.5} />
+                </div>
+                {/* Mini truck badge */}
+                <div style={{
+                  position:'absolute', bottom:-2, right:-4,
+                  width:24, height:24, borderRadius:'50%',
+                  background:'#f97316',
+                  display:'flex', alignItems:'center', justifyContent:'center',
+                  border:'2px solid #fff',
+                  boxShadow:'0 2px 8px rgba(249,115,22,0.5)',
+                  zIndex:2,
+                }}>
+                  <DeliveryTruck width={12} height={12} color="#fff" />
+                </div>
               </div>
-              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, letterSpacing: '-0.01em' }}>
+
+              <h3 style={{ margin:0, fontSize:'1.3rem', fontWeight:800, color:'#fff', letterSpacing:'-0.02em' }}>
                 {t('drivers.credentials.title')}
               </h3>
-              <p style={{ margin: '6px 0 0', opacity: 0.85, fontSize: '0.85rem' }}>
+              <p style={{ margin:'6px 0 0', color:'rgba(255,255,255,0.62)', fontSize:'0.83rem', fontWeight:500 }}>
                 {credentialsModal.isDefault
                   ? t('drivers.credentials.default_password')
                   : t('drivers.credentials.custom_password')}
               </p>
             </div>
 
-            {/* Credentials body */}
-            <div style={{ padding: '24px' }}>
-              <div style={{
-                background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12,
-                overflow: 'hidden', marginBottom: 16,
-              }}>
-                <div style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  padding: '14px 16px', borderBottom: '1px solid #e2e8f0',
-                }}>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('drivers.credentials.username')}</span>
-                  <span style={{ fontSize: '0.95rem', fontWeight: 600, fontFamily: 'monospace', color: '#1e293b' }}>{credentialsModal.username}</span>
+            {/* ── Credential rows ── */}
+            <div style={{ padding:'24px 24px 20px' }}>
+
+              {/* Username row */}
+              <div
+                className="cred-row-copy"
+                onClick={() => navigator.clipboard?.writeText(credentialsModal.username)}
+                title="Click to copy"
+                style={{
+                  display:'flex', alignItems:'center', justifyContent:'space-between',
+                  padding:'13px 14px', borderRadius:14, marginBottom:10,
+                  background:'#f8fafc', border:'1.5px solid #e2e8f0',
+                  cursor:'pointer', transition:'background 0.15s',
+                }}
+              >
+                <div>
+                  <div style={{ fontSize:10, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:3 }}>
+                    {t('drivers.credentials.username')}
+                  </div>
+                  <div style={{ fontSize:'1rem', fontWeight:700, fontFamily:'monospace', color:'#0f172a', letterSpacing:'0.03em' }}>
+                    {credentialsModal.username}
+                  </div>
                 </div>
                 <div style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  padding: '14px 16px',
+                  width:30, height:30, borderRadius:8,
+                  background:'#e2e8f0', display:'flex', alignItems:'center', justifyContent:'center',
+                  flexShrink:0,
                 }}>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('drivers.credentials.password')}</span>
-                  <span style={{ fontSize: '0.95rem', fontWeight: 600, fontFamily: 'monospace', color: '#1e293b' }}>{credentialsModal.password}</span>
+                  <Copy width={14} height={14} color="#64748b" />
                 </div>
               </div>
 
+              {/* Password row */}
+              <div
+                className="cred-row-copy"
+                onClick={() => navigator.clipboard?.writeText(credentialsModal.password)}
+                title="Click to copy"
+                style={{
+                  display:'flex', alignItems:'center', justifyContent:'space-between',
+                  padding:'13px 14px', borderRadius:14, marginBottom:16,
+                  background: 'linear-gradient(135deg, #fff7ed, #fff)',
+                  border:'1.5px solid #fed7aa',
+                  cursor:'pointer', transition:'background 0.15s',
+                }}
+              >
+                <div>
+                  <div style={{ fontSize:10, fontWeight:700, color:'#f97316', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:3 }}>
+                    {t('drivers.credentials.password')}
+                  </div>
+                  <div style={{ fontSize:'1rem', fontWeight:700, fontFamily:'monospace', color:'#0f172a', letterSpacing:'0.05em' }}>
+                    {credentialsModal.password}
+                  </div>
+                </div>
+                <div style={{
+                  width:30, height:30, borderRadius:8,
+                  background:'#fed7aa', display:'flex', alignItems:'center', justifyContent:'center',
+                  flexShrink:0,
+                }}>
+                  <Copy width={14} height={14} color="#f97316" />
+                </div>
+              </div>
+
+              {/* Warning strip */}
               {credentialsModal.isDefault && (
                 <div style={{
-                  background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 10,
-                  padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'flex-start',
-                  marginBottom: 16,
+                  background:'linear-gradient(135deg, #fff7ed, #fef3c7)',
+                  border:'1px solid #fde68a', borderRadius:12,
+                  padding:'10px 14px', display:'flex', gap:10, alignItems:'flex-start',
+                  marginBottom:18,
                 }}>
-                  <span style={{ fontSize: 18, flexShrink: 0, marginTop: 1 }}>⚠️</span>
-                  <p style={{ margin: 0, fontSize: '0.82rem', color: '#9a3412', lineHeight: 1.5 }}>
+                  <span style={{ fontSize:16, flexShrink:0, marginTop:1 }}>🔑</span>
+                  <p style={{ margin:0, fontSize:'0.78rem', color:'#92400e', lineHeight:1.55, fontWeight:500 }}>
                     {t('drivers.credentials.warning')}
                   </p>
                 </div>
               )}
 
+              {/* Copy & Close button */}
               <button
-                className="btn-primary-action"
+                className="cred-btn-copy"
                 onClick={() => {
                   const text = `Username: ${credentialsModal.username}\nPassword: ${credentialsModal.password}`;
                   navigator.clipboard?.writeText(text);
                   setCredentialsModal(null);
                 }}
-                style={{ width: '100%', padding: '12px', borderRadius: 10, fontSize: '0.9rem', fontWeight: 600 }}
+                style={{
+                  width:'100%', padding:'13px',
+                  background:'linear-gradient(135deg, #244066, #1a3d5c)',
+                  color:'#fff', border:'none', borderRadius:14,
+                  fontSize:'0.9rem', fontWeight:700, cursor:'pointer',
+                  display:'flex', alignItems:'center', justifyContent:'center', gap:8,
+                  boxShadow:'0 4px 16px rgba(36,64,102,0.35)',
+                  transition:'background 0.15s',
+                }}
               >
-                {t('drivers.credentials.copy_close')}
+                <Copy width={15} height={15} /> {t('drivers.credentials.copy_close')}
               </button>
+
+              {/* Close only */}
               <button
-                className="btn-outline-action"
+                className="cred-btn-close"
                 onClick={() => setCredentialsModal(null)}
-                style={{ width: '100%', padding: '10px', borderRadius: 10, marginTop: 8, fontSize: '0.85rem' }}
+                style={{
+                  width:'100%', padding:'11px',
+                  background:'transparent', color:'#64748b',
+                  border:'1.5px solid #e2e8f0', borderRadius:14,
+                  fontSize:'0.85rem', fontWeight:600, cursor:'pointer',
+                  marginTop:8, transition:'background 0.15s, border-color 0.15s',
+                }}
               >
                 {t('common.close')}
               </button>

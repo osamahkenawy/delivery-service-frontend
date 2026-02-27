@@ -187,8 +187,8 @@ export default function Returns() {
       ) : filtered.length === 0 ? (
         <div className="ret-empty">
           <div className="ret-empty-icon"><RefreshDouble size={28} /></div>
-          <h3>{t("returns.no_returns")}</h3>
-          <p>{t("returns.no_results")}</p>
+          <h3 className='text-center' style={{textAlign: 'center'}} >{t("returns.no_returns")}</h3>
+          <p className='text-center' style={{textAlign: 'center'}}>{t("returns.no_results")}</p>
         </div>
       ) : (
         <div className="ret-table-wrap">

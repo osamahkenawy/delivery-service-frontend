@@ -317,7 +317,7 @@ export default function DriverDashboard() {
         <div className="dp-no-profile-icon">
           <WarningTriangle width={40} height={40} color="#dc2626" />
         </div>
-        <h2>{t("driverDashboard.no_profile")}</h2>
+        <h2 style={{textAlign: 'center'}}>{t("driverDashboard.no_profile")}</h2>
         <p>{t('driverDashboard.no_profile_message')}</p>
         <Toast toasts={toasts} />
       </div>

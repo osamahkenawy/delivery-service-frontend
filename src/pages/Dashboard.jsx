@@ -183,15 +183,46 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="loading-container">
-        <div className="loading-spinner">
-          <div className="loader-orbital">
-            <div className="loader-core"></div>
-            <div className="loader-ring loader-ring-1"></div>
-            <div className="loader-ring loader-ring-2"></div>
+      <div className="dash-loader">
+        {/* Animated background orbs */}
+        <div className="dash-loader-orb dash-loader-orb-1" />
+        <div className="dash-loader-orb dash-loader-orb-2" />
+        <div className="dash-loader-orb dash-loader-orb-3" />
+
+        <div className="dash-loader-content">
+          {/* Truck + Road animation */}
+          <div className="dash-loader-scene">
+            <div className="dash-loader-road">
+              <span /><span /><span /><span /><span /><span /><span />
+            </div>
+            <div className="dash-loader-truck">
+              <DeliveryTruck width={48} height={48} />
+            </div>
+            <div className="dash-loader-pins">
+              <div className="dash-loader-pin dash-loader-pin-1"><MapPin width={18} height={18} /></div>
+              <div className="dash-loader-pin dash-loader-pin-2"><MapPin width={14} height={14} /></div>
+              <div className="dash-loader-pin dash-loader-pin-3"><MapPin width={20} height={20} /></div>
+            </div>
           </div>
-          <div className="loader-text" style={{ color: '#244066', fontSize: 16, fontWeight: 600, marginTop: 20 }}>
-            Loading dashboard...
+
+          {/* Brand letters */}
+          <div className="dash-loader-brand">
+            {'TRASEALLA'.split('').map((l, i) => (
+              <span key={i} className="dash-loader-letter" style={{ animationDelay: `${i * 0.08}s` }}>{l}</span>
+            ))}
+          </div>
+
+          {/* Progress bar */}
+          <div className="dash-loader-bar-track">
+            <div className="dash-loader-bar-fill" />
+          </div>
+
+          {/* Subtitle */}
+          <div className="dash-loader-subtitle">
+            {t('dashboard.loading')}
+            <span className="dash-loader-dots">
+              <span /><span /><span />
+            </span>
           </div>
         </div>
       </div>

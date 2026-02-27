@@ -20,6 +20,8 @@ const iconMap = {
   'barcode':         Package,
   'driver-scan':     DeliveryTruck,
   'my-deliveries':   Package,
+  'driver-dashboard': HomeSimple,
+  'my-orders':        Package,
   'clients':        User,
   'zones':          MapPin,
   'pricing':        DollarCircle,
@@ -97,13 +99,14 @@ const driverNavSections = [
   {
     titleKey: 'main',
     items: [
-      { path: '/driver/orders', labelKey: 'my_deliveries',  iconKey: 'my-deliveries' },
+      { path: '/driver/dashboard', labelKey: 'driver_home',    iconKey: 'driver-dashboard' },
+      { path: '/driver/orders',    labelKey: 'my_orders',      iconKey: 'my-orders' },
     ]
   },
   {
     titleKey: 'tools',
     items: [
-      { path: '/driver/scan',   labelKey: 'scan_shipment',  iconKey: 'driver-scan' },
+      { path: '/driver/scan',      labelKey: 'scan_shipment',  iconKey: 'driver-scan' },
     ]
   },
 ];

@@ -307,6 +307,51 @@ export default function OrderDetail() {
               {order.client_name && <InfoRow icon={User} label={t('orderDetail.client')} value={order.client_name} />}
             </div>
 
+            {/* Financial Breakdown (#60 #61 #62) */}
+            {(parseFloat(order.commission_amount) > 0 || parseFloat(order.vat_amount) > 0 || parseFloat(order.net_payable) > 0) && (
+              <div className="od-card" style={{background:'linear-gradient(135deg,#f0fdf4 0%,#ecfdf5 100%)',border:'1px solid #bbf7d0'}}>
+                <h4 className="od-card-title" style={{color:'#16a34a'}}><DollarCircle width={15} height={15} /> {t('orderDetail.section.financial')}</h4>
+                <div style={{display:'flex',flexDirection:'column',gap:6}}>
+                  <div style={{display:'flex',justifyContent:'space-between',fontSize:13,color:'#334155'}}>
+                    <span>{t('orderDetail.fin.subtotal')}</span>
+                    <span style={{fontWeight:600}}>{fmtAED(order.delivery_fee)}</span>
+                  </div>
+                  {parseFloat(order.discount) > 0 && (
+                    <div style={{display:'flex',justifyContent:'space-between',fontSize:13,color:'#dc2626'}}>
+                      <span>{t('orderDetail.fin.discount')}</span>
+                      <span>- {fmtAED(order.discount)}</span>
+                    </div>
+                  )}
+                  {parseFloat(order.commission_amount) > 0 && (
+                    <div style={{display:'flex',justifyContent:'space-between',fontSize:13,color:'#d97706'}}>
+                      <span>{t('orderDetail.fin.commission')} ({order.commission_rate}%)</span>
+                      <span>- {fmtAED(order.commission_amount)}</span>
+                    </div>
+                  )}
+                  {parseFloat(order.vat_amount) > 0 && (
+                    <div style={{display:'flex',justifyContent:'space-between',fontSize:13,color:'#6366f1'}}>
+                      <span>{t('orderDetail.fin.vat')} ({order.vat_rate}%)</span>
+                      <span>{fmtAED(order.vat_amount)}</span>
+                    </div>
+                  )}
+                  {parseFloat(order.platform_fee) > 0 && (
+                    <div style={{display:'flex',justifyContent:'space-between',fontSize:13,color:'#64748b'}}>
+                      <span>{t('orderDetail.fin.platform_fee')}</span>
+                      <span>- {fmtAED(order.platform_fee)}</span>
+                    </div>
+                  )}
+                  <div style={{borderTop:'1.5px solid #16a34a',paddingTop:8,marginTop:4,display:'flex',justifyContent:'space-between',fontSize:14,fontWeight:700,color:'#16a34a'}}>
+                    <span>{t('orderDetail.fin.net_payable')}</span>
+                    <span>{fmtAED(order.net_payable)}</span>
+                  </div>
+                  <div style={{display:'flex',justifyContent:'space-between',fontSize:14,fontWeight:700,color:'#1e293b',paddingTop:2}}>
+                    <span>{t('orderDetail.fin.total')}</span>
+                    <span>{fmtAED(order.total_amount)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Driver */}
             <div className="od-card">
               <div className="od-card-title-row">

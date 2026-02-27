@@ -23,6 +23,7 @@ import LiveMap from './pages/LiveMap';
 import Barcode from './pages/Barcode';
 import DriverScan from './pages/DriverScan';
 import DriverDashboard from './pages/DriverDashboard';
+import DriverHome from './pages/DriverHome';
 import Settings from './pages/Settings';
 import Integrations from './pages/Integrations';
 import ShipmentTracking from './pages/ShipmentTracking';
@@ -166,7 +167,7 @@ function App() {
   }
 
   const isDriver = user?.role === 'driver';
-  const homeRoute = isDriver ? '/driver/orders' : '/dashboard';
+  const homeRoute = isDriver ? '/driver/dashboard' : '/dashboard';
 
   const PrivateRoute = ({ children }) => user ? <Layout>{children}</Layout> : <Navigate to="/login" />;
   const AdminRoute = ({ children }) => {
@@ -187,8 +188,9 @@ function App() {
         <Route path="/" element={<Navigate to={user ? homeRoute : '/login'} />} />
 
         {/* Driver routes (accessible by all authenticated users) */}
-        <Route path="/driver/orders"  element={<PrivateRoute><DriverDashboard /></PrivateRoute>} />
-        <Route path="/driver/scan"    element={<PrivateRoute><DriverScan /></PrivateRoute>} />
+        <Route path="/driver/dashboard" element={<PrivateRoute><DriverHome /></PrivateRoute>} />
+        <Route path="/driver/orders"    element={<PrivateRoute><DriverDashboard /></PrivateRoute>} />
+        <Route path="/driver/scan"      element={<PrivateRoute><DriverScan /></PrivateRoute>} />
 
         {/* Admin-only routes (drivers get redirected) */}
         <Route path="/dashboard"      element={<AdminRoute><Dashboard /></AdminRoute>} />

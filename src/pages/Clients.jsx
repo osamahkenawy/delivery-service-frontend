@@ -125,7 +125,8 @@ function StepBar({ current, steps }) {
 
 /* ── Nominatim address search dropdown ── */
 function AddressSearch({ onSelect }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
   const [q, setQ] = React.useState('');
   const [results, setResults] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
