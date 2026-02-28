@@ -9,6 +9,11 @@ import './BulkImport.css';
 import { useTranslation } from 'react-i18next';
 
 const REQUIRED_FIELDS = ['recipient_name', 'recipient_phone', 'recipient_address'];
+
+const VALID_ORDER_TYPES = ['standard', 'express', 'same_day', 'scheduled', 'return'];
+const VALID_CATEGORIES  = ['parcel', 'document', 'food', 'grocery', 'medicine', 'electronics', 'fragile', 'other'];
+const VALID_PAY_METHODS = ['cod', 'prepaid', 'credit', 'wallet'];
+
 const SYSTEM_FIELDS = [
   { key: 'recipient_name', label: 'Recipient Name', required: true },
   { key: 'recipient_phone', label: 'Recipient Phone', required: true },
@@ -23,9 +28,12 @@ const SYSTEM_FIELDS = [
   { key: 'weight_kg', label: 'Weight (kg)', required: false },
   { key: 'description', label: 'Description', required: false },
   { key: 'special_instructions', label: 'Special Instructions', required: false },
+  { key: 'scheduled_at', label: 'Scheduled Date', required: false },
   { key: 'payment_method', label: 'Payment Method', required: false },
   { key: 'cod_amount', label: 'COD Amount', required: false },
   { key: 'delivery_fee', label: 'Delivery Fee', required: false },
+  { key: 'discount', label: 'Discount', required: false },
+  { key: 'client_id', label: 'Client ID', required: false },
   { key: 'notes', label: 'Notes', required: false },
 ];
 
@@ -47,7 +55,7 @@ function parseCSV(text) {
 
 function generateCSVTemplate() {
   const headers = SYSTEM_FIELDS.map(f => f.key).join(',');
-  const sample = 'John Doe,+971501234567,123 Al Barsha Dubai,Al Barsha,Dubai,Sender Co,+971501111111,Warehouse 1,standard,parcel,2.5,Electronics,Handle with care,cod,150,25,Urgent delivery';
+  const sample = 'John Doe,+971501234567,123 Al Barsha Dubai,Al Barsha,Dubai,Sender Co,+971501111111,Warehouse 1,standard,parcel,2.5,Electronics,Handle with care,2026-03-15,cod,150,25,0,,Urgent delivery';
   return `${headers}\n${sample}`;
 }
 
@@ -122,25 +130,47 @@ export default function BulkImport() {
   const validatedRows = useMemo(() => {
     return csvRows.map(row => {
       const errors = [];
+      const warnings = [];
       REQUIRED_FIELDS.forEach(field => {
         const csvCol = mapping[field];
         if (!csvCol || !row[csvCol]?.trim()) {
           errors.push(t('bulkImport.missing_field', { field: t('bulkImport.fields.' + field) }));
         }
       });
-      return { ...row, __errors: errors, __valid: errors.length === 0 };
+      // Validate ENUM fields
+      const orderTypeCol = mapping['order_type'];
+      if (orderTypeCol && row[orderTypeCol]?.trim() && !VALID_ORDER_TYPES.includes(row[orderTypeCol].trim().toLowerCase())) {
+        warnings.push(t('bulkImport.invalid_enum', { field: t('bulkImport.fields.order_type'), value: row[orderTypeCol], allowed: VALID_ORDER_TYPES.join(', ') }));
+      }
+      const categoryCol = mapping['category'];
+      if (categoryCol && row[categoryCol]?.trim() && !VALID_CATEGORIES.includes(row[categoryCol].trim().toLowerCase())) {
+        warnings.push(t('bulkImport.invalid_enum', { field: t('bulkImport.fields.category'), value: row[categoryCol], allowed: VALID_CATEGORIES.join(', ') }));
+      }
+      const payMethodCol = mapping['payment_method'];
+      if (payMethodCol && row[payMethodCol]?.trim() && !VALID_PAY_METHODS.includes(row[payMethodCol].trim().toLowerCase())) {
+        warnings.push(t('bulkImport.invalid_enum', { field: t('bulkImport.fields.payment_method'), value: row[payMethodCol], allowed: VALID_PAY_METHODS.join(', ') }));
+      }
+      return { ...row, __errors: errors, __warnings: warnings, __valid: errors.length === 0 };
     });
   }, [csvRows, mapping]);
 
   const validCount = validatedRows.filter(r => r.__valid).length;
   const invalidCount = validatedRows.filter(r => !r.__valid).length;
+  const warningCount = validatedRows.filter(r => r.__warnings?.length > 0).length;
 
-  // Build mapped data
+  // Build mapped data — trim values and lowercase ENUM fields
   const buildOrderData = (row) => {
     const data = {};
     SYSTEM_FIELDS.forEach(f => {
       const csvCol = mapping[f.key];
-      if (csvCol && row[csvCol]) data[f.key] = row[csvCol];
+      if (csvCol && row[csvCol]?.trim()) {
+        let val = row[csvCol].trim();
+        // Lowercase ENUM fields so backend accepts them
+        if (['order_type', 'category', 'payment_method'].includes(f.key)) {
+          val = val.toLowerCase().replace(/\s+/g, '_');
+        }
+        data[f.key] = val;
+      }
     });
     return data;
   };
@@ -374,6 +404,14 @@ export default function BulkImport() {
                 <div><span className="blk-stat-val">{invalidCount}</span><span className="blk-stat-lbl">{t("bulkImport.invalid")}</span></div>
               </div>
             </div>
+            {warningCount > 0 && (
+              <div className="blk-stat-card warning">
+                <div className="blk-stat-card-row">
+                  <div className="blk-stat-icon" style={{ background: '#fef3c7' }}><WarningCircle size={20} color="#d97706" /></div>
+                  <div><span className="blk-stat-val">{warningCount}</span><span className="blk-stat-lbl">{t("bulkImport.warnings")}</span></div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="blk-preview-wrap" style={{ maxHeight: 420, overflowY: 'auto' }}>
@@ -393,7 +431,13 @@ export default function BulkImport() {
                     <td style={{ fontWeight: 600, color: '#94a3b8' }}>{i + 1}</td>
                     <td>
                       {row.__valid ? (
-                        <span className="blk-valid"><Check size={12} /> {t('bulkImport.valid_label')}</span>
+                        row.__warnings?.length > 0 ? (
+                          <span className="blk-warning" title={row.__warnings.join(', ')}>
+                            <WarningCircle size={12} /> {t('bulkImport.warning_label')}
+                          </span>
+                        ) : (
+                          <span className="blk-valid"><Check size={12} /> {t('bulkImport.valid_label')}</span>
+                        )
                       ) : (
                         <span className="blk-invalid" title={row.__errors.join(', ')}>
                           <Xmark size={12} /> {row.__errors[0]}

@@ -246,6 +246,7 @@
 .blk-valid   { color: #16a34a; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
 .blk-invalid { color: #ef4444; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
 .blk-warn    { color: #d97706; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+.blk-warning { color: #d97706; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 4px; cursor: help; }
 
 .blk-row-valid   { border-left: 3px solid #16a34a; }
 .blk-row-invalid { border-left: 3px solid #ef4444; background: #fef2f2 !important; }

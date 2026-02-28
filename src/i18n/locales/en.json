@@ -2125,6 +2125,9 @@
     "upload_csv_alert": "Please upload a CSV file",
     "unknown_error": "Unknown error",
     "missing_field": "Missing {{field}}",
+    "invalid_enum": "Invalid {{field}}: '{{value}}'. Allowed: {{allowed}}",
+    "warnings": "WARNINGS",
+    "warning_label": "Warning",
     "fields": {
       "recipient_name": "Recipient Name",
       "recipient_phone": "Recipient Phone",
@@ -2139,9 +2142,12 @@
       "weight_kg": "Weight (kg)",
       "description": "Description",
       "special_instructions": "Special Instructions",
+      "scheduled_at": "Scheduled Date",
       "payment_method": "Payment Method",
       "cod_amount": "COD Amount",
       "delivery_fee": "Delivery Fee",
+      "discount": "Discount",
+      "client_id": "Client ID",
       "notes": "Notes"
     }
   },

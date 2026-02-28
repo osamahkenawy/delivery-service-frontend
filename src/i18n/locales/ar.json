@@ -2043,6 +2043,9 @@
     "upload_csv_alert": "يرجى رفع ملف CSV",
     "unknown_error": "خطأ غير معروف",
     "missing_field": "حقل {{field}} مفقود",
+    "invalid_enum": "قيمة غير صالحة لـ {{field}}: '{{value}}'. القيم المسموحة: {{allowed}}",
+    "warnings": "تحذيرات",
+    "warning_label": "تحذير",
     "fields": {
       "recipient_name": "اسم المُستلِم",
       "recipient_phone": "هاتف المُستلِم",
@@ -2057,9 +2060,12 @@
       "weight_kg": "الوزن (كجم)",
       "description": "الوصف",
       "special_instructions": "تعليمات خاصة",
+      "scheduled_at": "تاريخ الجدولة",
       "payment_method": "طريقة الدفع",
       "cod_amount": "مبلغ الدفع عند الاستلام",
       "delivery_fee": "رسوم التوصيل",
+      "discount": "الخصم",
+      "client_id": "رقم العميل",
       "notes": "ملاحظات"
     }
   },
