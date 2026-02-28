@@ -20,6 +20,9 @@ const SuperAdminTenants = () => {
   const [selectedTenant, setSelectedTenant] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [showModulesModal, setShowModulesModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createForm, setCreateForm] = useState({ name: '', email: '', phone: '', city: '', country: '', industry: '', max_users: 10 });
+  const [creating, setCreating] = useState(false);
   const [availableModules, setAvailableModules] = useState([]);
   const [selectedModules, setSelectedModules] = useState([]);
 
@@ -129,19 +132,52 @@ const SuperAdminTenants = () => {
 
       if (response.ok) {
         const data = await response.json();
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('crm_token', data.token);
+        localStorage.setItem('crm_user', JSON.stringify(data.user));
+        if (data.user?.tenant_id) {
+          localStorage.setItem('crm_tenant', JSON.stringify({ id: data.user.tenant_id }));
+        }
         window.open('/dashboard', '_blank');
+      } else {
+        const err = await response.json();
+        alert(err.error || 'Failed to impersonate');
       }
     } catch (error) {
       console.error('Failed to impersonate:', error);
     }
   };
 
+  const createTenant = async () => {
+    try {
+      setCreating(true);
+      const token = localStorage.getItem('superAdminToken');
+      const response = await fetch(`${API_BASE_URL}/super-admin/tenants`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(createForm),
+      });
+      if (response.ok) {
+        const result = await response.json();
+        setShowCreateModal(false);
+        setCreateForm({ name: '', email: '', phone: '', city: '', country: '', industry: '', max_users: 10 });
+        fetchTenants();
+        alert(`Tenant "${result.tenant?.name}" created successfully!\n\nDefault admin credentials:\nUsername: admin_${result.tenant?.slug}\nPassword: ${result.defaultPassword || 'Admin@123'}`);
+      } else {
+        const err = await response.json();
+        alert(err.error || 'Failed to create tenant');
+      }
+    } catch (error) {
+      console.error('Failed to create tenant:', error);
+    } finally {
+      setCreating(false);
+    }
+  };
+
   const openModulesModal = (tenant) => {
     setSelectedTenant(tenant);
-    const currentModules = tenant.allowed_modules ? 
-      (typeof tenant.allowed_modules === 'string' ? JSON.parse(tenant.allowed_modules) : tenant.allowed_modules) : 
+    const tenantSettings = typeof tenant.settings === 'string' ? JSON.parse(tenant.settings || '{}') : (tenant.settings || {});
+    const currentModules = tenantSettings.allowed_modules ? 
+      (typeof tenantSettings.allowed_modules === 'string' ? JSON.parse(tenantSettings.allowed_modules) : tenantSettings.allowed_modules) : 
       availableModules.map(m => m.id);
     setSelectedModules(currentModules);
     setShowModulesModal(true);
@@ -172,10 +208,16 @@ const SuperAdminTenants = () => {
           <h1>Tenant Management</h1>
           <p>Manage all CRM client accounts</p>
         </div>
-        <button className="sa-primary-btn" onClick={fetchTenants}>
-          <Refresh size={18} />
-          <span>Refresh</span>
-        </button>
+        <div className="sa-header-actions">
+          <button className="sa-primary-btn" onClick={() => setShowCreateModal(true)}>
+            <Plus size={18} />
+            <span>New Tenant</span>
+          </button>
+          <button className="sa-secondary-btn" onClick={fetchTenants}>
+            <Refresh size={18} />
+            <span>Refresh</span>
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -390,6 +432,68 @@ const SuperAdminTenants = () => {
               </button>
               <button className="sa-btn primary" onClick={updateModules}>
                 Save Modules
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Tenant Modal */}
+      {showCreateModal && (
+        <div className="sa-modal-overlay" onClick={() => setShowCreateModal(false)}>
+          <div className="sa-modal large" onClick={(e) => e.stopPropagation()}>
+            <div className="sa-modal-header">
+              <h3>Create New Tenant</h3>
+              <button className="sa-modal-close" onClick={() => setShowCreateModal(false)}>×</button>
+            </div>
+            <div className="sa-modal-body">
+              <div className="sa-form-grid">
+                <div className="sa-form-group">
+                  <label>Company Name *</label>
+                  <input type="text" value={createForm.name} onChange={e => setCreateForm(p => ({ ...p, name: e.target.value }))} placeholder="Acme Corp" />
+                </div>
+                <div className="sa-form-group">
+                  <label>Email *</label>
+                  <input type="email" value={createForm.email} onChange={e => setCreateForm(p => ({ ...p, email: e.target.value }))} placeholder="admin@company.com" />
+                </div>
+                <div className="sa-form-group">
+                  <label>Phone</label>
+                  <input type="text" value={createForm.phone} onChange={e => setCreateForm(p => ({ ...p, phone: e.target.value }))} placeholder="+971..." />
+                </div>
+                <div className="sa-form-group">
+                  <label>Industry</label>
+                  <select value={createForm.industry} onChange={e => setCreateForm(p => ({ ...p, industry: e.target.value }))}>
+                    <option value="">Select Industry</option>
+                    <option value="delivery">Delivery & Logistics</option>
+                    <option value="ecommerce">E-Commerce</option>
+                    <option value="food">Food & Restaurant</option>
+                    <option value="retail">Retail</option>
+                    <option value="healthcare">Healthcare</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div className="sa-form-group">
+                  <label>City</label>
+                  <input type="text" value={createForm.city} onChange={e => setCreateForm(p => ({ ...p, city: e.target.value }))} placeholder="Dubai" />
+                </div>
+                <div className="sa-form-group">
+                  <label>Country</label>
+                  <input type="text" value={createForm.country} onChange={e => setCreateForm(p => ({ ...p, country: e.target.value }))} placeholder="UAE" />
+                </div>
+                <div className="sa-form-group">
+                  <label>Max Users</label>
+                  <input type="number" min="1" value={createForm.max_users} onChange={e => setCreateForm(p => ({ ...p, max_users: parseInt(e.target.value) || 10 }))} />
+                </div>
+              </div>
+              <div className="sa-info-box" style={{ marginTop: 16 }}>
+                <CheckCircle size={18} />
+                <span>A default admin user will be created with password <strong>Admin@123</strong></span>
+              </div>
+            </div>
+            <div className="sa-modal-footer">
+              <button className="sa-btn secondary" onClick={() => setShowCreateModal(false)}>Cancel</button>
+              <button className="sa-btn primary" onClick={createTenant} disabled={creating || !createForm.name || !createForm.email}>
+                {creating ? 'Creating...' : 'Create Tenant'}
               </button>
             </div>
           </div>

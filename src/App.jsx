@@ -39,6 +39,9 @@ import SuperAdminDashboard from './pages/SuperAdmin/SuperAdminDashboard';
 import SuperAdminTenants from './pages/SuperAdmin/SuperAdminTenants';
 import SuperAdminModules from './pages/SuperAdmin/SuperAdminModules';
 import SuperAdminUsers from './pages/SuperAdmin/SuperAdminUsers';
+import SuperAdminAnalytics from './pages/SuperAdmin/SuperAdminAnalytics';
+import SuperAdminSettings from './pages/SuperAdmin/SuperAdminSettings';
+import SuperAdminTenantDetail from './pages/SuperAdmin/SuperAdminTenantDetail';
 
 // Components
 import Layout from './components/Layout';
@@ -233,9 +236,11 @@ function App() {
           <Route index element={<Navigate to="/super-admin/dashboard" />} />
           <Route path="dashboard" element={<SuperAdminDashboard />} />
           <Route path="tenants"   element={<SuperAdminTenants />} />
-          <Route path="tenants/:id" element={<SuperAdminTenants />} />
+          <Route path="tenants/:id" element={<SuperAdminTenantDetail />} />
           <Route path="modules"  element={<SuperAdminModules />} />
           <Route path="users"    element={<SuperAdminUsers />} />
+          <Route path="analytics" element={<SuperAdminAnalytics />} />
+          <Route path="settings" element={<SuperAdminSettings />} />
         </Route>
 
         {/* Catch-all */}

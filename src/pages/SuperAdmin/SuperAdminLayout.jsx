@@ -3,7 +3,7 @@ import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Menu, LogOut, Home, Building, User, Settings, ShieldCheck,
-  Globe, Package, Bell, Search, NavArrowLeft, Suitcase
+  Globe, Package, Bell, Search, NavArrowLeft, StatsReport, Activity
 } from 'iconoir-react';
 import SEO from '../../components/SEO';
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
@@ -59,7 +59,7 @@ const SuperAdminLayout = () => {
     { path: '/super-admin/tenants', icon: Building, label: 'Tenants' },
     { path: '/super-admin/users', icon: User, label: 'Platform Users' },
     { path: '/super-admin/modules', icon: Package, label: 'Modules' },
-    { path: '/super-admin/analytics', icon: Suitcase, label: 'Analytics' },
+    { path: '/super-admin/analytics', icon: StatsReport, label: 'Analytics' },
     { path: '/super-admin/settings', icon: Settings, label: 'Settings' },
   ];
 
@@ -83,20 +83,21 @@ const SuperAdminLayout = () => {
       <aside className={`sa-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sa-sidebar-header">
           <div className="sa-logo">
-            <img src="/assets/images/logos/TRASEALLA_LOGO.svg" alt="Trasealla" />
+            
+            <img src="/assets/images/logos/trasealla_white_without_bg.png" alt="Trasealla" />
           </div>
           <div className="sa-badge">
             <ShieldCheck size={14} />
             <span>Super Admin</span>
           </div>
         </div>
-
+ 
         <nav className="sa-nav">
           {navItems.map((item) => (
             <Link
               key={item.path}
               to={item.path}
-              className={`sa-nav-item ${location.pathname === item.path ? 'active' : ''}`}
+              className={`sa-nav-item ${location.pathname.startsWith(item.path) ? 'active' : ''}`}
             >
               <item.icon size={20} />
               <span>{item.label}</span>

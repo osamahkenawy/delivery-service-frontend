@@ -27,7 +27,7 @@ export default function SuperAdminLogin() {
         localStorage.setItem('superAdminUser', JSON.stringify(data.user));
         navigate('/super-admin/dashboard');
       } else {
-        setError(data.error || 'Invalid credentials');
+        setError(data.error || data.message || 'Invalid credentials');
       }
     } catch {
       setError('Connection error. Please try again.');

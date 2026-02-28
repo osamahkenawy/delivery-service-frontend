@@ -1,12 +1,48 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Package, Building, CheckCircle, Xmark, Search, 
-  User, Mail, Phone, Suitcase, Calendar, EditPencil, Settings
+  Package, Building, CheckCircle, Xmark, Search,
+  User, Mail, Phone, Suitcase, Calendar, EditPencil, Settings,
+  Home, Truck, Map, Globe, CreditCard, StatsReport, Bell,
+  Box, Archive, RefreshDouble, BinHalf, Wallet, Journal,
+  NavArrowRight, ReportColumns, FloppyDisk, Key,
+  GridPlus, GridMinus
 } from 'iconoir-react';
 import './SuperAdmin.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+
+/* ── per-module icon + accent colour ── */
+const MODULE_META = {
+  dashboard:          { icon: Home,           color: '#6366f1' },
+  orders:             { icon: Box,            color: '#f97316' },
+  dispatch:           { icon: Truck,          color: '#0ea5e9' },
+  drivers:            { icon: User,           color: '#10b981' },
+  clients:            { icon: Building,       color: '#8b5cf6' },
+  'live-map':         { icon: Map,            color: '#ec4899' },
+  'shipment-tracking':{ icon: Search,         color: '#14b8a6' },
+  'bulk-import':      { icon: Archive,        color: '#64748b' },
+  returns:            { icon: RefreshDouble,   color: '#ef4444' },
+  wallet:             { icon: Wallet,         color: '#eab308' },
+  invoices:           { icon: Journal,        color: '#06b6d4' },
+  cod:                { icon: CreditCard,     color: '#f59e0b' },
+  reports:            { icon: StatsReport,    color: '#3b82f6' },
+  performance:        { icon: ReportColumns,  color: '#a855f7' },
+  zones:              { icon: Map,            color: '#22c55e' },
+  pricing:            { icon: CreditCard,     color: '#f43f5e' },
+  notifications:      { icon: Bell,           color: '#f97316' },
+  settings:           { icon: Settings,       color: '#6b7280' },
+  integrations:       { icon: Key,            color: '#0d9488' },
+};
+
+const CATEGORY_META = {
+  Core:          { icon: Home,       color: '#6366f1', bg: '#eef2ff' },
+  Operations:    { icon: Truck,      color: '#f97316', bg: '#fff7ed' },
+  Finance:       { icon: Wallet,     color: '#eab308', bg: '#fefce8' },
+  Analytics:     { icon: StatsReport,color: '#3b82f6', bg: '#eff6ff' },
+  Configuration: { icon: Settings,   color: '#6b7280', bg: '#f9fafb' },
+  Communication: { icon: Bell,       color: '#ec4899', bg: '#fdf2f8' },
+};
 
 const SuperAdminModules = () => {
   const { t } = useTranslation();
@@ -18,31 +54,17 @@ const SuperAdminModules = () => {
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
     try {
       const token = localStorage.getItem('superAdminToken');
-      
-      // Fetch modules
-      const modulesRes = await fetch(`${API_BASE_URL}/super-admin/modules`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (modulesRes.ok) {
-        const data = await modulesRes.json();
-        setModules(data);
-      }
-
-      // Fetch tenants
-      const tenantsRes = await fetch(`${API_BASE_URL}/super-admin/tenants`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (tenantsRes.ok) {
-        const data = await tenantsRes.json();
-        setTenants(data.tenants || []);
-      }
+      const [modulesRes, tenantsRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/super-admin/modules`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_BASE_URL}/super-admin/tenants`, { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+      if (modulesRes.ok) setModules(await modulesRes.json());
+      if (tenantsRes.ok) { const d = await tenantsRes.json(); setTenants(d.tenants || []); }
     } catch (error) {
       console.error('Failed to fetch data:', error);
     } finally {
@@ -53,8 +75,8 @@ const SuperAdminModules = () => {
   const openModuleConfig = (tenant) => {
     setSelectedTenant(tenant);
     const currentModules = tenant.allowed_modules
-      ? (typeof tenant.allowed_modules === 'string' 
-          ? JSON.parse(tenant.allowed_modules) 
+      ? (typeof tenant.allowed_modules === 'string'
+          ? JSON.parse(tenant.allowed_modules)
           : tenant.allowed_modules)
       : modules.map(m => m.id);
     setSelectedModules(currentModules);
@@ -63,10 +85,18 @@ const SuperAdminModules = () => {
 
   const toggleModule = (moduleId) => {
     setSelectedModules(prev =>
-      prev.includes(moduleId)
-        ? prev.filter(id => id !== moduleId)
-        : [...prev, moduleId]
+      prev.includes(moduleId) ? prev.filter(id => id !== moduleId) : [...prev, moduleId]
     );
+  };
+
+  const toggleCategory = (categoryModules) => {
+    const allSelected = categoryModules.every(m => selectedModules.includes(m.id));
+    if (allSelected) {
+      setSelectedModules(prev => prev.filter(id => !categoryModules.find(m => m.id === id)));
+    } else {
+      const newIds = categoryModules.map(m => m.id).filter(id => !selectedModules.includes(id));
+      setSelectedModules(prev => [...prev, ...newIds]);
+    }
   };
 
   const saveModules = async () => {
@@ -75,10 +105,7 @@ const SuperAdminModules = () => {
       const token = localStorage.getItem('superAdminToken');
       await fetch(`${API_BASE_URL}/super-admin/tenants/${selectedTenant.id}/modules`, {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ modules: selectedModules }),
       });
       setShowModal(false);
@@ -99,55 +126,67 @@ const SuperAdminModules = () => {
     return acc;
   }, {});
 
-  const getCategoryIcon = (category) => {
-    switch (category) {
-      case 'CRM': return <User size={20} />;
-      case 'Sales': return <Suitcase size={20} />;
-      case 'Marketing': return <Mail size={20} />;
-      case 'Communication': return <Phone size={20} />;
-      case 'Settings': return <Settings size={20} />;
-      case 'Analytics': return <Calendar size={20} />;
-      default: return <Package size={20} />;
-    }
-  };
+  const getModuleMeta = (id) => MODULE_META[id] || { icon: Package, color: '#94a3b8' };
+  const getCatMeta = (cat) => CATEGORY_META[cat] || { icon: Package, color: '#94a3b8', bg: '#f9fafb' };
+
+  if (loading) {
+    return (
+      <div className="sa-page" style={{ display: 'flex', justifyContent: 'center', padding: 80 }}>
+        <div className="loading-spinner large" />
+      </div>
+    );
+  }
 
   return (
     <div className="sa-page">
+      {/* Page header */}
       <div className="sa-page-header">
         <div>
           <h1>Module Management</h1>
           <p>Configure which modules each tenant can access</p>
         </div>
+        <div className="sam-header-stat">
+          <Package size={20} />
+          <span><strong>{modules.length}</strong> modules available</span>
+        </div>
       </div>
 
-      {/* Available Modules */}
-      <div className="sa-card">
-        <div className="sa-card-header">
-          <h2>Available Modules ({modules.length})</h2>
-        </div>
-        <div className="sa-modules-overview">
-          {Object.entries(groupedModules).map(([category, categoryModules]) => (
-            <div key={category} className="sa-module-category">
-              <div className="sa-category-header">
-                {getCategoryIcon(category)}
-                <h3>{category}</h3>
-                <span className="sa-category-count">{categoryModules.length}</span>
+      {/* ── Category cards grid ── */}
+      <div className="sam-categories-grid">
+        {Object.entries(groupedModules).map(([category, catModules]) => {
+          const cat = getCatMeta(category);
+          const CatIcon = cat.icon;
+          return (
+            <div key={category} className="sam-category-card">
+              <div className="sam-cat-header">
+                <div className="sam-cat-icon" style={{ background: cat.bg, color: cat.color }}>
+                  <CatIcon size={22} />
+                </div>
+                <div className="sam-cat-title">
+                  <h3>{category}</h3>
+                  <span className="sam-cat-count">{catModules.length} module{catModules.length !== 1 ? 's' : ''}</span>
+                </div>
               </div>
-              <div className="sa-category-modules">
-                {categoryModules.map(module => (
-                  <div key={module.id} className="sa-module-item">
-                    <CheckCircle size={16} className="success" />
-                    <span>{module.name}</span>
-                  </div>
-                ))}
+              <div className="sam-cat-modules">
+                {catModules.map(mod => {
+                  const meta = getModuleMeta(mod.id);
+                  const ModIcon = meta.icon;
+                  return (
+                    <div key={mod.id} className="sam-module-pill">
+                      <span className="sam-pill-dot" style={{ background: meta.color }} />
+                      <ModIcon size={15} style={{ color: meta.color, flexShrink: 0 }} />
+                      <span className="sam-pill-name">{mod.name}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
-          ))}
-        </div>
+          );
+        })}
       </div>
 
-      {/* Tenant Module Configuration */}
-      <div className="sa-card">
+      {/* ── Tenant access table ── */}
+      <div className="sa-card" style={{ marginTop: 28 }}>
         <div className="sa-card-header">
           <h2>Tenant Module Access</h2>
         </div>
@@ -163,39 +202,30 @@ const SuperAdminModules = () => {
               </tr>
             </thead>
             <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan="5" className="sa-loading-row">
-                    <div className="loading-spinner"></div>
-                  </td>
-                </tr>
-              ) : tenants.length === 0 ? (
-                <tr>
-                  <td colSpan="5" className="sa-empty-row">No tenants found</td>
-                </tr>
+              {tenants.length === 0 ? (
+                <tr><td colSpan="5" className="sa-empty-row">No tenants found</td></tr>
               ) : (
                 tenants.map(tenant => {
                   const enabledModules = tenant.allowed_modules
-                    ? (typeof tenant.allowed_modules === 'string'
-                        ? JSON.parse(tenant.allowed_modules)
-                        : tenant.allowed_modules)
+                    ? (typeof tenant.allowed_modules === 'string' ? JSON.parse(tenant.allowed_modules) : tenant.allowed_modules)
                     : modules.map(m => m.id);
-                  
+                  const pct = modules.length ? Math.round((enabledModules.length / modules.length) * 100) : 0;
+
                   return (
                     <tr key={tenant.id}>
                       <td>
                         <div className="sa-tenant-name">
-                          <div className="sa-tenant-avatar">
-                            {tenant.name?.charAt(0)}
-                          </div>
+                          <div className="sa-tenant-avatar">{tenant.name?.charAt(0)}</div>
                           <span>{tenant.name}</span>
                         </div>
                       </td>
-                      <td>{tenant.industry || '-'}</td>
+                      <td><span style={{ textTransform: 'capitalize' }}>{tenant.industry || '-'}</span></td>
                       <td>
-                        <div className="sa-module-count">
-                          <Package size={16} />
-                          <span>{enabledModules.length} / {modules.length}</span>
+                        <div className="sam-module-bar-cell">
+                          <div className="sam-progress-wrap">
+                            <div className="sam-progress-bar" style={{ width: `${pct}%`, background: pct === 100 ? '#10b981' : '#f97316' }} />
+                          </div>
+                          <span className="sam-bar-label">{enabledModules.length}/{modules.length}</span>
                         </div>
                       </td>
                       <td>
@@ -204,12 +234,9 @@ const SuperAdminModules = () => {
                         </span>
                       </td>
                       <td>
-                        <button
-                          className="sa-action-btn"
-                          onClick={() => openModuleConfig(tenant)}
-                          title="Configure Modules"
-                        >
-                          <EditPencil size={18} />
+                        <button className="sa-btn primary small" onClick={() => openModuleConfig(tenant)} title="Configure Modules">
+                          <EditPencil size={15} />
+                          <span>Configure</span>
                         </button>
                       </td>
                     </tr>
@@ -221,49 +248,103 @@ const SuperAdminModules = () => {
         </div>
       </div>
 
-      {/* Module Configuration Modal */}
+      {/* ── Configuration Modal ── */}
       {showModal && selectedTenant && (
         <div className="sa-modal-overlay" onClick={() => setShowModal(false)}>
           <div className="sa-modal large" onClick={(e) => e.stopPropagation()}>
             <div className="sa-modal-header">
-              <h3>Configure Modules for {selectedTenant.name}</h3>
+              <div>
+                <h3>Configure Modules</h3>
+                <p style={{ margin: 0, fontSize: 13, color: '#6b7280' }}>{selectedTenant.name}</p>
+              </div>
               <button className="sa-modal-close" onClick={() => setShowModal(false)}>×</button>
             </div>
-            <div className="sa-modal-body">
-              <div className="sa-module-actions">
-                <button className="sa-btn secondary" onClick={selectAll}>Select All</button>
-                <button className="sa-btn secondary" onClick={deselectAll}>Deselect All</button>
-                <span className="sa-selected-count">
-                  {selectedModules.length} of {modules.length} selected
+
+            <div className="sa-modal-body" style={{ padding: 0 }}>
+              {/* Toolbar */}
+              <div className="sam-modal-toolbar">
+                <button className="sa-btn secondary small" onClick={selectAll}>
+                  <GridPlus size={15} /> Select All
+                </button>
+                <button className="sa-btn secondary small" onClick={deselectAll}>
+                  <GridMinus size={15} /> Deselect All
+                </button>
+                <span className="sam-selected-tag">
+                  <CheckCircle size={14} />
+                  {selectedModules.length} / {modules.length}
                 </span>
               </div>
-              
-              {Object.entries(groupedModules).map(([category, categoryModules]) => (
-                <div key={category} className="sa-config-category">
-                  <h4>{category}</h4>
-                  <div className="sa-config-modules">
-                    {categoryModules.map(module => (
-                      <label key={module.id} className="sa-module-checkbox">
-                        <input
-                          type="checkbox"
-                          checked={selectedModules.includes(module.id)}
-                          onChange={() => toggleModule(module.id)}
-                        />
-                        <div className="sa-module-info">
-                          <span className="sa-module-name">{module.name}</span>
-                          <span className="sa-module-name-ar">{module.nameAr}</span>
+
+              {/* Category sections */}
+              <div className="sam-modal-categories">
+                {Object.entries(groupedModules).map(([category, catModules]) => {
+                  const cat = getCatMeta(category);
+                  const CatIcon = cat.icon;
+                  const allSelected = catModules.every(m => selectedModules.includes(m.id));
+                  const someSelected = catModules.some(m => selectedModules.includes(m.id));
+
+                  return (
+                    <div key={category} className="sam-cfg-category">
+                      <div className="sam-cfg-cat-header">
+                        <div className="sam-cfg-cat-left">
+                          <div className="sam-cat-icon small" style={{ background: cat.bg, color: cat.color }}>
+                            <CatIcon size={16} />
+                          </div>
+                          <span className="sam-cfg-cat-name">{category}</span>
+                          <span className="sam-cfg-cat-count">
+                            {catModules.filter(m => selectedModules.includes(m.id)).length}/{catModules.length}
+                          </span>
                         </div>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              ))}
+                        <button
+                          className={`sam-toggle-cat ${allSelected ? 'active' : someSelected ? 'partial' : ''}`}
+                          onClick={() => toggleCategory(catModules)}
+                        >
+                          {allSelected ? 'Deselect All' : 'Select All'}
+                        </button>
+                      </div>
+
+                      <div className="sam-cfg-modules-grid">
+                        {catModules.map(mod => {
+                          const meta = getModuleMeta(mod.id);
+                          const ModIcon = meta.icon;
+                          const checked = selectedModules.includes(mod.id);
+                          return (
+                            <label
+                              key={mod.id}
+                              className={`sam-cfg-module ${checked ? 'checked' : ''}`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => toggleModule(mod.id)}
+                              />
+                              <div className="sam-cfg-mod-icon" style={{
+                                background: checked ? meta.color + '18' : '#f1f5f9',
+                                color: checked ? meta.color : '#94a3b8',
+                              }}>
+                                <ModIcon size={18} />
+                              </div>
+                              <div className="sam-cfg-mod-text">
+                                <span className="sam-cfg-mod-name">{mod.name}</span>
+                                <span className="sam-cfg-mod-ar">{mod.nameAr}</span>
+                              </div>
+                              <div className={`sam-cfg-check ${checked ? 'on' : ''}`}>
+                                {checked ? <CheckCircle size={18} /> : <div className="sam-cfg-check-empty" />}
+                              </div>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
+
             <div className="sa-modal-footer">
-              <button className="sa-btn secondary" onClick={() => setShowModal(false)}>
-                Cancel
-              </button>
+              <button className="sa-btn secondary" onClick={() => setShowModal(false)}>Cancel</button>
               <button className="sa-btn primary" onClick={saveModules} disabled={saving}>
+                <FloppyDisk size={16} />
                 {saving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
