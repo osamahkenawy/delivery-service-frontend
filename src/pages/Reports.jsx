@@ -141,24 +141,65 @@ export default function Reports() {
     URL.revokeObjectURL(url);
   };
 
-  const exportPDF = () => {
+  const exportPDF = async () => {
     if (!data) return;
     const doc = new jsPDF();
     const ov = data.overview || {};
     const now = new Date().toLocaleDateString('en-AE', { dateStyle: 'long' });
 
+    // ── Load Amiri Arabic font (supports Arabic + Latin) ──
+    try {
+      const [regularResp, boldResp] = await Promise.all([
+        fetch('/fonts/Amiri-Regular.ttf'),
+        fetch('/fonts/Amiri-Bold.ttf'),
+      ]);
+      if (regularResp.ok && boldResp.ok) {
+        const [regBuf, boldBuf] = await Promise.all([
+          regularResp.arrayBuffer(),
+          boldResp.arrayBuffer(),
+        ]);
+        const toBase64 = buf => {
+          const bytes = new Uint8Array(buf);
+          let binary = '';
+          for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+          return btoa(binary);
+        };
+        doc.addFileToVFS('Amiri-Regular.ttf', toBase64(regBuf));
+        doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
+        doc.addFileToVFS('Amiri-Bold.ttf', toBase64(boldBuf));
+        doc.addFont('Amiri-Bold.ttf', 'Amiri', 'bold');
+        doc.setFont('Amiri', 'normal');
+      }
+    } catch (e) {
+      console.warn('Failed to load Arabic font, falling back to default:', e);
+    }
+
+    // Enable RTL if Arabic UI
+    if (isRTL) doc.setR2L(true);
+
+    const pageW = doc.internal.pageSize.getWidth();
+    const margin = 14;
+    // For RTL: text anchors on the right; for LTR: on the left
+    const textX = isRTL ? pageW - margin : margin;
+    const textAlign = isRTL ? 'right' : 'left';
+
     // Header
     doc.setFontSize(20);
     doc.setTextColor(36, 64, 102);
-    doc.text(t('reports.pdf.title'), 14, 20);
+    doc.text(t('reports.pdf.title'), textX, 20, { align: textAlign });
     doc.setFontSize(10);
     doc.setTextColor(100);
-    doc.text(t('reports.pdf.generated_period', { date: now, days: period }), 14, 28);
+    doc.text(t('reports.pdf.generated_period', { date: now, days: period }), textX, 28, { align: textAlign });
+
+    // Common autoTable styles for Arabic font
+    const tableFont = { font: 'Amiri' };
+    const tableStyles = { ...tableFont, fontSize: 9, halign: isRTL ? 'right' : 'left' };
+    const headStyles = { fillColor: [36, 64, 102], ...tableFont, fontStyle: 'bold', halign: isRTL ? 'right' : 'left' };
 
     // KPIs table
     doc.setFontSize(13);
     doc.setTextColor(36, 64, 102);
-    doc.text(t('reports.pdf.overview'), 14, 40);
+    doc.text(t('reports.pdf.overview'), textX, 40, { align: textAlign });
     autoTable(doc, {
       startY: 44,
       head: [[t('reports.pdf.metric'), t('reports.pdf.value')]],
@@ -171,8 +212,8 @@ export default function Reports() {
         [t('reports.pdf.cod_collected'), fmtAED(ov.cod_collected)],
       ],
       theme: 'grid',
-      headStyles: { fillColor: [36, 64, 102] },
-      styles: { fontSize: 9 },
+      headStyles,
+      styles: tableStyles,
     });
 
     // Zone table
@@ -180,14 +221,14 @@ export default function Reports() {
       doc.setFontSize(13);
       doc.setTextColor(36, 64, 102);
       const zy = doc.lastAutoTable.finalY + 12;
-      doc.text(t('reports.pdf.orders_by_zone'), 14, zy);
+      doc.text(t('reports.pdf.orders_by_zone'), textX, zy, { align: textAlign });
       autoTable(doc, {
         startY: zy + 4,
         head: [[t('reports.pdf.zone'), t('reports.pdf.orders'), t('reports.pdf.delivered'), t('reports.pdf.success_pct'), t('reports.pdf.revenue')]],
         body: data.by_zone.map(r => [r.zone, r.orders, r.delivered, pct(r.delivered, r.orders), fmtAED(r.revenue)]),
         theme: 'grid',
-        headStyles: { fillColor: [36, 64, 102] },
-        styles: { fontSize: 8 },
+        headStyles,
+        styles: { ...tableStyles, fontSize: 8 },
       });
     }
 
@@ -198,7 +239,7 @@ export default function Reports() {
       const startY = dy > 240 ? 20 : dy;
       doc.setFontSize(13);
       doc.setTextColor(36, 64, 102);
-      doc.text(t('reports.pdf.driver_performance'), 14, startY);
+      doc.text(t('reports.pdf.driver_performance'), textX, startY, { align: textAlign });
       autoTable(doc, {
         startY: startY + 4,
         head: [[t('reports.pdf.driver'), t('reports.pdf.vehicle'), t('reports.pdf.total'), t('reports.pdf.delivered'), t('reports.pdf.failed'), t('reports.pdf.success_pct'), t('reports.pdf.revenue')]],
@@ -207,8 +248,8 @@ export default function Reports() {
           pct(r.delivered, r.total_assigned), fmtAED(r.revenue)
         ]),
         theme: 'grid',
-        headStyles: { fillColor: [36, 64, 102] },
-        styles: { fontSize: 8 },
+        headStyles,
+        styles: { ...tableStyles, fontSize: 8 },
       });
     }
 
@@ -219,14 +260,14 @@ export default function Reports() {
       const startY = cy > 240 ? 20 : cy;
       doc.setFontSize(13);
       doc.setTextColor(36, 64, 102);
-      doc.text(t('reports.pdf.top_clients'), 14, startY);
+      doc.text(t('reports.pdf.top_clients'), textX, startY, { align: textAlign });
       autoTable(doc, {
         startY: startY + 4,
         head: [[t('reports.pdf.client'), t('reports.pdf.orders'), t('reports.pdf.delivered'), t('reports.pdf.revenue'), t('reports.pdf.avg_value')]],
         body: data.top_clients.map(r => [r.name, r.orders, r.delivered, fmtAED(r.revenue), fmtAED(r.avg_order_value)]),
         theme: 'grid',
-        headStyles: { fillColor: [36, 64, 102] },
-        styles: { fontSize: 8 },
+        headStyles,
+        styles: { ...tableStyles, fontSize: 8 },
       });
     }
 
