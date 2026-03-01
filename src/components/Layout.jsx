@@ -209,7 +209,7 @@ export default function Layout({ children }) {
         <div className="sidebar-brand">
           <Link to="/dashboard">
             <img
-              src={(user?.tenant_logo_white || tenant?.logo_url_white || '').replace(/^\/uploads\//, '/api/uploads-static/') || '/assets/images/logos/trasealla_white_without_bg.png'}
+              src={(user?.tenant_logo_white || tenant?.logo_url_white || '').replace(/^\/uploads\//, '/api/file/') || '/assets/images/logos/trasealla_white_without_bg.png'}
               alt={user?.tenant_name || tenant?.name || 'Trasealla Solutions'}
               style={{ height: '100px' }}
               onError={e => {
@@ -259,7 +259,7 @@ export default function Layout({ children }) {
           {!sidebarOpen && (
             <div className="topbar-brand-mobile">
               <img
-                src={(user?.tenant_logo || '').replace(/^\/uploads\//, '/api/uploads-static/') || '/assets/images/logos/trasealla_logo_logistics_without_bg.png'}
+                src={(user?.tenant_logo || '').replace(/^\/uploads\//, '/api/file/') || '/assets/images/logos/trasealla_logo_logistics_without_bg.png'}
                 alt={user?.tenant_name || 'Trasealla'}
                 style={{ height: '35px', marginRight: '10px' }}
                 onError={e => { e.target.style.display = 'none'; }}
