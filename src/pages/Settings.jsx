@@ -1332,6 +1332,7 @@ export default function Settings() {
   const { toasts, showToast } = useToast();
 
   // Adapter so older (type,msg) call-sites still work:
+  const { checkSession } = useContext(AuthContext);
   const toast = useCallback((type, msg) => showToast(msg, type), [showToast]);
 
   useEffect(() => {
@@ -1349,7 +1350,11 @@ export default function Settings() {
       tenant: { name, logo_url, logo_url_white, phone, email, address, city, country, currency, timezone },
       settings,
     });
-    if (res.success) showToast(t('settings.save_success'), 'success');
+    if (res.success) {
+      showToast(t('settings.save_success'), 'success');
+      // Refresh auth context so sidebar/header picks up new logos immediately
+      checkSession();
+    }
     else showToast(res.message || t('settings.save_failed'), 'error');
     setSaving(false);
   };

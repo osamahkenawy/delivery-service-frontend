@@ -19,56 +19,59 @@ const SuperAdminUsers = () => {
   const [editingUser, setEditingUser] = useState(null);
 
   useEffect(() => {
-    fetchTenants();
-    fetchUsers();
+    loadData();
   }, [selectedTenant]);
 
-  const fetchTenants = async () => {
+  const loadData = async () => {
+    setLoading(true);
     try {
       const token = localStorage.getItem('superAdminToken');
-      const response = await fetch(`${API_BASE_URL}/super-admin/tenants`, {
+      
+      // 1. Fetch tenants first
+      const tRes = await fetch(`${API_BASE_URL}/super-admin/tenants`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (response.ok) {
-        const data = await response.json();
-        setTenants(data.tenants || []);
+      let tenantList = [];
+      if (tRes.ok) {
+        const tData = await tRes.json();
+        tenantList = tData.tenants || [];
+        setTenants(tenantList);
       }
-    } catch (error) {
-      console.error('Failed to fetch tenants:', error);
-    }
-  };
 
-  const fetchUsers = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('superAdminToken');
-      
-      // Fetch users from all tenants
+      // 2. Now fetch users from each tenant using the fetched list
       let allUsers = [];
-      for (const tenant of tenants) {
-        if (selectedTenant && tenant.id !== parseInt(selectedTenant)) continue;
-        
-        const response = await fetch(`${API_BASE_URL}/super-admin/tenants/${tenant.id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          const usersWithTenant = (data.users || []).map(user => ({
-            ...user,
-            tenant_name: tenant.name,
-            tenant_id: tenant.id
-          }));
-          allUsers = [...allUsers, ...usersWithTenant];
-        }
-      }
-      
+      const tenantsToQuery = selectedTenant
+        ? tenantList.filter(t => t.id === parseInt(selectedTenant))
+        : tenantList;
+
+      const userPromises = tenantsToQuery.map(async (tenant) => {
+        try {
+          const response = await fetch(`${API_BASE_URL}/super-admin/tenants/${tenant.id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (response.ok) {
+            const data = await response.json();
+            return (data.users || []).map(user => ({
+              ...user,
+              tenant_name: tenant.name,
+              tenant_id: tenant.id
+            }));
+          }
+        } catch (_) {}
+        return [];
+      });
+
+      const results = await Promise.all(userPromises);
+      allUsers = results.flat();
       setUsers(allUsers);
     } catch (error) {
-      console.error('Failed to fetch users:', error);
+      console.error('Failed to load data:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  const fetchUsers = () => loadData();
 
   const filteredUsers = users.filter(user => {
     if (!searchQuery) return true;

@@ -42,6 +42,17 @@ import SuperAdminUsers from './pages/SuperAdmin/SuperAdminUsers';
 import SuperAdminAnalytics from './pages/SuperAdmin/SuperAdminAnalytics';
 import SuperAdminSettings from './pages/SuperAdmin/SuperAdminSettings';
 import SuperAdminTenantDetail from './pages/SuperAdmin/SuperAdminTenantDetail';
+import SuperAdminAuditLog from './pages/SuperAdmin/SuperAdminAuditLog';
+import SuperAdminSubscriptions from './pages/SuperAdmin/SuperAdminSubscriptions';
+import SuperAdminAnnouncements from './pages/SuperAdmin/SuperAdminAnnouncements';
+import SuperAdminSystemHealth from './pages/SuperAdmin/SuperAdminSystemHealth';
+import SuperAdminEmailTemplates from './pages/SuperAdmin/SuperAdminEmailTemplates';
+import SuperAdminRevenue from './pages/SuperAdmin/SuperAdminRevenue';
+import SuperAdminBackups from './pages/SuperAdmin/SuperAdminBackups';
+import SuperAdminTickets from './pages/SuperAdmin/SuperAdminTickets';
+import SuperAdminOnboarding from './pages/SuperAdmin/SuperAdminOnboarding';
+import SuperAdminBranding from './pages/SuperAdmin/SuperAdminBranding';
+import SuperAdminBulkOps from './pages/SuperAdmin/SuperAdminBulkOps';
 
 // Components
 import Layout from './components/Layout';
@@ -241,6 +252,17 @@ function App() {
           <Route path="users"    element={<SuperAdminUsers />} />
           <Route path="analytics" element={<SuperAdminAnalytics />} />
           <Route path="settings" element={<SuperAdminSettings />} />
+          <Route path="audit-log" element={<SuperAdminAuditLog />} />
+          <Route path="subscriptions" element={<SuperAdminSubscriptions />} />
+          <Route path="announcements" element={<SuperAdminAnnouncements />} />
+          <Route path="system-health" element={<SuperAdminSystemHealth />} />
+          <Route path="email-templates" element={<SuperAdminEmailTemplates />} />
+          <Route path="revenue" element={<SuperAdminRevenue />} />
+          <Route path="backups" element={<SuperAdminBackups />} />
+          <Route path="tickets" element={<SuperAdminTickets />} />
+          <Route path="onboarding" element={<SuperAdminOnboarding />} />
+          <Route path="branding" element={<SuperAdminBranding />} />
+          <Route path="bulk-operations" element={<SuperAdminBulkOps />} />
         </Route>
 
         {/* Catch-all */}

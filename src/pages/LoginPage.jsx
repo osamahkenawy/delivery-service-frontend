@@ -32,8 +32,22 @@ export default function LoginPage() {
   const [fpLoading,setFpLoading]= useState(false);
   const [fpError,  setFpError]  = useState('');
 
+  /* ── Branding state ── */
+  const [branding, setBranding] = useState(null);
+
   const { login } = useContext(AuthContext);
   const navigate  = useNavigate();
+
+  /* ── Fetch tenant branding on mount ── */
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${API_URL}/auth/branding`);
+        const json = await res.json();
+        if (json.success && json.data) setBranding(json.data);
+      } catch { /* fallback to default logo */ }
+    })();
+  }, []);
 
   /* ── Login submit ── */
   const handleSubmit = async (e) => {
@@ -78,9 +92,9 @@ export default function LoginPage() {
     }
   };
 
-  /* ── Login page always shows the Trasealla platform logo ── */
-  const logoSrc = '/assets/images/logos/trasealla_with_bg.jpg';
-  const logoAlt = 'Trasealla Solutions';
+  /* ── Use tenant branding logo if available ── */
+  const logoSrc = branding?.logo_url || '/assets/images/logos/trasealla_with_bg.jpg';
+  const logoAlt = branding?.name || 'Trasealla Solutions';
 
   const [langOpen, setLangOpen] = useState(false);
   const langRef = useRef(null);

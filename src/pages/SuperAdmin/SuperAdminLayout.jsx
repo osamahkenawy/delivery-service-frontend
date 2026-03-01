@@ -3,7 +3,9 @@ import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Menu, LogOut, Home, Building, User, Settings, ShieldCheck,
-  Globe, Package, Bell, Search, NavArrowLeft, StatsReport, Activity
+  Globe, Package, Bell, Search, NavArrowLeft, StatsReport, Activity,
+  CreditCard, Megaphone, Mail, DollarCircle, Archive,
+  ChatLines, Palette, UserPlus, ClipboardCheck, CheckCircle
 } from 'iconoir-react';
 import SEO from '../../components/SEO';
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
@@ -57,8 +59,19 @@ const SuperAdminLayout = () => {
   const navItems = [
     { path: '/super-admin/dashboard', icon: Home, label: 'Dashboard' },
     { path: '/super-admin/tenants', icon: Building, label: 'Tenants' },
+    { path: '/super-admin/onboarding', icon: UserPlus, label: 'Onboard Tenant' },
     { path: '/super-admin/users', icon: User, label: 'Platform Users' },
     { path: '/super-admin/modules', icon: Package, label: 'Modules' },
+    { path: '/super-admin/subscriptions', icon: CreditCard, label: 'Subscriptions' },
+    { path: '/super-admin/revenue', icon: DollarCircle, label: 'Revenue' },
+    { path: '/super-admin/announcements', icon: Megaphone, label: 'Announcements' },
+    { path: '/super-admin/tickets', icon: ChatLines, label: 'Support Tickets' },
+    { path: '/super-admin/email-templates', icon: Mail, label: 'Email Templates' },
+    { path: '/super-admin/branding', icon: Palette, label: 'Branding' },
+    { path: '/super-admin/bulk-operations', icon: CheckCircle, label: 'Bulk Operations' },
+    { path: '/super-admin/system-health', icon: Activity, label: 'System Health' },
+    { path: '/super-admin/audit-log', icon: ClipboardCheck, label: 'Audit Log' },
+    { path: '/super-admin/backups', icon: Archive, label: 'Backups & Export' },
     { path: '/super-admin/analytics', icon: StatsReport, label: 'Analytics' },
     { path: '/super-admin/settings', icon: Settings, label: 'Settings' },
   ];
