@@ -224,6 +224,7 @@ export default function Wallet() {
           {/* ── Transactions Tab ──────────────────────── */}
           {activeTab === 'transactions' && (
             <div className="wlt-table-card">
+              <div className="wlt-table-wrap">
               <table className="wlt-table">
                 <thead>
                   <tr>
@@ -248,7 +249,7 @@ export default function Wallet() {
                     </tr>
                   ) : paged.map(tx => {
                     const badge = TX_BADGE[tx.type] || { bg: '#f1f5f9', color: '#64748b', label: tx.type };
-                    const isCredit = ['topup','credit','cod_settled','release'].includes(tx.type);
+                    const isCredit = ['topup','credit','cod_settled','release','prepaid_settled'].includes(tx.type);
                     return (
                       <tr key={tx.id}>
                         <td className="wlt-muted" style={{ whiteSpace: 'nowrap' }}>
@@ -271,6 +272,7 @@ export default function Wallet() {
                   })}
                 </tbody>
               </table>
+              </div>
 
               {totalPages > 1 && (
                 <div className="wlt-pagination">
@@ -297,6 +299,7 @@ export default function Wallet() {
                   <div className="wlt-empty-title">{t('wallet.all_cod_collected')}</div>
                 </div>
               ) : (
+                <div className="wlt-table-wrap">
                 <table className="wlt-table">
                   <thead>
                     <tr>
@@ -332,6 +335,7 @@ export default function Wallet() {
                     ))}
                   </tbody>
                 </table>
+                </div>
               )}
             </div>
           )}
@@ -345,6 +349,7 @@ export default function Wallet() {
                   <div className="wlt-empty-title">{t('wallet.no_cod_orders')}</div>
                 </div>
               ) : (
+                <div className="wlt-table-wrap">
                 <table className="wlt-table">
                   <thead>
                     <tr>
@@ -369,6 +374,7 @@ export default function Wallet() {
                     ))}
                   </tbody>
                 </table>
+                </div>
               )}
             </div>
           )}
