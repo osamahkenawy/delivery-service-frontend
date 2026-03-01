@@ -777,10 +777,11 @@ export default function Clients() {
                 <>
                   <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:20 }}>
                     {(() => {
+                      const creditVal = parseFloat(drawer.credit_limit) || 0;
                       const drawerKpiStats = [
                         { label: t('clients.drawer.total_orders'), Icon: Package, value: drawer.total_orders || 0, color: '#3b82f6' },
                         { label: t('clients.drawer.delivered'), Icon: CheckCircle, value: drawer.delivered_orders || 0, color: '#16a34a' },
-                        { label: t('clients.drawer.credit_limit'), Icon: Wallet, value: drawer.credit_limit > 0 ? `AED ${drawer.credit_limit.toFixed(0)}` : t('clients.drawer.no_limit'), color: '#8b5cf6' },
+                        { label: t('clients.drawer.credit_limit'), Icon: Wallet, value: creditVal > 0 ? `AED ${creditVal.toFixed(0)}` : t('clients.drawer.no_limit'), color: '#8b5cf6' },
                         { label: t('clients.profile.emirate'), Icon: MapPin, value: drawer.emirate || '—', color: '#f97316' },
                       ];
                       return drawerKpiStats.map(s => (
