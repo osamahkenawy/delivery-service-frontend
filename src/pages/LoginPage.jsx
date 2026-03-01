@@ -93,7 +93,8 @@ export default function LoginPage() {
   };
 
   /* ── Use tenant branding logo if available ── */
-  const logoSrc = branding?.logo_url || '/assets/images/logos/trasealla_with_bg.jpg';
+  const rawLogo = branding?.logo_url;
+  const logoSrc = rawLogo ? rawLogo.replace(/^\/uploads\//, '/api/uploads-static/') : '/assets/images/logos/trasealla_with_bg.jpg';
   const logoAlt = branding?.name || 'Trasealla Solutions';
 
   const [langOpen, setLangOpen] = useState(false);
