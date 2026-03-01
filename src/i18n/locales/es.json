@@ -2127,5 +2127,8 @@
       "driver": "Conductor",
       "client": "Cliente"
     }
+  },
+  "footer": {
+    "copyright": "© {{year}} Trasealla Solutions — Todos los derechos reservados"
   }
 }

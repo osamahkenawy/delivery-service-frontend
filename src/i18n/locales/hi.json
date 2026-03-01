@@ -2766,5 +2766,8 @@
   "minutes_ago": "{{count}} मिनट पहले",
   "hours_ago": "{{count}} घंटे पहले",
   "days_ago": "{{count}} दिन पहले"
-}
+},
+  "footer": {
+    "copyright": "© {{year}} Trasealla Solutions — सर्वाधिकार सुरक्षित"
+  }
 }

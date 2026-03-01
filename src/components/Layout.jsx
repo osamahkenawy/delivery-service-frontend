@@ -335,7 +335,7 @@ export default function Layout({ children }) {
       </main>
 
       <footer className={`custom-footer ${!sidebarOpen ? 'sidebar-closed' : ''}`}>
-        &copy; {new Date().getFullYear()} Trasealla Solutions &mdash; All rights reserved
+        {t('footer.copyright', { year: new Date().getFullYear() })}
       </footer>
     </div>
   );

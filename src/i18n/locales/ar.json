@@ -2695,5 +2695,8 @@
     "minutes_ago": "منذ {{count}} د",
     "hours_ago": "منذ {{count}} س",
     "days_ago": "منذ {{count}} ي"
+  },
+  "footer": {
+    "copyright": "© {{year}} تراسيلا للحلول — جميع الحقوق محفوظة"
   }
 }

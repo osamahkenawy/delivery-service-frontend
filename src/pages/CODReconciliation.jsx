@@ -129,12 +129,16 @@ export default function CODReconciliation() {
     setSettling(true);
     try {
       const res = await api.post('/cod/settle', { driver_id: driverId });
-      setShowSettleModal(null);
-      showToast(res?.data?.message || t('cod.modal.success'), 'success');
-      loadData();
+      if (res.success) {
+        setShowSettleModal(null);
+        showToast(res.message || t('cod.modal.success'), 'success');
+        loadData();
+      } else {
+        showToast(res.message || t('cod.settle_failed', 'Settlement failed'), 'error');
+      }
     } catch (err) {
       console.error(err);
-      showToast(err?.response?.data?.error || t('cod.settle_failed', 'Settlement failed'), 'error');
+      showToast(err?.message || t('cod.settle_failed', 'Settlement failed'), 'error');
     }
     finally { setSettling(false); }
   };

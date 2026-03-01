@@ -2840,5 +2840,8 @@
     "minutes_ago": "{{count}}m ago",
     "hours_ago": "{{count}}h ago",
     "days_ago": "{{count}}d ago"
+  },
+  "footer": {
+    "copyright": "© {{year}} Trasealla Solutions — Todos os direitos reservados"
   }
 }
