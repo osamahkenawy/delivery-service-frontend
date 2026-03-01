@@ -1,12 +1,23 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   RefreshDouble, Search, Plus, Eye, Check, Xmark,
   Package, Clock, WarningCircle, DeliveryTruck,
   ArrowDown, User, Phone, Calendar, EditPencil, MapPin
 } from 'iconoir-react';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { api } from '../lib/api';
 import './Returns.css';
 import { useTranslation } from 'react-i18next';
+
+/* Fix leaflet marker icon paths (Vite) */
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
 
 const RETURN_REASON_KEYS = {
   'Damaged item': 'damaged_item',
@@ -32,11 +43,24 @@ function formatDate(d) {
 }
 
 const emptyForm = {
-  order_id: '', reason: '', notes: '', pickup_address: '', pickup_date: ''
+  order_id: '', reason: '', notes: '', pickup_address: '', pickup_date: '',
+  pickup_lat: null, pickup_lng: null
 };
 
+/* ── Map click handler ── */
+function ClickHandler({ onClick }) {
+  useMapEvents({ click: (e) => onClick(e.latlng) });
+  return null;
+}
+function FlyTo({ center }) {
+  const map = useMap();
+  useEffect(() => { if (center) map.flyTo(center, Math.max(map.getZoom(), 15), { duration: 0.6 }); }, [center]);
+  return null;
+}
+
 export default function Returns() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
   const [returns, setReturns] = useState([]);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -47,6 +71,17 @@ export default function Returns() {
   const [showDetail, setShowDetail] = useState(null);
   const [form, setForm] = useState({ ...emptyForm });
   const [saving, setSaving] = useState(false);
+  const [orderSearch, setOrderSearch] = useState('');
+  const [orderDropdownOpen, setOrderDropdownOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const orderDropRef = useRef(null);
+
+  /* Close order dropdown on outside click */
+  useEffect(() => {
+    const h = (e) => { if (orderDropRef.current && !orderDropRef.current.contains(e.target)) setOrderDropdownOpen(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, []);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -55,7 +90,7 @@ export default function Returns() {
         api.get(`/returns${statusFilter ? `?status=${statusFilter}` : ''}`),
         api.get('/orders?status=delivered&limit=200')
       ]);
-      setReturns(returnsRes?.data || []);
+      setReturns(returnsRes?.returns || returnsRes?.data || []);
       setOrders(ordersRes?.data || []);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
@@ -96,14 +131,85 @@ export default function Returns() {
     if (!form.order_id || !form.reason) return;
     setSaving(true);
     try {
-      const res = await api.post('/returns', form);
+      const payload = { ...form };
+      if (payload.pickup_lat) payload.pickup_lat = parseFloat(payload.pickup_lat);
+      if (payload.pickup_lng) payload.pickup_lng = parseFloat(payload.pickup_lng);
+      const res = await api.post('/returns', payload);
       if (res?.success) {
         setShowModal(false);
         setForm({ ...emptyForm });
+        setSelectedOrder(null);
+        setOrderSearch('');
         loadData();
+      } else {
+        console.error('Return creation failed:', res?.message);
       }
     } catch (err) { console.error(err); }
     finally { setSaving(false); }
+  };
+
+  /* Filtered orders for dropdown search */
+  const filteredOrders = useMemo(() => {
+    if (!orderSearch) return orders;
+    const s = orderSearch.toLowerCase();
+    return orders.filter(o =>
+      o.order_number?.toLowerCase().includes(s) ||
+      o.recipient_name?.toLowerCase().includes(s) ||
+      o.recipient_phone?.includes(s)
+    );
+  }, [orders, orderSearch]);
+
+  /* Select an order from dropdown — auto-fill contact details */
+  const selectOrder = (order) => {
+    setSelectedOrder(order);
+    setForm(f => ({
+      ...f,
+      order_id: order.id,
+      pickup_address: order.recipient_address || '',
+      pickup_lat: order.recipient_lat || null,
+      pickup_lng: order.recipient_lng || null,
+    }));
+    setOrderSearch(order.order_number + ' — ' + (order.recipient_name || ''));
+    setOrderDropdownOpen(false);
+  };
+
+  /* Map pin click for pickup address */
+  const handleMapPick = async (lat, lng) => {
+    setForm(f => ({ ...f, pickup_lat: lat, pickup_lng: lng }));
+    // Reverse geocode
+    try {
+      const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+      const data = await r.json();
+      if (data?.display_name) {
+        setForm(f => ({ ...f, pickup_address: data.display_name }));
+      }
+    } catch { /* ignore */ }
+  };
+
+  /* Address search for pickup location */
+  const addressTimer = useRef(null);
+  const addressDropRef = useRef(null);
+  const [addressResults, setAddressResults] = useState([]);
+  const [addressDropOpen, setAddressDropOpen] = useState(false);
+
+  useEffect(() => {
+    const h = (e) => { if (addressDropRef.current && !addressDropRef.current.contains(e.target)) setAddressDropOpen(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, []);
+
+  const searchAddress = (val) => {
+    setForm(f => ({ ...f, pickup_address: val }));
+    clearTimeout(addressTimer.current);
+    if (val.length < 3) { setAddressResults([]); return; }
+    addressTimer.current = setTimeout(async () => {
+      try {
+        const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val)}&countrycodes=ae&limit=5`);
+        const data = await r.json();
+        setAddressResults(data);
+        setAddressDropOpen(true);
+      } catch { setAddressResults([]); }
+    }, 400);
   };
 
   const handleAction = async (id, action) => {
@@ -269,26 +375,73 @@ export default function Returns() {
 
       {/* New Return Modal */}
       {showModal && (
-        <div className="ret-modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="ret-modal" onClick={e => e.stopPropagation()}>
+        <div className="ret-modal-overlay" onClick={() => { setShowModal(false); setSelectedOrder(null); setOrderSearch(''); }}>
+          <div className="ret-modal ret-modal-large" onClick={e => e.stopPropagation()}>
             <div className="ret-modal-header">
               <h3><RefreshDouble size={18} /> {t('returns.modal.new_title')}</h3>
-              <button className="ret-modal-close" onClick={() => setShowModal(false)}><Xmark size={16} /></button>
+              <button className="ret-modal-close" onClick={() => { setShowModal(false); setSelectedOrder(null); setOrderSearch(''); }}><Xmark size={16} /></button>
             </div>
-            <div className="ret-modal-body">
+            <div className="ret-modal-body" style={{ overflowY: 'auto', maxHeight: '65vh' }}>
               <div className="ret-form-grid">
-                <div className="ret-form-group span-2">
+
+                {/* Searchable Order Dropdown */}
+                <div className="ret-form-group span-2" ref={orderDropRef} style={{ position: 'relative' }}>
                   <label className="ret-form-label">{t('returns.form.order')}</label>
-                  <select className="ret-form-select" value={form.order_id}
-                          onChange={e => setForm(f => ({ ...f, order_id: e.target.value }))}>
-                    <option value="">{t('returns.form.select_order')}</option>
-                    {orders.map(o => (
-                      <option key={o.id} value={o.id}>
-                        {o.order_number} — {o.recipient_name}
-                      </option>
-                    ))}
-                  </select>
+                  <div style={{ position: 'relative' }}>
+                    <Search size={14} style={{ position: 'absolute', [isRTL ? 'right' : 'left']: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                    <input
+                      className="ret-form-input"
+                      style={{ [isRTL ? 'paddingRight' : 'paddingLeft']: 36 }}
+                      placeholder={t('returns.form.search_order')}
+                      value={orderSearch}
+                      onChange={e => { setOrderSearch(e.target.value); setOrderDropdownOpen(true); if (!e.target.value) { setSelectedOrder(null); setForm(f => ({ ...f, order_id: '' })); } }}
+                      onFocus={() => setOrderDropdownOpen(true)}
+                    />
+                  </div>
+                  {orderDropdownOpen && filteredOrders.length > 0 && (
+                    <div style={{
+                      position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', borderRadius: 10,
+                      boxShadow: '0 8px 30px rgba(0,0,0,0.15)', border: '1px solid #e2e8f0', zIndex: 50,
+                      maxHeight: 200, overflowY: 'auto', marginTop: 4
+                    }}>
+                      {filteredOrders.map(o => (
+                        <div key={o.id} onClick={() => selectOrder(o)}
+                          style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: '1px solid #f8fafc', fontSize: 13 }}
+                          onMouseOver={e => e.currentTarget.style.background = '#f8fafc'}
+                          onMouseOut={e => e.currentTarget.style.background = '#fff'}>
+                          <div style={{ fontWeight: 700, color: '#1e293b' }}>{o.order_number}</div>
+                          <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2, display: 'flex', gap: 12 }}>
+                            <span><User size={10} style={{ marginRight: 3, verticalAlign: 'middle' }} />{o.recipient_name || '—'}</span>
+                            <span><Phone size={10} style={{ marginRight: 3, verticalAlign: 'middle' }} />{o.recipient_phone || '—'}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
+
+                {/* Contact Details Card (auto-populated from selected order) */}
+                {selectedOrder && (
+                  <div className="span-2" style={{
+                    background: '#f8fafc', borderRadius: 12, padding: '14px 18px', border: '1px solid #e2e8f0',
+                    display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px', fontSize: 13
+                  }}>
+                    <div>
+                      <span style={{ color: '#94a3b8', fontSize: 11, textTransform: 'uppercase', fontWeight: 700 }}>{t('returns.detail.customer')}</span>
+                      <div style={{ fontWeight: 600, color: '#1e293b', marginTop: 2 }}>{selectedOrder.recipient_name || '—'}</div>
+                    </div>
+                    <div>
+                      <span style={{ color: '#94a3b8', fontSize: 11, textTransform: 'uppercase', fontWeight: 700 }}>{t('returns.detail.phone')}</span>
+                      <div style={{ fontWeight: 600, color: '#1e293b', marginTop: 2 }}>{selectedOrder.recipient_phone || '—'}</div>
+                    </div>
+                    <div style={{ gridColumn: '1/-1' }}>
+                      <span style={{ color: '#94a3b8', fontSize: 11, textTransform: 'uppercase', fontWeight: 700 }}>{t('returns.detail.address')}</span>
+                      <div style={{ fontWeight: 600, color: '#1e293b', marginTop: 2 }}>{selectedOrder.recipient_address || '—'}</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Reason */}
                 <div className="ret-form-group span-2">
                   <label className="ret-form-label">{t('returns.form.reason')}</label>
                   <select className="ret-form-select" value={form.reason}
@@ -299,27 +452,91 @@ export default function Returns() {
                     ))}
                   </select>
                 </div>
-                <div className="ret-form-group span-2">
-                  <label className="ret-form-label">{t("returns.pickup_address")}</label>
-                  <input className="ret-form-input" placeholder={t("returns.address_placeholder")}
-                         value={form.pickup_address}
-                         onChange={e => setForm(f => ({ ...f, pickup_address: e.target.value }))} />
+
+                {/* Pickup Address Search */}
+                <div className="ret-form-group span-2" ref={addressDropRef} style={{ position: 'relative' }}>
+                  <label className="ret-form-label"><MapPin size={12} style={{ verticalAlign: 'middle', marginRight: 4 }} />{t('returns.pickup_address')}</label>
+                  <div style={{ position: 'relative' }}>
+                    <Search size={14} style={{ position: 'absolute', [isRTL ? 'right' : 'left']: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                    <input className="ret-form-input"
+                      style={{ [isRTL ? 'paddingRight' : 'paddingLeft']: 36 }}
+                      placeholder={t('returns.address_placeholder')}
+                      value={form.pickup_address}
+                      onChange={e => searchAddress(e.target.value)}
+                      onFocus={() => addressResults.length && setAddressDropOpen(true)}
+                    />
+                  </div>
+                  {addressDropOpen && addressResults.length > 0 && (
+                    <div style={{
+                      position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', borderRadius: 10,
+                      boxShadow: '0 8px 30px rgba(0,0,0,0.15)', border: '1px solid #e2e8f0', zIndex: 50,
+                      maxHeight: 180, overflowY: 'auto', marginTop: 4
+                    }}>
+                      {addressResults.map((r, i) => (
+                        <div key={i} onClick={() => {
+                          setForm(f => ({ ...f, pickup_address: r.display_name, pickup_lat: parseFloat(r.lat), pickup_lng: parseFloat(r.lon) }));
+                          setAddressDropOpen(false);
+                        }}
+                          style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: '1px solid #f8fafc', fontSize: 13, color: '#1e293b' }}
+                          onMouseOver={e => e.currentTarget.style.background = '#f8fafc'}
+                          onMouseOut={e => e.currentTarget.style.background = '#fff'}>
+                          <div style={{ fontWeight: 600 }}>{r.display_name.split(',')[0]}</div>
+                          <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{r.display_name.split(',').slice(1, 3).join(',')}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
+
+                {/* Map Picker */}
+                <div className="ret-form-group span-2">
+                  <label className="ret-form-label" style={{ fontSize: 11, color: '#94a3b8' }}>
+                    {t('returns.tap_to_pick')}
+                  </label>
+                  <div style={{ borderRadius: 12, overflow: 'hidden', border: '1.5px solid #e2e8f0', height: 200, position: 'relative' }}>
+                    <MapContainer
+                      center={form.pickup_lat && form.pickup_lng ? [form.pickup_lat, form.pickup_lng] : [25.2048, 55.2708]}
+                      zoom={form.pickup_lat ? 15 : 11}
+                      style={{ height: '100%', width: '100%' }}
+                      scrollWheelZoom={true}
+                      doubleClickZoom={false}
+                      attributionControl={false}
+                    >
+                      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                      <ClickHandler onClick={(latlng) => handleMapPick(latlng.lat, latlng.lng)} />
+                      {form.pickup_lat && form.pickup_lng && <FlyTo center={[form.pickup_lat, form.pickup_lng]} />}
+                      {form.pickup_lat && form.pickup_lng && <Marker position={[form.pickup_lat, form.pickup_lng]} />}
+                    </MapContainer>
+                    {form.pickup_lat && form.pickup_lng && (
+                      <div style={{
+                        position: 'absolute', bottom: 8, [isRTL ? 'right' : 'left']: 8,
+                        background: 'rgba(0,0,0,.7)', color: '#fff', borderRadius: 6,
+                        padding: '4px 10px', fontSize: 11, fontWeight: 600, zIndex: 999, backdropFilter: 'blur(4px)'
+                      }}>
+                        {parseFloat(form.pickup_lat).toFixed(5)}, {parseFloat(form.pickup_lng).toFixed(5)}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Pickup Date */}
                 <div className="ret-form-group">
-                  <label className="ret-form-label">{t("returns.preferred_date")}</label>
+                  <label className="ret-form-label">{t('returns.preferred_date')}</label>
                   <input type="date" className="ret-form-input" value={form.pickup_date}
                          onChange={e => setForm(f => ({ ...f, pickup_date: e.target.value }))} />
                 </div>
+
+                {/* Notes */}
                 <div className="ret-form-group span-2">
                   <label className="ret-form-label">{t('returns.form.notes')}</label>
-                  <textarea className="ret-form-textarea" placeholder={t("returns.notes_placeholder")}
+                  <textarea className="ret-form-textarea" placeholder={t('returns.notes_placeholder')}
                             value={form.notes}
                             onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
                 </div>
               </div>
             </div>
             <div className="ret-modal-footer">
-              <button className="ret-btn-secondary" onClick={() => setShowModal(false)}>{t("common.cancel")}</button>
+              <button className="ret-btn-secondary" onClick={() => { setShowModal(false); setSelectedOrder(null); setOrderSearch(''); }}>{t('common.cancel')}</button>
               <button className="ret-btn-primary" onClick={handleSubmit} disabled={saving || !form.order_id || !form.reason}>
                 {saving ? t('returns.submitting') : <><Plus size={14} /> {t('returns.submit')}</>}
               </button>

@@ -1320,6 +1320,7 @@
     "form": {
       "order": "Order *",
       "select_order": "Select delivered order",
+      "search_order": "Pesquisar por número do pedido, nome ou telefone...",
       "reason": "Reason *",
       "select_reason": "Select reason",
       "notes": "Notes"
@@ -1330,8 +1331,12 @@
       "reason": "Reason",
       "notes": "Notes",
       "requested": "Requested",
-      "resolved": "Resolved"
-    }
+      "resolved": "Resolved",
+      "customer": "Cliente",
+      "phone": "Telefone",
+      "address": "Endereço"
+    },
+    "tap_to_pick": "Clique no mapa para definir o local de recolha"
   },
   "pricing": {
     "title": "Pricing Rules",

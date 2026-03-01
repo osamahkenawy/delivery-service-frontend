@@ -291,6 +291,9 @@
   box-shadow: 0 20px 60px rgba(0,0,0,0.15);
   animation: ret-slideUp 0.3s ease;
 }
+.ret-modal.ret-modal-large {
+  max-width: 680px;
+}
 @keyframes ret-slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 .ret-modal-header {
   background: linear-gradient(135deg, #1c2430, #2d3748);

@@ -1142,7 +1142,27 @@
       "received": "Recibido",
       "resolved": "Resuelto",
       "cancelled": "Cancelado"
-    }
+    },
+    "form": {
+      "order": "Pedido *",
+      "select_order": "Seleccionar pedido entregado",
+      "search_order": "Buscar por número de pedido, nombre o teléfono...",
+      "reason": "Motivo *",
+      "select_reason": "Seleccionar motivo",
+      "notes": "Notas"
+    },
+    "detail": {
+      "status": "Estado",
+      "order": "Pedido",
+      "reason": "Motivo",
+      "notes": "Notas",
+      "requested": "Solicitado",
+      "resolved": "Resuelto",
+      "customer": "Cliente",
+      "phone": "Teléfono",
+      "address": "Dirección"
+    },
+    "tap_to_pick": "Haga clic en el mapa para establecer la ubicación de recogida"
   },
   "pricing": {
     "title": "Reglas de Precios",

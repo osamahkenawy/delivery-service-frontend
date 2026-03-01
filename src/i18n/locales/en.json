@@ -1326,6 +1326,7 @@
     "form": {
       "order": "Order *",
       "select_order": "Select delivered order",
+      "search_order": "Search by order number, name, or phone...",
       "reason": "Reason *",
       "select_reason": "Select reason",
       "notes": "Notes"
@@ -1336,8 +1337,12 @@
       "reason": "Reason",
       "notes": "Notes",
       "requested": "Requested",
-      "resolved": "Resolved"
-    }
+      "resolved": "Resolved",
+      "customer": "Customer",
+      "phone": "Phone",
+      "address": "Address"
+    },
+    "tap_to_pick": "Click or tap on the map to set pickup location"
   },
   "pricing": {
     "title": "Pricing Rules",

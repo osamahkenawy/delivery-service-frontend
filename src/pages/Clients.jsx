@@ -877,7 +877,7 @@ export default function Clients() {
             maxHeight:'92vh', display:'flex', flexDirection:'column', overflow:'hidden', boxShadow:'0 24px 70px rgba(0,0,0,0.2)' }}>
 
             {/* Modal Header */}
-            <div style={{ padding:'22px 28px 0', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+            <div style={{ padding:'22px 28px 0', display:'flex', justifyContent:'space-between', alignItems:'center', position:'relative' }}>
               <div>
                 <h3 style={{ margin:0, fontSize:20, fontWeight:800, color:'#1e293b' }}>
                   {selected ? t('clients.modal.edit_title') : t('clients.modal.new_title')}
@@ -888,8 +888,7 @@ export default function Clients() {
               </div>
               <button type="button" onClick={() => setShowForm(false)}
                 style={{ background:'#f1f5f9', border:'none', cursor:'pointer', color:'#64748b',
-                  width:34, height:34, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center',
-                  position:'absolute', [i18n.language === 'ar' ? 'left' : 'right']:28, top:22 }}>
+                  width:34, height:34, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center' }}>
                 <Xmark width={16} height={16} />
               </button>
             </div>

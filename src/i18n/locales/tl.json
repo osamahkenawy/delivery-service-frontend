@@ -1320,6 +1320,7 @@
     "form": {
       "order": "Order *",
       "select_order": "Select delivered order",
+      "search_order": "Maghanap ayon sa order number, pangalan, o telepono...",
       "reason": "Reason *",
       "select_reason": "Select reason",
       "notes": "Notes"
@@ -1330,8 +1331,12 @@
       "reason": "Reason",
       "notes": "Notes",
       "requested": "Requested",
-      "resolved": "Resolved"
-    }
+      "resolved": "Resolved",
+      "customer": "Customer",
+      "phone": "Telepono",
+      "address": "Address"
+    },
+    "tap_to_pick": "I-click ang mapa para itakda ang pickup location"
   },
   "pricing": {
     "title": "Pricing Rules",
