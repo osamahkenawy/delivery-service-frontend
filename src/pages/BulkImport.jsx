@@ -35,6 +35,7 @@ const SYSTEM_FIELDS = [
   { key: 'discount', label: 'Discount', required: false },
   { key: 'client_id', label: 'Client ID', required: false },
   { key: 'notes', label: 'Notes', required: false },
+  { key: 'pregenerated_token', label: 'Pre-Printed Barcode', required: false },
 ];
 
 function parseCSV(text) {

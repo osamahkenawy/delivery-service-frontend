@@ -8,6 +8,7 @@ import {
   WarningTriangle, CheckCircle, StatsUpSquare, Wallet,
   DollarCircle, Calendar, Box3dPoint, Hashtag,
   CreditCard, Weight, Prohibition, Refresh, Group, OpenNewWindow, ShareAndroid,
+  ScanBarcode,
 } from 'iconoir-react';
 import api from '../lib/api';
 import Toast, { useToast } from '../components/Toast';
@@ -70,6 +71,7 @@ const EMPTY_FORM = {
   payment_method:'cod', cod_amount:'', delivery_fee:'', discount:'',
   weight_kg:'', dimensions:'', description:'', special_instructions:'',
   scheduled_at:'', notes:'',
+  pregenerated_token:'',
 };
 
 /* ══════════════════════════════════════════════════════════════
@@ -300,16 +302,16 @@ function FlyTo({ center }) {
 }
 
 /* Location picker map for order form */
-function LocationPickerMap({ lat, lng, onPick }) {
+function LocationPickerMap({ lat, lng, onPick, height: customHeight }) {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === 'ar';
   const center = (lat && lng) ? [parseFloat(lat), parseFloat(lng)] : [25.2048, 55.2708]; // Dubai default
   const hasPin = lat && lng;
   const isMobile = window.innerWidth <= 768;
-  const mapHeight = isMobile ? 180 : 240;
+  const mapHeight = customHeight || (isMobile ? 180 : 240);
   
   return (
-    <div style={{ gridColumn:'1/-1' }}>
+    <div style={{ gridColumn: customHeight ? undefined : '1/-1' }}>
       <label style={LABEL}>
         <MapPin width={12} height={12} style={{ [isRTL?'marginLeft':'marginRight']:4, verticalAlign:'middle' }} />
         {t('orders.form.pin_location')} <span style={{ fontWeight:400, textTransform:'none', fontSize:11, color:'#94a3b8' }}>
@@ -373,6 +375,7 @@ export default function Orders() {
   const [driverPicker, setDriverPicker] = useState(null); // { orderId } when open
   const [driverSearch, setDriverSearch] = useState('');
   const [assigningDriver, setAssigningDriver] = useState(null); // driver.id being assigned
+  const [preTokenValidation, setPreTokenValidation] = useState(null); // { valid, reason, order_number } or null
   const debounceRef = useRef(null);
   const didAutoOpen = useRef(false);
 
@@ -582,7 +585,7 @@ export default function Orders() {
     setStep(1); setFormError(''); setShowForm(true);
   };
 
-  const closeForm = () => { setShowForm(false); setSelected(null); setForm(EMPTY_FORM); setFormError(''); setStep(1); };
+  const closeForm = () => { setShowForm(false); setSelected(null); setForm(EMPTY_FORM); setFormError(''); setStep(1); setPreTokenValidation(null); };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -595,6 +598,8 @@ export default function Orders() {
       ['cod_amount','delivery_fee','discount','weight_kg'].forEach(k => {
         if (payload[k] === '') payload[k] = 0;
       });
+      // Remove pregenerated_token from payload if empty
+      if (!payload.pregenerated_token) delete payload.pregenerated_token;
       const res = selected
         ? await api.put(`/orders/${selected.id}`, payload)
         : await api.post('/orders', payload);
@@ -1282,7 +1287,7 @@ export default function Orders() {
           WebkitOverflowScrolling: 'touch' }}>
           <div style={{ background:'#fff', borderRadius:window.innerWidth <= 768 ? 12 : 20, 
             width:'100%', 
-            maxWidth: window.innerWidth <= 768 ? '100%' : 640,
+            maxWidth: window.innerWidth <= 768 ? '100%' : 1100,
             maxHeight: window.innerWidth <= 768 ? 'calc(100vh - 40px)' : '90vh',
             minHeight: window.innerWidth <= 768 ? 'auto' : '600px',
             display:'flex', flexDirection:'column', overflow:'hidden', 
@@ -1324,10 +1329,61 @@ export default function Orders() {
                 )}
 
                 {/* Step 1: Client & Sender */}
-                {step === 1 && (
-                  <div style={{ display:'grid', 
-                    gridTemplateColumns: window.innerWidth <= 768 ? '1fr' : '1fr 1fr', 
-                    gap: window.innerWidth <= 768 ? 12 : 16 }}>
+                {step === 1 && (() => { const _mob = window.innerWidth <= 768; const _showMap = !form.client_id; return (
+                  <div style={{ display:'flex',
+                    flexDirection: _mob ? 'column' : (isRTL ? 'row-reverse' : 'row'),
+                    gap: _mob ? 16 : 24 }}>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ display:'grid',
+                        gridTemplateColumns: _mob ? '1fr' : '1fr 1fr',
+                        gap: _mob ? 12 : 16 }}>
+
+                    {/* Pre-printed barcode scan (only on create, not edit) */}
+                    {!selected && (
+                      <div style={{ gridColumn:'1/-1', marginBottom: 4 }}>
+                        <label style={LABEL}>
+                          <ScanBarcode width={13} height={13} style={{ verticalAlign: -2, marginRight: 4 }} />
+                          Scan Pre-Printed Barcode (Optional)
+                        </label>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <input
+                            value={form.pregenerated_token}
+                            onChange={async (e) => {
+                              const val = e.target.value.toUpperCase();
+                              set('pregenerated_token', val);
+                              setPreTokenValidation(null);
+                              if (val.length >= 8) {
+                                try {
+                                  const res = await api.post('/orders/validate-pregenerated', { tracking_token: val });
+                                  if (res.success) setPreTokenValidation(res.data);
+                                } catch { /* ignore */ }
+                              }
+                            }}
+                            style={{ ...INPUT, flex: 1, fontFamily: 'monospace', fontSize: 15, letterSpacing: 1 }}
+                            placeholder="TRS-XXXXXXXX"
+                            autoComplete="off"
+                          />
+                          {preTokenValidation && (
+                            <span style={{
+                              fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap',
+                              color: preTokenValidation.valid ? '#16a34a' : '#dc2626',
+                            }}>
+                              {preTokenValidation.valid
+                                ? '\u2713 Valid token'
+                                : preTokenValidation.reason === 'already_used'
+                                  ? `\u2717 Already linked to ${preTokenValidation.order_number}`
+                                  : preTokenValidation.reason === 'expired'
+                                    ? '\u2717 Token expired'
+                                    : '\u2717 Token not found'}
+                            </span>
+                          )}
+                        </div>
+                        <p style={{ margin: '4px 0 0', fontSize: 11, color: '#94a3b8' }}>
+                          Scan or type a pre-printed barcode to link this order to a package you already labeled.
+                        </p>
+                      </div>
+                    )}
+
                     <div style={{ gridColumn:'1/-1' }}>
                       <label style={LABEL}>{t('orders.form.client_selection')}</label>
                       <select value={form.client_id} onChange={e=>set('client_id',e.target.value)} style={INPUT}>
@@ -1370,13 +1426,6 @@ export default function Orders() {
                         placeholder={t('orders.placeholders.phone')}
                         readOnly={!!form.client_id} />
                     </div>
-                    {!form.client_id && (
-                      <AddressSearch onSelect={({ lat, lng, display }) => {
-                        set('sender_lat', lat);
-                        set('sender_lng', lng);
-                        if (display) set('sender_address', display);
-                      }} />
-                    )}
                     <div style={{ gridColumn:'1/-1' }}>
                       <label style={LABEL}>{t('orders.form.sender_address')}</label>
                       <input value={form.sender_address} onChange={e=>set('sender_address',e.target.value)}
@@ -1384,31 +1433,51 @@ export default function Orders() {
                         placeholder={t('orders.placeholders.pickup_address')}
                         readOnly={!!form.client_id} />
                     </div>
-                    {!form.client_id && (
-                      <LocationPickerMap
-                        lat={form.sender_lat} lng={form.sender_lng}
-                        onPick={async (lat, lng) => {
-                          set('sender_lat', lat);
-                          set('sender_lng', lng);
-                          try {
-                            const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
-                            const data = await r.json();
-                            if (data.display_name) set('sender_address', data.display_name);
-                          } catch {}
-                        }}
-                      />
+                      </div>{/* close grid */}
+                    </div>{/* close form column */}
+                    {/* ─ Map Side Column ─ */}
+                    {_showMap && (
+                      <div style={{ width: _mob ? '100%' : 380, flexShrink:0 }}>
+                        <div style={{ position: _mob ? 'relative' : 'sticky', top:0 }}>
+                          <AddressSearch onSelect={({ lat, lng, display }) => {
+                            set('sender_lat', lat);
+                            set('sender_lng', lng);
+                            if (display) set('sender_address', display);
+                          }} />
+                          <div style={{ marginTop:12 }}>
+                            <LocationPickerMap
+                              lat={form.sender_lat} lng={form.sender_lng}
+                              height={_mob ? 180 : 400}
+                              onPick={async (lat, lng) => {
+                                set('sender_lat', lat);
+                                set('sender_lng', lng);
+                                try {
+                                  const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+                                  const data = await r.json();
+                                  if (data.display_name) set('sender_address', data.display_name);
+                                } catch {}
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
                     )}
                   </div>
-                )}
+                ); })()}
 
                 {/* Step 2: Recipient & Delivery */}
                 {step === 2 && (() => {
+                  const _mob = window.innerWidth <= 768;
                   const selectedClient = form.client_id ? clients.find(cl => String(cl.id) === String(form.client_id)) : null;
                   const hasClientLocation = selectedClient && (selectedClient.address_line1 || selectedClient.area || selectedClient.latitude);
                   return (
-                    <div style={{ display:'grid', 
-                      gridTemplateColumns: window.innerWidth <= 768 ? '1fr' : '1fr 1fr', 
-                      gap: window.innerWidth <= 768 ? 12 : 16 }}>
+                    <div style={{ display:'flex',
+                      flexDirection: _mob ? 'column' : (isRTL ? 'row-reverse' : 'row'),
+                      gap: _mob ? 16 : 24 }}>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ display:'grid',
+                          gridTemplateColumns: _mob ? '1fr' : '1fr 1fr',
+                          gap: _mob ? 12 : 16 }}>
                       {/* Client location auto-fill notice */}
                       {hasClientLocation && (
                         <div style={{ gridColumn:'1/-1', padding:'10px 14px', background:'#eff6ff', borderRadius:10, border:'1px solid #dbeafe', fontSize:12, display:'flex', alignItems:'center', gap:8 }}>                          <MapPin width={15} height={15} color="#3b82f6" />
@@ -1434,27 +1503,6 @@ export default function Orders() {
                         <input type="email" value={form.recipient_email} onChange={e=>set('recipient_email',e.target.value)}
                           style={INPUT} placeholder={t('orders.placeholders.email')} />
                       </div>
-
-                      <AddressSearch onSelect={({ lat, lng, display }) => {
-                        set('recipient_lat', lat);
-                        set('recipient_lng', lng);
-                        if (display) set('recipient_address', display);
-                      }} />
-
-                      <LocationPickerMap
-                        lat={form.recipient_lat} lng={form.recipient_lng}
-                        onPick={async (lat, lng) => {
-                          set('recipient_lat', lat);
-                          set('recipient_lng', lng);
-                          // Reverse geocode to fill address
-                          try {
-                            const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
-                            const data = await r.json();
-                            if (data.display_name) set('recipient_address', data.display_name);
-                            if (data.address?.suburb || data.address?.neighbourhood) set('recipient_area', data.address.suburb || data.address.neighbourhood);
-                          } catch {}
-                        }}
-                      />
 
                       <div style={{ gridColumn:'1/-1' }}>
                         <label style={LABEL}>{t('orders.form.delivery_address')} *</label>
@@ -1491,6 +1539,34 @@ export default function Orders() {
                         <label style={LABEL}>{t('orders.form.scheduled_at')}</label>
                         <input type="datetime-local" value={form.scheduled_at} onChange={e=>set('scheduled_at',e.target.value)}
                           style={INPUT} />
+                      </div>
+                        </div>{/* close grid */}
+                      </div>{/* close form column */}
+                      {/* ─ Map Side Column ─ */}
+                      <div style={{ width: _mob ? '100%' : 380, flexShrink:0 }}>
+                        <div style={{ position: _mob ? 'relative' : 'sticky', top:0 }}>
+                          <AddressSearch onSelect={({ lat, lng, display }) => {
+                            set('recipient_lat', lat);
+                            set('recipient_lng', lng);
+                            if (display) set('recipient_address', display);
+                          }} />
+                          <div style={{ marginTop:12 }}>
+                            <LocationPickerMap
+                              lat={form.recipient_lat} lng={form.recipient_lng}
+                              height={_mob ? 180 : 400}
+                              onPick={async (lat, lng) => {
+                                set('recipient_lat', lat);
+                                set('recipient_lng', lng);
+                                try {
+                                  const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+                                  const data = await r.json();
+                                  if (data.display_name) set('recipient_address', data.display_name);
+                                  if (data.address?.suburb || data.address?.neighbourhood) set('recipient_area', data.address.suburb || data.address.neighbourhood);
+                                } catch {}
+                              }}
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   );

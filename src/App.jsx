@@ -53,6 +53,7 @@ import SuperAdminTickets from './pages/SuperAdmin/SuperAdminTickets';
 import SuperAdminOnboarding from './pages/SuperAdmin/SuperAdminOnboarding';
 import SuperAdminBranding from './pages/SuperAdmin/SuperAdminBranding';
 import SuperAdminBulkOps from './pages/SuperAdmin/SuperAdminBulkOps';
+import SuperAdminBarcodes from './pages/SuperAdmin/SuperAdminBarcodes';
 
 // Components
 import Layout from './components/Layout';
@@ -263,6 +264,7 @@ function App() {
           <Route path="onboarding" element={<SuperAdminOnboarding />} />
           <Route path="branding" element={<SuperAdminBranding />} />
           <Route path="bulk-operations" element={<SuperAdminBulkOps />} />
+          <Route path="barcodes" element={<SuperAdminBarcodes />} />
         </Route>
 
         {/* Catch-all */}

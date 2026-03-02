@@ -72,6 +72,7 @@ const navSections = [
       { path: '/shipment-tracking',  labelKey: 'tracking',        iconKey: 'shipment-tracking', moduleKey: 'shipment-tracking', roles: ['admin', 'dispatcher'] },
       { path: '/bulk-import',        labelKey: 'bulk_import',     iconKey: 'bulk-import',      moduleKey: 'bulk-import',       roles: ['admin', 'dispatcher'] },
       { path: '/returns',            labelKey: 'returns',         iconKey: 'returns',          moduleKey: 'returns',           roles: ['admin', 'dispatcher'] },
+      { path: '/barcode',            labelKey: 'barcode',         iconKey: 'barcode',          moduleKey: 'barcode',           roles: ['admin', 'dispatcher'] },
     ]
   },
   /* ── DRIVER TOOLS ─────────────────────────────────── */

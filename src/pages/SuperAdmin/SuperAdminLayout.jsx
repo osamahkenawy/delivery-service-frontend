@@ -5,7 +5,7 @@ import {
   Menu, LogOut, Home, Building, User, Settings, ShieldCheck,
   Globe, Package, Bell, Search, NavArrowLeft, StatsReport, Activity,
   CreditCard, Megaphone, Mail, DollarCircle, Archive,
-  ChatLines, Palette, UserPlus, ClipboardCheck, CheckCircle
+  ChatLines, Palette, UserPlus, ClipboardCheck, CheckCircle, QrCode
 } from 'iconoir-react';
 import SEO from '../../components/SEO';
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
@@ -68,6 +68,7 @@ const SuperAdminLayout = () => {
     { path: '/super-admin/tickets', icon: ChatLines, label: 'Support Tickets' },
     { path: '/super-admin/email-templates', icon: Mail, label: 'Email Templates' },
     { path: '/super-admin/branding', icon: Palette, label: 'Branding' },
+    { path: '/super-admin/barcodes', icon: QrCode, label: 'Barcodes' },
     { path: '/super-admin/bulk-operations', icon: CheckCircle, label: 'Bulk Operations' },
     { path: '/super-admin/system-health', icon: Activity, label: 'System Health' },
     { path: '/super-admin/audit-log', icon: ClipboardCheck, label: 'Audit Log' },

@@ -4,7 +4,7 @@ import JsBarcode from 'jsbarcode';
 import QRCode from 'qrcode';
 import {
   Printer, ScanBarcode, Package, Search, XmarkCircle,
-  CheckSquareSolid, Square,
+  CheckSquareSolid, Square, Plus, Trash, Link as LinkIcon,
 } from 'iconoir-react';
 import api from '../lib/api';
 import './CRMPages.css';
@@ -97,8 +97,67 @@ function BarcodeCard({ order, highlighted }) {
   );
 }
 
+/* ── Pre-generated barcode card (not yet linked to an order) ──── */
+function PreGenCard({ token, highlighted }) {
+  const { t } = useTranslation();
+  const svgRef    = useRef(null);
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    if (svgRef.current && token?.tracking_token) {
+      renderBarcode(svgRef.current, token.tracking_token);
+    }
+  }, [token?.tracking_token]);
+
+  useEffect(() => {
+    if (!canvasRef.current || !token?.tracking_token) return;
+    const trackUrl = (typeof window !== 'undefined' ? window.location.origin : '') + '/track/' + token.tracking_token;
+    QRCode.toCanvas(canvasRef.current, trackUrl, {
+      width: 90, margin: 1, color: { dark: '#1e293b', light: '#ffffff' },
+    }).catch(() => {});
+  }, [token?.tracking_token]);
+
+  if (!token) return null;
+  const isUsed    = token.is_used === 1 || token.is_used === true;
+  const isExpired = token.days_remaining !== null && token.days_remaining !== undefined && token.days_remaining <= 0 && !isUsed;
+
+  return (
+    <div className={`bc-card${highlighted ? ' bc-card-highlighted' : ''}`}>
+      <div className="bc-card-header">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+          <div className="bc-order-number">{token.tracking_token}</div>
+          <span className="bc-status-pill" style={{
+            background: isUsed ? '#dcfce7' : isExpired ? '#fee2e2' : '#fef3c7',
+            color: isUsed ? '#16a34a' : isExpired ? '#dc2626' : '#d97706'
+          }}>
+            {isUsed ? `✓ ${token.order_number || 'Linked'}` : isExpired ? 'Expired' : 'Available'}
+          </span>
+        </div>
+        <div className="bc-meta">
+          {token.batch_name && <>{token.batch_name} · </>}
+          {token.days_remaining != null && !isUsed && !isExpired ? `${token.days_remaining}d remaining` : ''}
+        </div>
+      </div>
+      <div className="bc-body">
+        <div className="bc-barcode-wrap">
+          <svg ref={svgRef} />
+        </div>
+        <div className="bc-qr-wrap">
+          <canvas ref={canvasRef} />
+          <div className="bc-qr-label">{t('barcode.scan_to_track')}</div>
+        </div>
+      </div>
+      <div className="bc-footer">
+        <span className="bc-token">{token.tracking_token}</span>
+        <span className="bc-type" style={{ fontSize: 10, opacity: 0.7 }}>PRE-PRINT</span>
+      </div>
+    </div>
+  );
+}
+
 export default function Barcode() {
   const { t } = useTranslation();
+  const [activeTab, setActiveTab] = useState('orders'); // 'orders' | 'preprint'
   const [orders,      setOrders]      = useState([]);
   const [loading,     setLoading]     = useState(true);
   const [search,      setSearch]      = useState('');
@@ -110,12 +169,78 @@ export default function Barcode() {
   const [highlightId, setHighlightId] = useState(null);
   const cardRefs = useRef({});
 
+  // ── Pre-Print tab state ──
+  const [preTokens,       setPreTokens]       = useState([]);
+  const [preLoading,      setPreLoading]      = useState(false);
+  const [preSelected,     setPreSelected]     = useState(new Set());
+  const [showGenModal,    setShowGenModal]    = useState(false);
+  const [genCount,        setGenCount]        = useState(10);
+  const [genBatchName,    setGenBatchName]    = useState('');
+  const [generating,      setGenerating]      = useState(false);
+  const [preStats,        setPreStats]        = useState({ total: 0, available: 0, used: 0, expired: 0 });
+  const [preFilter,       setPreFilter]       = useState('available'); // 'all' | 'available' | 'used'
+  const preCardRefs = useRef({});
+
   useEffect(() => {
     api.get('/orders?limit=500').then(res => {
       if (res.success) setOrders(res.data || []);
       setLoading(false);
     });
   }, []);
+
+  // Fetch pre-generated tokens when tab is active
+  useEffect(() => {
+    if (activeTab !== 'preprint') return;
+    setPreLoading(true);
+    const usedParam = preFilter === 'available' ? '&used=false' : preFilter === 'used' ? '&used=true' : '';
+    Promise.all([
+      api.get(`/orders/pre-generated?limit=500${usedParam}`),
+      api.get('/orders/pre-generated/stats'),
+    ]).then(([tokensRes, statsRes]) => {
+      if (tokensRes.success) setPreTokens(tokensRes.data || []);
+      if (statsRes.success) setPreStats(statsRes.data || {});
+      setPreLoading(false);
+    }).catch(() => setPreLoading(false));
+  }, [activeTab, preFilter]);
+
+  const handleGenerate = async () => {
+    setGenerating(true);
+    try {
+      const res = await api.post('/orders/pre-generate', {
+        count: genCount,
+        batch_name: genBatchName || null,
+      });
+      if (res.success) {
+        setShowGenModal(false);
+        setGenCount(10);
+        setGenBatchName('');
+        // Refresh list
+        const [tokensRes, statsRes] = await Promise.all([
+          api.get(`/orders/pre-generated?limit=500${preFilter === 'available' ? '&used=false' : preFilter === 'used' ? '&used=true' : ''}`),
+          api.get('/orders/pre-generated/stats'),
+        ]);
+        if (tokensRes.success) setPreTokens(tokensRes.data || []);
+        if (statsRes.success) setPreStats(statsRes.data || {});
+      }
+    } catch (err) { console.error(err); }
+    setGenerating(false);
+  };
+
+  const handleDeleteToken = async (id) => {
+    if (!confirm('Delete this unused token?')) return;
+    const res = await api.delete(`/orders/pre-generated/${id}`);
+    if (res.success) {
+      setPreTokens(prev => prev.filter(t => t.id !== id));
+      setPreStats(prev => ({ ...prev, available: Math.max(0, (prev.available || 0) - 1), total: Math.max(0, (prev.total || 0) - 1) }));
+    }
+  };
+
+  const printPreSelected = () => {
+    const toPrint = preSelected.size > 0 ? preTokens.filter(t => preSelected.has(t.id)) : preTokens.filter(t => !t.is_used);
+    if (!toPrint.length) return;
+    setPrinting(true);
+    setTimeout(() => { window.print(); setPrinting(false); }, 100);
+  };
 
   const filtered = orders.filter(o => {
     const q = search.toLowerCase();
@@ -173,6 +298,8 @@ export default function Barcode() {
   }, [orders]);
 
   const toBePrinted = selected.size > 0 ? filtered.filter(o => selected.has(o.id)) : filtered;
+  const prePrintList = preSelected.size > 0 ? preTokens.filter(t => preSelected.has(t.id)) : preTokens.filter(t => !t.is_used);
+  const preAllSelected = preTokens.length > 0 && preSelected.size === preTokens.length;
 
   return (
     <>
@@ -184,130 +311,365 @@ export default function Barcode() {
           <div className="module-hero-left">
             <h2 className="module-hero-title">{t('barcode.title')}</h2>
             <p className="module-hero-sub">
-              {selected.size > 0
-                ? t('barcode.subtitle', { total: filtered.length, selected: selected.size })
-                : t('barcode.subtitle_none', { total: filtered.length })}
+              {activeTab === 'orders'
+                ? (selected.size > 0
+                    ? t('barcode.subtitle', { total: filtered.length, selected: selected.size })
+                    : t('barcode.subtitle_none', { total: filtered.length }))
+                : `Pre-printed barcodes: ${preStats.available || 0} available, ${preStats.used || 0} used`}
             </p>
           </div>
           <div className="module-hero-actions">
-            <button className="module-btn module-btn-outline" onClick={toggleAll}>
-              {allSelected
-                ? <><CheckSquareSolid width={15} height={15} /> {t('barcode.deselect_all')}</>
-                : <><Square width={15} height={15} /> {t('barcode.select_all')}</>}
-            </button>
-            <button
-              className="module-btn module-btn-primary"
-              onClick={printSelected}
-              disabled={printing || (!loading && filtered.length === 0)}
-              style={{ background: '#f97316', borderColor: '#f97316' }}
-            >
-              <Printer width={15} height={15} />
-              {selected.size > 0
-                ? t('barcode.print_selected', { count: selected.size })
-                : t('barcode.print_all', { count: filtered.length })}
-            </button>
-          </div>
-        </div>
-
-        {/* Scan-to-find bar */}
-        <div className="bc-scan-bar">
-          <div className="bc-scan-input-wrap">
-            <ScanBarcode width={16} height={16} className="bc-scan-icon" />
-            <input
-              className="bc-scan-input"
-              placeholder={t('barcode.scan_placeholder')}
-              value={scanQuery}
-              onChange={e => { setScanQuery(e.target.value); handleScan(e.target.value); }}
-              onKeyDown={e => { if (e.key === 'Enter') handleScan(scanQuery); }}
-              autoComplete="off"
-            />
-            {scanQuery && (
-              <button className="search-clear" onClick={() => {
-                setScanQuery(''); setScanResult(null); setHighlightId(null);
-              }}>
-                <XmarkCircle width={15} height={15} />
-              </button>
+            {activeTab === 'orders' ? (
+              <>
+                <button className="module-btn module-btn-outline" onClick={toggleAll}>
+                  {allSelected
+                    ? <><CheckSquareSolid width={15} height={15} /> {t('barcode.deselect_all')}</>
+                    : <><Square width={15} height={15} /> {t('barcode.select_all')}</>}
+                </button>
+                <button
+                  className="module-btn module-btn-primary"
+                  onClick={printSelected}
+                  disabled={printing || (!loading && filtered.length === 0)}
+                  style={{ background: '#f97316', borderColor: '#f97316' }}
+                >
+                  <Printer width={15} height={15} />
+                  {selected.size > 0
+                    ? t('barcode.print_selected', { count: selected.size })
+                    : t('barcode.print_all', { count: filtered.length })}
+                </button>
+              </>
+            ) : (
+              <>
+                <button className="module-btn module-btn-outline" onClick={() => setShowGenModal(true)}>
+                  <Plus width={15} height={15} /> Generate Barcodes
+                </button>
+                <button
+                  className="module-btn module-btn-primary"
+                  onClick={printPreSelected}
+                  disabled={printing || preTokens.length === 0}
+                  style={{ background: '#f97316', borderColor: '#f97316' }}
+                >
+                  <Printer width={15} height={15} />
+                  {preSelected.size > 0 ? `Print Selected (${preSelected.size})` : `Print All Available (${preTokens.filter(t => !t.is_used).length})`}
+                </button>
+              </>
             )}
           </div>
-          <span className={`bc-scan-feedback${scanResult?.status === 'found' ? ' found' : scanResult?.status === 'not_found' ? ' not-found' : ''}`}>
-            {scanResult?.status === 'found'
-              ? t('barcode.scan_found', { number: scanResult.number })
-              : scanResult?.status === 'not_found'
-                ? t('barcode.scan_not_found')
-                : t('barcode.scan_hint')}
-          </span>
         </div>
 
-        {/* Filter row */}
-        <div className="bc-filter-row">
-          <div className="search-box" style={{ flex: 1, minWidth: 200 }}>
-            <Search width={15} height={15} className="search-icon" />
-            <input
-              type="text"
-              className="search-input"
-              placeholder={t('barcode.search_placeholder')}
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-            {search && (
-              <button className="search-clear" onClick={() => setSearch('')}>
-                <XmarkCircle width={15} height={15} />
-              </button>
+        {/* Tab switcher */}
+        <div style={{ display: 'flex', gap: 0, marginBottom: 16, borderBottom: '2px solid #e2e8f0' }}>
+          <button
+            onClick={() => setActiveTab('orders')}
+            style={{
+              padding: '10px 24px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+              background: 'none', border: 'none',
+              borderBottom: activeTab === 'orders' ? '2px solid #f97316' : '2px solid transparent',
+              color: activeTab === 'orders' ? '#f97316' : '#64748b',
+              marginBottom: -2,
+            }}
+          >
+            <Package width={14} height={14} style={{ marginRight: 6, verticalAlign: -2 }} />
+            Order Barcodes
+          </button>
+          <button
+            onClick={() => setActiveTab('preprint')}
+            style={{
+              padding: '10px 24px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+              background: 'none', border: 'none',
+              borderBottom: activeTab === 'preprint' ? '2px solid #f97316' : '2px solid transparent',
+              color: activeTab === 'preprint' ? '#f97316' : '#64748b',
+              marginBottom: -2,
+            }}
+          >
+            <ScanBarcode width={14} height={14} style={{ marginRight: 6, verticalAlign: -2 }} />
+            Pre-Print
+            {preStats.available > 0 && (
+              <span style={{ background: '#fef3c7', color: '#d97706', fontSize: 11, padding: '2px 7px', borderRadius: 10, marginLeft: 8 }}>
+                {preStats.available}
+              </span>
             )}
-          </div>
-          <select className="filter-select" value={status} onChange={e => setStatus(e.target.value)}>
-            <option value="">{t('barcode.all_statuses')}</option>
-            {STATUSES.map(s => (
-              <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
-            ))}
-          </select>
-          {(search || status) && (
-            <button className="module-btn module-btn-outline" onClick={() => { setSearch(''); setStatus(''); }}>
-              <XmarkCircle width={14} height={14} /> {t('common.clear')}
-            </button>
-          )}
+          </button>
         </div>
 
-        {/* Content */}
-        {loading ? (
-          <div className="bc-grid">
-            {[1, 2, 3, 4, 5, 6].map(i => (
-              <div key={i} className="bc-card skeleton-pulse" style={{ height: 200, borderRadius: 10 }} />
-            ))}
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="ord-empty">
-            <div className="ord-empty-icon"><Package width={48} height={48} /></div>
-            <h3>{search || status ? t('barcode.no_results') : t('barcode.no_orders')}</h3>
-          </div>
-        ) : (
-          <div className="bc-grid">
-            {filtered.map(order => (
-              <div
-                key={order.id}
-                ref={el => { cardRefs.current[order.id] = el; }}
-                className={`bc-card-wrap${selected.has(order.id) ? ' bc-selected' : ''}${highlightId === order.id ? ' bc-highlighted-wrap' : ''}`}
-                onClick={() => toggleSelect(order.id)}
-              >
-                <div className={`bc-select-box${selected.has(order.id) ? ' checked' : ''}`}>
-                  {selected.has(order.id)
-                    ? <CheckSquareSolid width={18} height={18} />
-                    : <Square width={18} height={18} />}
-                </div>
-                <BarcodeCard order={order} highlighted={highlightId === order.id} />
+        {/* ── ORDERS TAB ─────────────────────────────── */}
+        {activeTab === 'orders' && (
+          <>
+            {/* Scan-to-find bar */}
+            <div className="bc-scan-bar">
+              <div className="bc-scan-input-wrap">
+                <ScanBarcode width={16} height={16} className="bc-scan-icon" />
+                <input
+                  className="bc-scan-input"
+                  placeholder={t('barcode.scan_placeholder')}
+                  value={scanQuery}
+                  onChange={e => { setScanQuery(e.target.value); handleScan(e.target.value); }}
+                  onKeyDown={e => { if (e.key === 'Enter') handleScan(scanQuery); }}
+                  autoComplete="off"
+                />
+                {scanQuery && (
+                  <button className="search-clear" onClick={() => {
+                    setScanQuery(''); setScanResult(null); setHighlightId(null);
+                  }}>
+                    <XmarkCircle width={15} height={15} />
+                  </button>
+                )}
               </div>
-            ))}
-          </div>
+              <span className={`bc-scan-feedback${scanResult?.status === 'found' ? ' found' : scanResult?.status === 'not_found' ? ' not-found' : ''}`}>
+                {scanResult?.status === 'found'
+                  ? t('barcode.scan_found', { number: scanResult.number })
+                  : scanResult?.status === 'not_found'
+                    ? t('barcode.scan_not_found')
+                    : t('barcode.scan_hint')}
+              </span>
+            </div>
+
+            {/* Filter row */}
+            <div className="bc-filter-row">
+              <div className="search-box" style={{ flex: 1, minWidth: 200 }}>
+                <Search width={15} height={15} className="search-icon" />
+                <input
+                  type="text"
+                  className="search-input"
+                  placeholder={t('barcode.search_placeholder')}
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                />
+                {search && (
+                  <button className="search-clear" onClick={() => setSearch('')}>
+                    <XmarkCircle width={15} height={15} />
+                  </button>
+                )}
+              </div>
+              <select className="filter-select" value={status} onChange={e => setStatus(e.target.value)}>
+                <option value="">{t('barcode.all_statuses')}</option>
+                {STATUSES.map(s => (
+                  <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
+                ))}
+              </select>
+              {(search || status) && (
+                <button className="module-btn module-btn-outline" onClick={() => { setSearch(''); setStatus(''); }}>
+                  <XmarkCircle width={14} height={14} /> {t('common.clear')}
+                </button>
+              )}
+            </div>
+
+            {/* Content */}
+            {loading ? (
+              <div className="bc-grid">
+                {[1, 2, 3, 4, 5, 6].map(i => (
+                  <div key={i} className="bc-card skeleton-pulse" style={{ height: 200, borderRadius: 10 }} />
+                ))}
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="ord-empty">
+                <div className="ord-empty-icon"><Package width={48} height={48} /></div>
+                <h3>{search || status ? t('barcode.no_results') : t('barcode.no_orders')}</h3>
+              </div>
+            ) : (
+              <div className="bc-grid">
+                {filtered.map(order => (
+                  <div
+                    key={order.id}
+                    ref={el => { cardRefs.current[order.id] = el; }}
+                    className={`bc-card-wrap${selected.has(order.id) ? ' bc-selected' : ''}${highlightId === order.id ? ' bc-highlighted-wrap' : ''}`}
+                    onClick={() => toggleSelect(order.id)}
+                  >
+                    <div className={`bc-select-box${selected.has(order.id) ? ' checked' : ''}`}>
+                      {selected.has(order.id)
+                        ? <CheckSquareSolid width={18} height={18} />
+                        : <Square width={18} height={18} />}
+                    </div>
+                    <BarcodeCard order={order} highlighted={highlightId === order.id} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── PRE-PRINT TAB ──────────────────────────── */}
+        {activeTab === 'preprint' && (
+          <>
+            {/* Stats bar */}
+            <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+              {[
+                { label: 'Total', value: preStats.total || 0, bg: '#f1f5f9', color: '#475569' },
+                { label: 'Available', value: preStats.available || 0, bg: '#fef3c7', color: '#d97706' },
+                { label: 'Used', value: preStats.used || 0, bg: '#dcfce7', color: '#16a34a' },
+                { label: 'Expired', value: preStats.expired || 0, bg: '#fee2e2', color: '#dc2626' },
+              ].map(s => (
+                <div key={s.label} style={{
+                  padding: '10px 18px', borderRadius: 10, background: s.bg,
+                  display: 'flex', alignItems: 'center', gap: 8,
+                }}>
+                  <span style={{ fontSize: 22, fontWeight: 700, color: s.color }}>{s.value}</span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: s.color, opacity: 0.8 }}>{s.label}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Filter */}
+            <div className="bc-filter-row">
+              <select className="filter-select" value={preFilter} onChange={e => setPreFilter(e.target.value)}>
+                <option value="all">All Tokens</option>
+                <option value="available">Available Only</option>
+                <option value="used">Used Only</option>
+              </select>
+              <button
+                className="module-btn module-btn-outline"
+                onClick={() => {
+                  if (preAllSelected) setPreSelected(new Set());
+                  else setPreSelected(new Set(preTokens.map(t => t.id)));
+                }}
+              >
+                {preAllSelected
+                  ? <><CheckSquareSolid width={15} height={15} /> Deselect All</>
+                  : <><Square width={15} height={15} /> Select All</>}
+              </button>
+            </div>
+
+            {/* Content */}
+            {preLoading ? (
+              <div className="bc-grid">
+                {[1, 2, 3, 4, 5, 6].map(i => (
+                  <div key={i} className="bc-card skeleton-pulse" style={{ height: 200, borderRadius: 10 }} />
+                ))}
+              </div>
+            ) : preTokens.length === 0 ? (
+              <div className="ord-empty">
+                <div className="ord-empty-icon"><ScanBarcode width={48} height={48} /></div>
+                <h3>No pre-generated barcodes yet</h3>
+                <p style={{ color: '#64748b', marginTop: 8 }}>Generate barcodes to print and stick on packages before creating orders.</p>
+                <button
+                  className="module-btn module-btn-primary"
+                  onClick={() => setShowGenModal(true)}
+                  style={{ marginTop: 16, background: '#f97316', borderColor: '#f97316' }}
+                >
+                  <Plus width={15} height={15} /> Generate Barcodes
+                </button>
+              </div>
+            ) : (
+              <div className="bc-grid">
+                {preTokens.map(token => (
+                  <div
+                    key={token.id}
+                    ref={el => { preCardRefs.current[token.id] = el; }}
+                    className={`bc-card-wrap${preSelected.has(token.id) ? ' bc-selected' : ''}`}
+                    onClick={() => {
+                      setPreSelected(prev => {
+                        const next = new Set(prev);
+                        if (next.has(token.id)) next.delete(token.id);
+                        else next.add(token.id);
+                        return next;
+                      });
+                    }}
+                  >
+                    <div className={`bc-select-box${preSelected.has(token.id) ? ' checked' : ''}`}>
+                      {preSelected.has(token.id)
+                        ? <CheckSquareSolid width={18} height={18} />
+                        : <Square width={18} height={18} />}
+                    </div>
+                    <PreGenCard token={token} />
+                    {/* Delete button for unused tokens */}
+                    {!token.is_used && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDeleteToken(token.id); }}
+                        style={{
+                          position: 'absolute', top: 8, right: 8, background: '#fee2e2', border: 'none',
+                          borderRadius: 6, padding: '4px 6px', cursor: 'pointer', color: '#dc2626', zIndex: 2,
+                        }}
+                        title="Delete token"
+                      >
+                        <Trash width={14} height={14} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
 
+      {/* ── Generate Modal ────────────────────────────── */}
+      {showGenModal && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }} onClick={() => setShowGenModal(false)}>
+          <div style={{
+            background: '#fff', borderRadius: 16, padding: 32, width: 400, maxWidth: '90vw',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+          }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, marginBottom: 4 }}>Generate Pre-Print Barcodes</h3>
+            <p style={{ margin: 0, color: '#64748b', fontSize: 13, marginBottom: 20 }}>
+              Create barcode labels to print and stick on packages before creating orders.
+            </p>
+
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 6, textTransform: 'uppercase' }}>
+              Quantity (1–200)
+            </label>
+            <input
+              type="number"
+              min={1} max={200}
+              value={genCount}
+              onChange={e => setGenCount(Math.min(200, Math.max(1, parseInt(e.target.value) || 1)))}
+              style={{
+                width: '100%', padding: '10px 13px', borderRadius: 9,
+                border: '1px solid #e2e8f0', fontSize: 14, boxSizing: 'border-box', marginBottom: 16,
+              }}
+            />
+
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 6, textTransform: 'uppercase' }}>
+              Batch Name (optional)
+            </label>
+            <input
+              type="text"
+              placeholder="e.g. March Batch, Warehouse A"
+              value={genBatchName}
+              onChange={e => setGenBatchName(e.target.value)}
+              style={{
+                width: '100%', padding: '10px 13px', borderRadius: 9,
+                border: '1px solid #e2e8f0', fontSize: 14, boxSizing: 'border-box', marginBottom: 24,
+              }}
+            />
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button
+                className="module-btn module-btn-outline"
+                onClick={() => setShowGenModal(false)}
+                disabled={generating}
+              >
+                Cancel
+              </button>
+              <button
+                className="module-btn module-btn-primary"
+                onClick={handleGenerate}
+                disabled={generating}
+                style={{ background: '#f97316', borderColor: '#f97316' }}
+              >
+                {generating ? 'Generating...' : `Generate ${genCount} Barcodes`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Print-only view ─────────────────────────── */}
       <div className="bc-print-only">
-        {toBePrinted.map(order => (
-          <div key={order.id} className="bc-print-page">
-            <BarcodeCard order={order} />
-          </div>
-        ))}
+        {activeTab === 'orders'
+          ? toBePrinted.map(order => (
+              <div key={order.id} className="bc-print-page">
+                <BarcodeCard order={order} />
+              </div>
+            ))
+          : prePrintList.map(token => (
+              <div key={token.id} className="bc-print-page">
+                <PreGenCard token={token} />
+              </div>
+            ))
+        }
       </div>
     </>
   );
