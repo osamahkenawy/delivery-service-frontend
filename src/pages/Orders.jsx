@@ -8,7 +8,7 @@ import {
   WarningTriangle, CheckCircle, StatsUpSquare, Wallet,
   DollarCircle, Calendar, Box3dPoint, Hashtag,
   CreditCard, Weight, Prohibition, Refresh, Group, OpenNewWindow, ShareAndroid,
-  ScanBarcode,
+  ScanBarcode, Printer,
 } from 'iconoir-react';
 import api from '../lib/api';
 import Toast, { useToast } from '../components/Toast';
@@ -349,6 +349,17 @@ export default function Orders() {
   const isRTL = i18n.language === 'ar';
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+
+  /* ── Responsive breakpoint: listen for resize ── */
+  const [windowW, setWindowW] = useState(window.innerWidth);
+  useEffect(() => {
+    const onResize = () => setWindowW(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  const _mob = windowW <= 768;
+  const _tab = windowW > 768 && windowW <= 1024;
+
   /* state */
   const [orders,     setOrders]     = useState([]);
   const [loading,    setLoading]    = useState(true);
@@ -376,6 +387,7 @@ export default function Orders() {
   const [driverSearch, setDriverSearch] = useState('');
   const [assigningDriver, setAssigningDriver] = useState(null); // driver.id being assigned
   const [preTokenValidation, setPreTokenValidation] = useState(null); // { valid, reason, order_number } or null
+  const [labelSelected, setLabelSelected] = useState(new Set()); // MODULE B: batch label selection
   const debounceRef = useRef(null);
   const didAutoOpen = useRef(false);
 
@@ -711,6 +723,64 @@ export default function Orders() {
   const hasFilters = filters.status || filters.search || filters.date_from || filters.date_to || filters.order_type || filters.client_id;
   const totalPages = Math.ceil(total / LIMIT);
 
+  /* ── MODULE B: Shipping Label helpers ──────────────────────── */
+  const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+  const getAuthToken = () => localStorage.getItem('crm_token');
+
+  const printSingleLabel = (orderId) => {
+    const token = getAuthToken();
+    const url = `${API_BASE_URL}/orders/${orderId}/label`;
+    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => {
+        if (r.status === 401) { localStorage.removeItem('crm_token'); window.location.href = '/login'; throw new Error('Session expired'); }
+        if (!r.ok) throw new Error('Label generation failed');
+        return r.blob();
+      })
+      .then(blob => {
+        const pdfUrl = URL.createObjectURL(blob);
+        window.open(pdfUrl, '_blank');
+        setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000);
+      })
+      .catch(e => { console.error(e); showToast('Failed to generate label', 'error'); });
+  };
+
+  const printBatchLabels = () => {
+    if (labelSelected.size === 0) return;
+    const token = getAuthToken();
+    const url = `${API_BASE_URL}/orders/labels`;
+    fetch(url, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order_ids: [...labelSelected] }),
+    })
+      .then(r => {
+        if (r.status === 401) { localStorage.removeItem('crm_token'); window.location.href = '/login'; throw new Error('Session expired'); }
+        if (!r.ok) throw new Error('Batch label generation failed');
+        return r.blob();
+      })
+      .then(blob => {
+        const pdfUrl = URL.createObjectURL(blob);
+        window.open(pdfUrl, '_blank');
+        setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000);
+        setLabelSelected(new Set());
+      })
+      .catch(e => { console.error(e); showToast('Failed to generate labels', 'error'); });
+  };
+
+  const toggleLabelSelect = (id, e) => {
+    e?.stopPropagation();
+    setLabelSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAllLabelSelect = () => {
+    if (labelSelected.size === orders.length) setLabelSelected(new Set());
+    else setLabelSelected(new Set(orders.map(o => o.id)));
+  };
+
   /* ═══════════════════════════════════════════════════════════
      RENDER
      ═══════════════════════════════════════════════════════════ */
@@ -746,6 +816,14 @@ export default function Orders() {
               display:'flex', alignItems:'center', gap:7 }}>
             <Download width={15} height={15} /> {exporting ? t('orders.actions.exporting') : t('orders.actions.export')}
           </button>
+          {labelSelected.size > 0 && (
+            <button onClick={printBatchLabels} title="Print shipping labels for selected orders"
+              style={{ padding:'10px 16px', borderRadius:10, border:'1px solid #fed7aa',
+                background:'#fff7ed', cursor:'pointer', fontWeight:600, fontSize:14,
+                color:'#ea580c', display:'flex', alignItems:'center', gap:7 }}>
+              <Printer width={15} height={15} /> Print Labels ({labelSelected.size})
+            </button>
+          )}
           <button onClick={() => openNew()}
             style={{ padding:'10px 22px', borderRadius:10, border:'none',
               background:'linear-gradient(135deg,#f97316,#ea580c)', color:'#fff',
@@ -843,6 +921,10 @@ export default function Orders() {
               <table style={{ width:'100%', borderCollapse:'collapse', fontSize:14 }}>
                 <thead>
                   <tr style={{ background:'#f8fafc', borderBottom:'2px solid #f1f5f9' }}>
+                    <th style={{ padding:'12px 8px 12px 16px', width:36 }} onClick={e => { e.stopPropagation(); toggleAllLabelSelect(); }}>
+                      <input type="checkbox" checked={orders.length > 0 && labelSelected.size === orders.length} readOnly
+                        style={{ cursor:'pointer', width:15, height:15, accentColor:'#f97316' }} title="Select all for label printing" />
+                    </th>
                     {[t('orders.table.order_num'),t('orders.table.status'),t('orders.table.client_sender'),t('orders.table.recipient'),t('orders.table.zone'),t('orders.table.type'),t('orders.table.payment'),t('orders.table.fee'),t('orders.table.date'),''].map(h => (
                       <th key={h} style={{ padding:'12px 16px', textAlign: isRTL ? 'right' : 'left', fontWeight:700, fontSize:12,
                         color:'#64748b', textTransform:'uppercase', letterSpacing:'0.04em', whiteSpace:'nowrap' }}>{h}</th>
@@ -852,9 +934,14 @@ export default function Orders() {
                 <tbody>
                   {orders.map(o => (
                     <tr key={o.id} onClick={() => openDrawer(o)}
-                      style={{ borderBottom:'1px solid #f8fafc', cursor:'pointer', transition:'background 0.15s' }}
-                      onMouseOver={e=>e.currentTarget.style.background='#fafbfc'}
-                      onMouseOut={e=>e.currentTarget.style.background='#fff'}>
+                      style={{ borderBottom:'1px solid #f8fafc', cursor:'pointer', transition:'background 0.15s',
+                        background: labelSelected.has(o.id) ? '#fff7ed' : '#fff' }}
+                      onMouseOver={e=>e.currentTarget.style.background=labelSelected.has(o.id)?'#fed7aa':'#fafbfc'}
+                      onMouseOut={e=>e.currentTarget.style.background=labelSelected.has(o.id)?'#fff7ed':'#fff'}>
+                      <td style={{ padding:'13px 8px 13px 16px', width:36 }} onClick={e => toggleLabelSelect(o.id, e)}>
+                        <input type="checkbox" checked={labelSelected.has(o.id)} readOnly
+                          style={{ cursor:'pointer', width:15, height:15, accentColor:'#f97316' }} />
+                      </td>
                       <td style={{ padding:'13px 16px' }}>
                         <OrderNumCell
                           orderNumber={o.order_number}
@@ -915,6 +1002,11 @@ export default function Orders() {
                       </td>
                       <td style={{ padding:'13px 16px' }} onClick={e => e.stopPropagation()}>
                         <div style={{ display:'flex', gap:6 }}>
+                          <button onClick={() => printSingleLabel(o.id)} title="Print Shipping Label"
+                            style={{ padding:'6px 8px', borderRadius:8, border:'1px solid #fed7aa', background:'#fff7ed',
+                              color:'#ea580c', cursor:'pointer', display:'flex', alignItems:'center' }}>
+                            <Printer width={13} height={13} />
+                          </button>
                           <button onClick={() => openEdit(o)} title="Edit"
                             style={{ padding:'6px 11px', borderRadius:8, border:'1px solid #e2e8f0', background:'#fff',
                               cursor:'pointer', fontSize:13, fontWeight:600, color:'#374151', display:'flex', alignItems:'center', gap:5 }}>
@@ -1048,6 +1140,12 @@ export default function Orders() {
                     background:'#f97316', color:'#fff', cursor:'pointer', fontWeight:700, fontSize:14,
                     display:'flex', alignItems:'center', justifyContent:'center', gap:7 }}>
                   <EditPencil width={15} height={15} /> {t('orders.actions.edit')}
+                </button>
+                <button onClick={() => printSingleLabel(drawer.id)} title="Print Shipping Label"
+                  style={{ flex:1, padding:'10px', borderRadius:10, border:'none',
+                    background:'#ea580c', color:'#fff', cursor:'pointer', fontWeight:700, fontSize:14,
+                    display:'flex', alignItems:'center', justifyContent:'center', gap:7 }}>
+                  <Printer width={15} height={15} /> Print Label
                 </button>
                 {drawer.tracking_token && (
                   <button onClick={() => window.open(`/track/${drawer.tracking_token}`, '_blank')}
@@ -1280,37 +1378,38 @@ export default function Orders() {
          CREATE / EDIT 3-STEP WIZARD
          ══════════════════════════════════════════════════════ */}
       {showForm && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:1000,
-          display:'flex', alignItems:'flex-start', justifyContent:'center', padding:'10px', 
-          paddingTop: window.innerWidth <= 768 ? '20px' : '40px',
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:1100,
+          display:'flex', alignItems:'flex-start', justifyContent:'center',
+          padding: _mob ? '8px' : '10px', 
+          paddingTop: _mob ? '10px' : _tab ? '24px' : '40px',
           overflowY:'auto', 
           WebkitOverflowScrolling: 'touch' }}>
-          <div style={{ background:'#fff', borderRadius:window.innerWidth <= 768 ? 12 : 20, 
+          <div style={{ background:'#fff', borderRadius: _mob ? 12 : 20, 
             width:'100%', 
-            maxWidth: window.innerWidth <= 768 ? '100%' : 1100,
-            maxHeight: window.innerWidth <= 768 ? 'calc(100vh - 40px)' : '90vh',
-            minHeight: window.innerWidth <= 768 ? 'auto' : '600px',
+            maxWidth: _mob ? '100%' : _tab ? '95%' : 1100,
+            maxHeight: _mob ? 'calc(100vh - 20px)' : _tab ? 'calc(100vh - 48px)' : '90vh',
+            minHeight: _mob ? 'auto' : '500px',
             display:'flex', flexDirection:'column', overflow:'hidden', 
             boxShadow:'0 24px 70px rgba(0,0,0,0.2)',
-            margin: window.innerWidth <= 768 ? '0' : 'auto' }}>
+            margin: _mob ? '0' : 'auto' }}>
 
             {/* Modal Header */}
-            <div style={{ padding: window.innerWidth <= 768 ? '16px 20px 0' : '22px 28px 0', 
-              display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-              <div>
-                <h3 style={{ margin:0, fontSize: window.innerWidth <= 768 ? 18 : 20, fontWeight:800, color:'#1e293b' }}>
+            <div style={{ padding: _mob ? '14px 16px 0' : '22px 28px 0', 
+              display:'flex', justifyContent:'space-between', alignItems:'center', gap: 8 }}>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <h3 style={{ margin:0, fontSize: _mob ? 16 : 20, fontWeight:800, color:'#1e293b', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
                   {selected ? `${t('orders.edit_order')} \u2014 ${selected.order_number}` : t('orders.new_order')}
                 </h3>
-                <p style={{ margin:'3px 0 0', color:'#94a3b8', fontSize: window.innerWidth <= 768 ? 12 : 13 }}>
+                <p style={{ margin:'3px 0 0', color:'#94a3b8', fontSize: _mob ? 11 : 13 }}>
                   {t('common.step')} {step} {t('common.of')} {STEPS.length} \u2014 {t(STEPS[step-1].descKey)}
                 </p>
               </div>
               <button type="button" onClick={closeForm}
                 style={{ background:'#f1f5f9', border:'none', cursor:'pointer', color:'#64748b',
-                  width: window.innerWidth <= 768 ? 32 : 34, 
-                  height: window.innerWidth <= 768 ? 32 : 34, 
+                  width: _mob ? 32 : 34, 
+                  height: _mob ? 32 : 34, flexShrink: 0,
                   borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                <Xmark width={window.innerWidth <= 768 ? 14 : 16} height={window.innerWidth <= 768 ? 14 : 16} />
+                <Xmark width={_mob ? 14 : 16} height={_mob ? 14 : 16} />
               </button>
             </div>
 
@@ -1319,7 +1418,7 @@ export default function Orders() {
 
             <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', flex:1, overflow:'hidden' }}>
               <div style={{ overflowY:'auto', flex:1, 
-                padding: window.innerWidth <= 768 ? '16px 20px 0' : '22px 28px 0',
+                padding: _mob ? '12px 14px 0' : _tab ? '18px 22px 0' : '22px 28px 0',
                 WebkitOverflowScrolling: 'touch' }}>
                 {formError && (
                   <div style={{ background:'#fee2e2', color:'#dc2626', padding:'10px 14px',
@@ -1329,14 +1428,14 @@ export default function Orders() {
                 )}
 
                 {/* Step 1: Client & Sender */}
-                {step === 1 && (() => { const _mob = window.innerWidth <= 768; const _showMap = !form.client_id; return (
+                {step === 1 && (() => { const _showMap = !form.client_id; return (
                   <div style={{ display:'flex',
-                    flexDirection: _mob ? 'column' : (isRTL ? 'row-reverse' : 'row'),
-                    gap: _mob ? 16 : 24 }}>
+                    flexDirection: (_mob || _tab) ? 'column' : (isRTL ? 'row-reverse' : 'row'),
+                    gap: _mob ? 12 : 24 }}>
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ display:'grid',
                         gridTemplateColumns: _mob ? '1fr' : '1fr 1fr',
-                        gap: _mob ? 12 : 16 }}>
+                        gap: _mob ? 10 : 16 }}>
 
                     {/* Pre-printed barcode scan (only on create, not edit) */}
                     {!selected && (
@@ -1437,8 +1536,8 @@ export default function Orders() {
                     </div>{/* close form column */}
                     {/* ─ Map Side Column ─ */}
                     {_showMap && (
-                      <div style={{ width: _mob ? '100%' : 380, flexShrink:0 }}>
-                        <div style={{ position: _mob ? 'relative' : 'sticky', top:0 }}>
+                      <div style={{ width: (_mob || _tab) ? '100%' : 380, flexShrink:0 }}>
+                        <div style={{ position: (_mob || _tab) ? 'relative' : 'sticky', top:0 }}>
                           <AddressSearch onSelect={({ lat, lng, display }) => {
                             set('sender_lat', lat);
                             set('sender_lng', lng);
@@ -1447,7 +1546,7 @@ export default function Orders() {
                           <div style={{ marginTop:12 }}>
                             <LocationPickerMap
                               lat={form.sender_lat} lng={form.sender_lng}
-                              height={_mob ? 180 : 400}
+                              height={_mob ? 160 : _tab ? 200 : 400}
                               onPick={async (lat, lng) => {
                                 set('sender_lat', lat);
                                 set('sender_lng', lng);
@@ -1467,17 +1566,16 @@ export default function Orders() {
 
                 {/* Step 2: Recipient & Delivery */}
                 {step === 2 && (() => {
-                  const _mob = window.innerWidth <= 768;
                   const selectedClient = form.client_id ? clients.find(cl => String(cl.id) === String(form.client_id)) : null;
                   const hasClientLocation = selectedClient && (selectedClient.address_line1 || selectedClient.area || selectedClient.latitude);
                   return (
                     <div style={{ display:'flex',
-                      flexDirection: _mob ? 'column' : (isRTL ? 'row-reverse' : 'row'),
-                      gap: _mob ? 16 : 24 }}>
+                      flexDirection: (_mob || _tab) ? 'column' : (isRTL ? 'row-reverse' : 'row'),
+                      gap: _mob ? 12 : 24 }}>
                       <div style={{ flex:1, minWidth:0 }}>
                         <div style={{ display:'grid',
                           gridTemplateColumns: _mob ? '1fr' : '1fr 1fr',
-                          gap: _mob ? 12 : 16 }}>
+                          gap: _mob ? 10 : 16 }}>
                       {/* Client location auto-fill notice */}
                       {hasClientLocation && (
                         <div style={{ gridColumn:'1/-1', padding:'10px 14px', background:'#eff6ff', borderRadius:10, border:'1px solid #dbeafe', fontSize:12, display:'flex', alignItems:'center', gap:8 }}>                          <MapPin width={15} height={15} color="#3b82f6" />
@@ -1543,8 +1641,8 @@ export default function Orders() {
                         </div>{/* close grid */}
                       </div>{/* close form column */}
                       {/* ─ Map Side Column ─ */}
-                      <div style={{ width: _mob ? '100%' : 380, flexShrink:0 }}>
-                        <div style={{ position: _mob ? 'relative' : 'sticky', top:0 }}>
+                      <div style={{ width: (_mob || _tab) ? '100%' : 380, flexShrink:0 }}>
+                        <div style={{ position: (_mob || _tab) ? 'relative' : 'sticky', top:0 }}>
                           <AddressSearch onSelect={({ lat, lng, display }) => {
                             set('recipient_lat', lat);
                             set('recipient_lng', lng);
@@ -1553,7 +1651,7 @@ export default function Orders() {
                           <div style={{ marginTop:12 }}>
                             <LocationPickerMap
                               lat={form.recipient_lat} lng={form.recipient_lng}
-                              height={_mob ? 180 : 400}
+                              height={_mob ? 160 : _tab ? 200 : 400}
                               onPick={async (lat, lng) => {
                                 set('recipient_lat', lat);
                                 set('recipient_lng', lng);
@@ -1575,8 +1673,8 @@ export default function Orders() {
                 {/* Step 3: Package & Payment */}
                 {step === 3 && (
                   <div style={{ display:'grid', 
-                    gridTemplateColumns: window.innerWidth <= 768 ? '1fr' : '1fr 1fr', 
-                    gap: window.innerWidth <= 768 ? 12 : 16 }}>
+                    gridTemplateColumns: _mob ? '1fr' : '1fr 1fr', 
+                    gap: _mob ? 10 : 16 }}>
                     <div>
                       <label style={LABEL}>{t('orders.form.category')}</label>
                       <select value={form.category} onChange={e=>set('category',e.target.value)} style={INPUT}>
@@ -1638,44 +1736,44 @@ export default function Orders() {
               </div>
 
               {/* Footer nav — sticky */}
-              <div style={{ padding: window.innerWidth <= 768 ? '12px 20px 16px' : '16px 28px 20px', 
+              <div style={{ padding: _mob ? '10px 14px 14px' : '16px 28px 20px', 
                 display:'flex', justifyContent:'space-between', alignItems:'center',
                 borderTop:'1px solid #f1f5f9', background:'#fff', flexShrink:0,
-                gap: window.innerWidth <= 768 ? '8px' : '0' }}>
+                gap: _mob ? '8px' : '0' }}>
                 <button type="button"
                   onClick={step > 1 ? (e) => prevStep(e) : closeForm}
-                  style={{ padding: window.innerWidth <= 768 ? '8px 16px' : '10px 22px', 
+                  style={{ padding: _mob ? '8px 14px' : '10px 22px', 
                     borderRadius:10, border:'1px solid #e2e8f0',
                     background:'#fff', cursor:'pointer', fontWeight:600, 
-                    fontSize: window.innerWidth <= 768 ? 13 : 14,
-                    display:'flex', alignItems:'center', gap: window.innerWidth <= 768 ? 6 : 7, 
-                    color:'#475569', flex: window.innerWidth <= 768 ? '1' : 'none' }}>
+                    fontSize: _mob ? 13 : 14,
+                    display:'flex', alignItems:'center', gap: _mob ? 6 : 7, 
+                    color:'#475569', flex: _mob ? '1' : 'none' }}>
                   {isRTL ? <NavArrowRight width={15} height={15} /> : <NavArrowLeft width={15} height={15} />}
                   {step > 1 ? t('orders.form.back') : t('orders.form.cancel')}
                 </button>
 
                 {step < STEPS.length ? (
                   <button type="button" onClick={(e) => nextStep(e)}
-                    style={{ padding: window.innerWidth <= 768 ? '8px 20px' : '10px 28px', 
+                    style={{ padding: _mob ? '8px 18px' : '10px 28px', 
                       borderRadius:10, border:'none',
                       background:'linear-gradient(135deg,#f97316,#ea580c)', color:'#fff',
-                      cursor:'pointer', fontWeight:700, fontSize: window.innerWidth <= 768 ? 13 : 14, 
-                      display:'flex', alignItems:'center', gap: window.innerWidth <= 768 ? 6 : 7,
+                      cursor:'pointer', fontWeight:700, fontSize: _mob ? 13 : 14, 
+                      display:'flex', alignItems:'center', gap: _mob ? 6 : 7,
                       boxShadow:'0 4px 14px rgba(249,115,22,0.35)',
-                      flex: window.innerWidth <= 768 ? '2' : 'none' }}>
+                      flex: _mob ? '2' : 'none' }}>
                     {t('orders.form.next')} {isRTL ? <NavArrowLeft width={15} height={15} /> : <NavArrowRight width={15} height={15} />}
                   </button>
                 ) : (
                   <button type="submit" disabled={saving}
-                    style={{ padding: window.innerWidth <= 768 ? '8px 20px' : '10px 28px', 
+                    style={{ padding: _mob ? '8px 18px' : '10px 28px', 
                       borderRadius:10, border:'none',
                       background:'linear-gradient(135deg,#16a34a,#15803d)', color:'#fff',
                       cursor:saving?'not-allowed':'pointer', fontWeight:700, 
-                      fontSize: window.innerWidth <= 768 ? 13 : 14,
+                      fontSize: _mob ? 13 : 14,
                       opacity:saving?0.7:1, display:'flex', alignItems:'center', 
-                      gap: window.innerWidth <= 768 ? 6 : 7,
+                      gap: _mob ? 6 : 7,
                       boxShadow:'0 4px 14px rgba(22,163,74,0.35)',
-                      flex: window.innerWidth <= 768 ? '2' : 'none' }}>
+                      flex: _mob ? '2' : 'none' }}>
                     <CheckCircle width={15} height={15} />
                     {saving ? t('orders.form.saving') : selected ? t('orders.form.update_order') : t('orders.form.create_order')}
                   </button>

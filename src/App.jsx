@@ -55,6 +55,24 @@ import SuperAdminBranding from './pages/SuperAdmin/SuperAdminBranding';
 import SuperAdminBulkOps from './pages/SuperAdmin/SuperAdminBulkOps';
 import SuperAdminBarcodes from './pages/SuperAdmin/SuperAdminBarcodes';
 
+// Merchant Portal Pages
+import ClientLogin from './pages/ClientPortal/ClientLogin';
+import ClientRegister from './pages/ClientPortal/ClientRegister';
+import ClientVerifyEmail from './pages/ClientPortal/ClientVerifyEmail';
+import ClientResetPassword from './pages/ClientPortal/ClientResetPassword';
+import ClientLayout from './pages/ClientPortal/ClientLayout';
+import ClientDashboard from './pages/ClientPortal/ClientDashboard';
+import ClientOrders from './pages/ClientPortal/ClientOrders';
+import ClientOrderDetail from './pages/ClientPortal/ClientOrderDetail';
+import ClientCreateOrder from './pages/ClientPortal/ClientCreateOrder';
+import ClientBulkImport from './pages/ClientPortal/ClientBulkImport';
+import ClientBarcodes from './pages/ClientPortal/ClientBarcodes';
+import ClientTracking from './pages/ClientPortal/ClientTracking';
+import ClientInvoices from './pages/ClientPortal/ClientInvoices';
+import ClientWallet from './pages/ClientPortal/ClientWallet';
+import ClientAddresses from './pages/ClientPortal/ClientAddresses';
+import ClientSettings from './pages/ClientPortal/ClientSettings';
+
 // Components
 import Layout from './components/Layout';
 
@@ -79,6 +97,7 @@ function App() {
       const token = localStorage.getItem('crm_token');
       if (token) {
         const API_URL = import.meta.env.VITE_API_URL || '/api';
+        // Try admin session first, then client session
         const res = await Promise.race([
           fetch(`${API_URL}/auth/session`, {
             headers: { 'Authorization': `Bearer ${token}` },
@@ -86,7 +105,20 @@ function App() {
           }),
           timeout
         ]);
-        const data = await res.json();
+        let data = await res.json();
+
+        // If admin session failed, try client session
+        if (!data.success || !data.data) {
+          const clientRes = await Promise.race([
+            fetch(`${API_URL}/client-portal/auth/session`, {
+              headers: { 'Authorization': `Bearer ${token}` },
+              credentials: 'include'
+            }),
+            timeout
+          ]);
+          data = await clientRes.json();
+        }
+
         if (data.success && data.data) {
           setUser(data.data);
           setTenant(data.data.tenant);
@@ -182,7 +214,8 @@ function App() {
   }
 
   const isDriver = user?.role === 'driver';
-  const homeRoute = isDriver ? '/driver/dashboard' : '/dashboard';
+  const isClient = user?.role === 'client';
+  const homeRoute = isClient ? '/merchant/dashboard' : isDriver ? '/driver/dashboard' : '/dashboard';
 
   /** Any authenticated user */
   const PrivateRoute = ({ children }) => user ? <Layout>{children}</Layout> : <Navigate to="/login" />;
@@ -191,6 +224,7 @@ function App() {
   const StaffRoute = ({ children }) => {
     if (!user) return <Navigate to="/login" />;
     if (isDriver) return <Navigate to="/driver/dashboard" />;
+    if (isClient) return <Navigate to="/merchant/dashboard" />;
     return <Layout>{children}</Layout>;
   };
 
@@ -199,6 +233,13 @@ function App() {
     if (!user) return <Navigate to="/login" />;
     if (user.role !== 'admin' && user.role !== 'super_admin') return <Navigate to={homeRoute} />;
     return <Layout>{children}</Layout>;
+  };
+
+  /** Merchant (client) only */
+  const MerchantRoute = ({ children }) => {
+    if (!user) return <Navigate to="/merchant/login" />;
+    if (!isClient) return <Navigate to={homeRoute} />;
+    return <ClientLayout>{children}</ClientLayout>;
   };
 
   return (
@@ -241,6 +282,25 @@ function App() {
         <Route path="/notifications"  element={<AdminRoute><Notifications /></AdminRoute>} />
         <Route path="/settings"       element={<AdminRoute><Settings /></AdminRoute>} />
         <Route path="/api-keys"       element={<AdminRoute><Integrations /></AdminRoute>} />
+
+        {/* Merchant Portal — Public Routes */}
+        <Route path="/merchant/login" element={user && isClient ? <Navigate to="/merchant/dashboard" /> : <ClientLogin />} />
+        <Route path="/merchant/register" element={user && isClient ? <Navigate to="/merchant/dashboard" /> : <ClientRegister />} />
+        <Route path="/merchant/verify-email" element={<ClientVerifyEmail />} />
+        <Route path="/merchant/reset-password" element={<ClientResetPassword />} />
+
+        {/* Merchant Portal — Authenticated Routes */}
+        <Route path="/merchant/dashboard"    element={<MerchantRoute><ClientDashboard /></MerchantRoute>} />
+        <Route path="/merchant/orders"       element={<MerchantRoute><ClientOrders /></MerchantRoute>} />
+        <Route path="/merchant/orders/:id"   element={<MerchantRoute><ClientOrderDetail /></MerchantRoute>} />
+        <Route path="/merchant/create-order" element={<MerchantRoute><ClientCreateOrder /></MerchantRoute>} />
+        <Route path="/merchant/bulk-import"  element={<MerchantRoute><ClientBulkImport /></MerchantRoute>} />
+        <Route path="/merchant/barcodes"     element={<MerchantRoute><ClientBarcodes /></MerchantRoute>} />
+        <Route path="/merchant/tracking"     element={<MerchantRoute><ClientTracking /></MerchantRoute>} />
+        <Route path="/merchant/invoices"     element={<MerchantRoute><ClientInvoices /></MerchantRoute>} />
+        <Route path="/merchant/wallet"       element={<MerchantRoute><ClientWallet /></MerchantRoute>} />
+        <Route path="/merchant/addresses"    element={<MerchantRoute><ClientAddresses /></MerchantRoute>} />
+        <Route path="/merchant/settings"     element={<MerchantRoute><ClientSettings /></MerchantRoute>} />
 
         {/* Super Admin Routes */}
         <Route path="/super-admin/login" element={<SuperAdminLogin />} />

@@ -167,6 +167,7 @@ export default function Barcode() {
   const [scanQuery,   setScanQuery]   = useState('');
   const [scanResult,  setScanResult]  = useState(null);
   const [highlightId, setHighlightId] = useState(null);
+  const [printMode,   setPrintMode]   = useState('barcode'); // MODULE B: 'barcode' | 'label'
   const cardRefs = useRef({});
 
   // ── Pre-Print tab state ──
@@ -240,6 +241,63 @@ export default function Barcode() {
     if (!toPrint.length) return;
     setPrinting(true);
     setTimeout(() => { window.print(); setPrinting(false); }, 100);
+  };
+
+  /* ── MODULE B: Full shipping label PDF generation ─────────── */
+  const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+  const getAuthToken = () => localStorage.getItem('crm_token');
+
+  const printShippingLabels = () => {
+    const toPrint = selected.size > 0 ? filtered.filter(o => selected.has(o.id)) : filtered;
+    if (!toPrint.length) return;
+    setPrinting(true);
+    const token = getAuthToken();
+
+    if (toPrint.length === 1) {
+      // Single label
+      fetch(`${API_BASE_URL}/orders/${toPrint[0].id}/label`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then(r => {
+          if (r.status === 401) { localStorage.removeItem('crm_token'); window.location.href = '/login'; throw new Error('Session expired'); }
+          if (!r.ok) throw new Error('Label generation failed');
+          return r.blob();
+        })
+        .then(blob => {
+          const pdfUrl = URL.createObjectURL(blob);
+          window.open(pdfUrl, '_blank');
+          setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000);
+        })
+        .catch(e => { console.error(e); alert(e.message || 'Failed to generate shipping label'); })
+        .finally(() => setPrinting(false));
+    } else {
+      // Batch labels
+      fetch(`${API_BASE_URL}/orders/labels`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order_ids: toPrint.map(o => o.id) }),
+      })
+        .then(r => {
+          if (r.status === 401) { localStorage.removeItem('crm_token'); window.location.href = '/login'; throw new Error('Session expired'); }
+          if (!r.ok) throw new Error('Batch label generation failed');
+          return r.blob();
+        })
+        .then(blob => {
+          const pdfUrl = URL.createObjectURL(blob);
+          window.open(pdfUrl, '_blank');
+          setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000);
+        })
+        .catch(e => { console.error(e); alert(e.message || 'Failed to generate shipping labels'); })
+        .finally(() => setPrinting(false));
+    }
+  };
+
+  const handlePrint = () => {
+    if (printMode === 'label') {
+      printShippingLabels();
+    } else {
+      printSelected();
+    }
   };
 
   const filtered = orders.filter(o => {
@@ -321,6 +379,35 @@ export default function Barcode() {
           <div className="module-hero-actions">
             {activeTab === 'orders' ? (
               <>
+                {/* MODULE B: Print mode toggle */}
+                <div style={{
+                  display: 'flex', borderRadius: 8, overflow: 'hidden',
+                  border: '1px solid #e2e8f0', fontSize: 12, fontWeight: 600,
+                }}>
+                  <button
+                    onClick={() => setPrintMode('barcode')}
+                    style={{
+                      padding: '7px 14px', border: 'none', cursor: 'pointer',
+                      background: printMode === 'barcode' ? '#f97316' : '#fff',
+                      color: printMode === 'barcode' ? '#fff' : '#64748b',
+                    }}
+                  >
+                    <ScanBarcode width={13} height={13} style={{ marginRight: 4, verticalAlign: -2 }} />
+                    Barcode Only
+                  </button>
+                  <button
+                    onClick={() => setPrintMode('label')}
+                    style={{
+                      padding: '7px 14px', border: 'none', cursor: 'pointer',
+                      borderLeft: '1px solid #e2e8f0',
+                      background: printMode === 'label' ? '#ea580c' : '#fff',
+                      color: printMode === 'label' ? '#fff' : '#64748b',
+                    }}
+                  >
+                    <Printer width={13} height={13} style={{ marginRight: 4, verticalAlign: -2 }} />
+                    Shipping Label
+                  </button>
+                </div>
                 <button className="module-btn module-btn-outline" onClick={toggleAll}>
                   {allSelected
                     ? <><CheckSquareSolid width={15} height={15} /> {t('barcode.deselect_all')}</>
@@ -328,14 +415,16 @@ export default function Barcode() {
                 </button>
                 <button
                   className="module-btn module-btn-primary"
-                  onClick={printSelected}
+                  onClick={handlePrint}
                   disabled={printing || (!loading && filtered.length === 0)}
-                  style={{ background: '#f97316', borderColor: '#f97316' }}
+                  style={{ background: printMode === 'label' ? '#ea580c' : '#f97316', borderColor: printMode === 'label' ? '#ea580c' : '#f97316' }}
                 >
                   <Printer width={15} height={15} />
-                  {selected.size > 0
-                    ? t('barcode.print_selected', { count: selected.size })
-                    : t('barcode.print_all', { count: filtered.length })}
+                  {printMode === 'label'
+                    ? (selected.size > 0 ? `Print Labels (${selected.size})` : `Print All Labels (${filtered.length})`)
+                    : (selected.size > 0
+                        ? t('barcode.print_selected', { count: selected.size })
+                        : t('barcode.print_all', { count: filtered.length }))}
                 </button>
               </>
             ) : (

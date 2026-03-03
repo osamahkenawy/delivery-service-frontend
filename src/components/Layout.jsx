@@ -212,7 +212,7 @@ export default function Layout({ children }) {
             <img
               src={(() => { const u = user?.tenant_logo_white || tenant?.logo_url_white; return u ? '/api/file?path=' + encodeURIComponent(u.replace(/^\/uploads\//, '')) : '/assets/images/logos/trasealla_white_without_bg.png'; })()}
               alt={user?.tenant_name || tenant?.name || 'Trasealla Solutions'}
-              style={{ height: '100px' }}
+              style={{ height: '73px' }}
               onError={e => {
                 if (e.target.src !== window.location.origin + '/assets/images/logos/trasealla_white_without_bg.png') {
                   e.target.src = '/assets/images/logos/trasealla_white_without_bg.png';

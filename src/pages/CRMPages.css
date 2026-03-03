@@ -1933,3 +1933,63 @@ textarea.form-control {
   .bc-select-box { display: none; }
 }
 @media (max-width: 768px) { .bc-grid { grid-template-columns: 1fr; } }
+
+/* ══════════════════════════════════════════════════════════
+ * WhatsApp Share Buttons
+ * ══════════════════════════════════════════════════════════ */
+.wa-share-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #25D366, #128C7E);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 3px 12px rgba(37, 211, 102, 0.3);
+  white-space: nowrap;
+}
+.wa-share-btn:hover {
+  background: linear-gradient(135deg, #20BD5A, #0f7a6e);
+  box-shadow: 0 5px 20px rgba(37, 211, 102, 0.45);
+  transform: translateY(-1px);
+}
+.wa-share-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(37, 211, 102, 0.25);
+}
+.wa-share-btn-full {
+  width: 100%;
+  justify-content: center;
+  padding: 10px 16px;
+  font-size: 14px;
+}
+
+/* WhatsApp share inside order detail row (recipient/driver sections) */
+.wa-share-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border: none;
+  border-radius: 7px;
+  background: #25D366;
+  color: #fff;
+  font-weight: 600;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: 8px;
+}
+[dir="rtl"] .wa-share-inline {
+  margin-left: 0;
+  margin-right: 8px;
+}
+.wa-share-inline:hover {
+  background: #20BD5A;
+  transform: scale(1.04);
+}

@@ -1225,17 +1225,6 @@
     "type_withdrawal": "Withdrawal",
     "type_hold": "Hold",
     "type_release": "Release",
-    "type_prepaid_settled": "Prepaid Settled",
-    "topup_desc": "Add funds to your wallet balance",
-    "topup_success": "Funds added successfully",
-    "topup_failed": "Top-up failed. Please try again.",
-    "settle_success": "COD settled to balance successfully",
-    "settle_failed": "Settlement failed. Please try again.",
-    "collect_success": "COD marked as collected",
-    "collect_failed": "Failed to collect COD. Please try again.",
-    "type_withdrawal": "Withdrawal",
-    "type_hold": "Hold",
-    "type_release": "Release",
     "type_prepaid_settled": "Prepaid Settled"
   },
   "returns": {

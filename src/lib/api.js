@@ -21,9 +21,11 @@ export async function apiFetch(endpoint, options = {}) {
   
   // Handle 401 unauthorized - redirect to login
   if (response.status === 401) {
+    const userData = localStorage.getItem('crm_user');
+    const isClient = userData && JSON.parse(userData).role === 'client';
     localStorage.removeItem('crm_token');
     localStorage.removeItem('crm_user');
-    window.location.href = '/login';
+    window.location.href = isClient ? '/merchant/login' : '/login';
     return { success: false, message: 'Session expired' };
   }
 
