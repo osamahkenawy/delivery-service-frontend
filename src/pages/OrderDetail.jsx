@@ -4,7 +4,7 @@ import {
   ArrowLeft, Package, DeliveryTruck, User, Phone, MapPin,
   Clock, Check, Xmark, Refresh, EditPencil, Hashtag,
   DollarCircle, Weight, Calendar, CreditCard, Box3dPoint,
-  ArrowRight, Copy, WarningTriangle, Notes, Prohibition
+  ArrowRight, Copy, WarningTriangle, Notes, Prohibition, Printer
 } from 'iconoir-react';
 import { AuthContext } from '../App';
 import api from '../lib/api';
@@ -179,6 +179,24 @@ export default function OrderDetail() {
     setTimeout(() => setCopied(false), 1500);
   };
 
+  /* ── MODULE B: Print Shipping Label ── */
+  const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+  const printSingleLabel = () => {
+    const token = localStorage.getItem('crm_token');
+    fetch(`${API_BASE_URL}/orders/${id}/label`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => {
+        if (r.status === 401) { localStorage.removeItem('crm_token'); window.location.href = '/login'; throw new Error('Session expired'); }
+        if (!r.ok) throw new Error('Label generation failed');
+        return r.blob();
+      })
+      .then(blob => {
+        const pdfUrl = URL.createObjectURL(blob);
+        window.open(pdfUrl, '_blank');
+        setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000);
+      })
+      .catch(e => console.error('Print label error:', e));
+  };
+
   /* ── Map markers ── */
   const mapMarkers = [];
   if (order?.sender_lat && order?.sender_lng) {
@@ -255,6 +273,11 @@ export default function OrderDetail() {
               style={{ color: '#2563eb', borderColor: '#bfdbfe' }}>
               <MapPin width={14} height={14} /> {t('orderDetail.all_tracking')}
             </button>
+            <button className="module-btn module-btn-outline" onClick={printSingleLabel}
+              style={{ color: '#f97316', borderColor: '#fed7aa' }}
+              title={t('orderDetail.print_shipping_label', 'Print Shipping Label')}>
+              <Printer width={14} height={14} /> {t('orderDetail.print_label', 'Print Label')}
+            </button>
             <button className="wa-share-btn" onClick={() => {
               const trackingUrl = window.location.origin;
               const msg = buildOrderMessage(order, t, trackingUrl);
@@ -325,6 +348,7 @@ export default function OrderDetail() {
             <div className="od-card">
               <h4 className="od-card-title"><Package width={15} height={15} /> {t('orderDetail.section.order_info')}</h4>
               <InfoRow icon={Hashtag}      label={t('orderDetail.order_num')}    value={order.order_number} mono />
+              {order.awb_number && <InfoRow icon={Hashtag} label={t('orderDetail.awb_number', 'AWB Number')} value={order.awb_number} mono />}
               <InfoRow icon={Box3dPoint}   label={t('orderDetail.type')}       value={fmtType(order.order_type)} />
               <InfoRow icon={CreditCard}   label={t('orderDetail.payment')}    value={t(`orderDetail.payment_labels.${order.payment_method}`, { defaultValue: order.payment_method })} />
               <InfoRow icon={DollarCircle} label={t('orderDetail.cod_amount')} value={fmtAED(order.cod_amount)} />

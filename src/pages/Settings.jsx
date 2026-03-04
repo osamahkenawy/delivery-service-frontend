@@ -5,7 +5,7 @@ import {
   Settings as SettingsIcon, User, Building, DeliveryTruck, Mail, Bell,
   Label as Tag, Plus, Trash, CheckCircle, WarningCircle, Globe, Phone,
   MapPin, Wallet, Clock, EditPencil, Xmark, Upload, Eye, EyeClosed,
-  NavArrowRight, SwitchOn as ToggleOn, ShieldCheck,
+  NavArrowRight, SwitchOn as ToggleOn, ShieldCheck, Printer,
 } from 'iconoir-react';
 import api from '../lib/api';
 import Toast, { useToast } from '../components/Toast';
@@ -555,6 +555,154 @@ function NotificationsTab({ data, setData, onSave, saving }) {
           <Bell width={14} height={14}/>
           {t('settings.notifications.sms_info')}
         </div>
+      </div>
+
+      <div className="stg-save-bar">
+        <button type="submit" className="stg-btn-primary" disabled={saving}>
+          {saving ? <><span className="stg-spin"/>{t('settings.saving')}</> : <><CheckCircle width={16} height={16}/>{t('settings.save_changes')}</>}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SHIPPING LABELS TAB (Module B)
+═══════════════════════════════════════════════════════════════ */
+function ShippingLabelsTab({ data, setData, onSave, saving }) {
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
+  const s = data.settings || {};
+  const lt = (s.label_template && typeof s.label_template === 'object') ? s.label_template : {};
+
+  const setLT = (k, v) => {
+    setData(d => ({
+      ...d,
+      settings: {
+        ...d.settings,
+        label_template: { ...(d.settings?.label_template || {}), [k]: v },
+      },
+    }));
+  };
+
+  const LABEL_SIZES = [
+    { value: 'A6',  label: 'A6 (4.13 × 5.83 in)' },
+    { value: 'A5',  label: 'A5 (5.83 × 8.27 in)' },
+    { value: '4x6', label: '4 × 6 in' },
+  ];
+
+  const LOGO_POSITIONS = [
+    { value: 'left',   label: t('settings.labels.pos_left', 'Left') },
+    { value: 'center', label: t('settings.labels.pos_center', 'Center') },
+    { value: 'right',  label: t('settings.labels.pos_right', 'Right') },
+  ];
+
+  const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+
+  const previewLabel = () => {
+    const token = localStorage.getItem('crm_token');
+    // Use a recent order or a dummy preview - try fetching from API
+    fetch(`${API_BASE_URL}/orders?limit=1`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(res => {
+        if (res.success && res.data?.length) {
+          const orderId = res.data[0].id;
+          fetch(`${API_BASE_URL}/orders/${orderId}/label`, { headers: { Authorization: `Bearer ${token}` } })
+            .then(r => r.blob())
+            .then(blob => {
+              const url = URL.createObjectURL(blob);
+              window.open(url, '_blank');
+              setTimeout(() => URL.revokeObjectURL(url), 60000);
+            });
+        }
+      })
+      .catch(e => console.error('Preview error:', e));
+  };
+
+  return (
+    <form onSubmit={onSave} className="stg-content">
+
+      {/* ── Label Size & Layout ── */}
+      <div className="stg-section">
+        <div className="stg-section-head">
+          <div className="stg-section-icon orange"><Printer width={18} height={18}/></div>
+          <div>
+            <div className="stg-section-title">{t('settings.labels.layout_title', 'Label Layout')}</div>
+            <div className="stg-section-sub">{t('settings.labels.layout_sub', 'Configure the size and appearance of shipping labels')}</div>
+          </div>
+        </div>
+        <div className="stg-grid">
+          <div className="stg-field">
+            <label>{t('settings.labels.label_size', 'Label Size')}</label>
+            <select value={lt.label_size || 'A6'} onChange={e => setLT('label_size', e.target.value)}>
+              {LABEL_SIZES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+            </select>
+          </div>
+          <div className="stg-field">
+            <label>{t('settings.labels.logo_position', 'Logo Position')}</label>
+            <select value={lt.logo_position || 'left'} onChange={e => setLT('logo_position', e.target.value)}>
+              {LOGO_POSITIONS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+            </select>
+          </div>
+          <div className="stg-field">
+            <label>{t('settings.labels.accent_color', 'Accent Color')}</label>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <input type="color" value={lt.accent_color || '#f97316'} onChange={e => setLT('accent_color', e.target.value)}
+                style={{ width: 40, height: 32, border: '1px solid #e2e8f0', borderRadius: 6, padding: 2, cursor: 'pointer' }} />
+              <input type="text" value={lt.accent_color || '#f97316'} onChange={e => setLT('accent_color', e.target.value)}
+                style={{ width: 90, fontFamily: 'monospace', fontSize: 13 }} placeholder="#f97316" />
+            </div>
+          </div>
+          <div className="stg-field">
+            <label>{t('settings.labels.cod_badge_color', 'COD Badge Color')}</label>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <input type="color" value={lt.cod_badge_color || '#dc2626'} onChange={e => setLT('cod_badge_color', e.target.value)}
+                style={{ width: 40, height: 32, border: '1px solid #e2e8f0', borderRadius: 6, padding: 2, cursor: 'pointer' }} />
+              <input type="text" value={lt.cod_badge_color || '#dc2626'} onChange={e => setLT('cod_badge_color', e.target.value)}
+                style={{ width: 90, fontFamily: 'monospace', fontSize: 13 }} placeholder="#dc2626" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Visibility Toggles ── */}
+      <div className="stg-section">
+        <div className="stg-section-head">
+          <div className="stg-section-icon blue"><Eye width={18} height={18}/></div>
+          <div>
+            <div className="stg-section-title">{t('settings.labels.visibility_title', 'Label Content')}</div>
+            <div className="stg-section-sub">{t('settings.labels.visibility_sub', 'Choose which elements appear on the shipping label')}</div>
+          </div>
+        </div>
+        <div className="stg-toggles">
+          {[
+            { key: 'show_logo',         label: t('settings.labels.show_logo', 'Company Logo'),        desc: t('settings.labels.show_logo_desc', 'Display your company logo on the label header') },
+            { key: 'show_barcode',       label: t('settings.labels.show_barcode', 'Barcode'),           desc: t('settings.labels.show_barcode_desc', 'CODE128 barcode for scanner compatibility') },
+            { key: 'show_qr',           label: t('settings.labels.show_qr', 'QR Code'),              desc: t('settings.labels.show_qr_desc', 'QR code linking to order tracking page') },
+            { key: 'show_sender',       label: t('settings.labels.show_sender', 'Sender Info'),       desc: t('settings.labels.show_sender_desc', 'Show sender name, phone, and address') },
+            { key: 'show_recipient',    label: t('settings.labels.show_recipient', 'Recipient Info'),  desc: t('settings.labels.show_recipient_desc', 'Show recipient name, phone, and address') },
+            { key: 'show_order_info',   label: t('settings.labels.show_order_info', 'Order Details'),  desc: t('settings.labels.show_order_info_desc', 'Display weight, dimensions, and piece count') },
+            { key: 'show_cod_badge',    label: t('settings.labels.show_cod_badge', 'COD Badge'),       desc: t('settings.labels.show_cod_badge_desc', 'Show cash-on-delivery amount badge') },
+            { key: 'show_instructions', label: t('settings.labels.show_instructions', 'Special Instructions'), desc: t('settings.labels.show_instructions_desc', 'Show special handling instructions box') },
+            { key: 'show_awb',          label: t('settings.labels.show_awb', 'AWB Number'),           desc: t('settings.labels.show_awb_desc', 'Display Air Waybill number in footer') },
+          ].map(({ key, label, desc }) => (
+            <div key={key} className="stg-toggle-row">
+              <div>
+                <div className="stg-toggle-label">{label}</div>
+                <div className="stg-toggle-desc">{desc}</div>
+              </div>
+              <Toggle on={lt[key] !== false} onChange={v => setLT(key, v)} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Preview ── */}
+      <div className="stg-section" style={{ textAlign: 'center', padding: '20px 0' }}>
+        <button type="button" className="module-btn module-btn-outline" onClick={previewLabel}
+          style={{ color: '#f97316', borderColor: '#fed7aa', gap: 6 }}>
+          <Eye width={16} height={16} /> {t('settings.labels.preview', 'Preview Label')}
+        </button>
       </div>
 
       <div className="stg-save-bar">
@@ -1315,6 +1463,7 @@ function UsersTab({ toast }) {
 const TABS = [
   { id:'general',       icon: Building,      color:'#f97316' },
   { id:'delivery',      icon: DeliveryTruck, color:'#3b82f6' },
+  { id:'labels',        icon: Printer,       color:'#ea580c' },
   { id:'notifications', icon: Bell,          color:'#8b5cf6' },
   { id:'categories',    icon: Tag,           color:'#0d9488' },
   { id:'roles',         icon: ShieldCheck,   color:'#7c3aed' },
@@ -1410,6 +1559,7 @@ export default function Settings() {
 
             {tab==='general'       && <GeneralTab       data={data} setData={setData} onSave={handleSave} saving={saving}/>}
             {tab==='delivery'      && <DeliveryTab      data={data} setData={setData} onSave={handleSave} saving={saving}/>}
+            {tab==='labels'        && <ShippingLabelsTab data={data} setData={setData} onSave={handleSave} saving={saving}/>}
             {tab==='notifications' && <NotificationsTab data={data} setData={setData} onSave={handleSave} saving={saving}/>}
             {tab==='categories'    && <CategoriesTab    toast={toast}/>}
             {tab==='roles'         && <RolesTab         toast={toast}/>}

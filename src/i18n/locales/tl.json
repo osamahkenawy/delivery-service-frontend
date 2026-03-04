@@ -1794,6 +1794,9 @@
     "copied": "Copied!",
     "track": "Track",
     "dispatch": "Dispatch",
+    "print_label": "Print Label",
+    "print_shipping_label": "Print Shipping Label",
+    "awb_number": "AWB Number",
     "tab_details": "Details",
     "tab_timeline": "Timeline",
     "tab_items": "Items",
@@ -2512,6 +2515,7 @@
     "tabs": {
       "general": "General",
       "delivery": "Delivery",
+      "labels": "Shipping Labels",
       "notifications": "Notifications",
       "categories": "Categories",
       "roles": "Mga Tungkulin",
@@ -2520,6 +2524,7 @@
     "tab_descriptions": {
       "general": "Company info, branding and regional preferences",
       "delivery": "Delivery defaults, COD rules and feature toggles",
+      "labels": "Shipping label layout, content and AWB settings",
       "notifications": "Email SMTP and SMS gateway configuration",
       "categories": "Manage order categories and shipment types",
       "roles": "Tukuyin ang mga tungkulin at i-configure ang mga pahintulot ng module",

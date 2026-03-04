@@ -4,6 +4,7 @@ import {
   Package, DeliveryTruck, Check, Xmark, Clock, MapPin, User, Phone,
   NavArrowRight, CheckCircle, WarningTriangle, DollarCircle, Wallet,
   Prohibition, Refresh, Eye, Copy, ArrowRight, Calendar, Timer,
+  HandBrake,
 } from 'iconoir-react';
 import api from '../lib/api';
 import Toast, { useToast } from '../components/Toast';
@@ -84,6 +85,9 @@ export default function DriverDashboard() {
   const [gpsError, setGpsError]   = useState(null);
   const [gpsCoords, setGpsCoords] = useState(null);   // for debug display
   const [proofUploading, setProofUploading] = useState(null); // order.id being uploaded
+  const [myPickups, setMyPickups] = useState([]);
+  const [pickupsLoading, setPickupsLoading] = useState(false);
+  const [pickupUpdating, setPickupUpdating] = useState(null);
   const refreshRef              = useRef(null);
   const gpsRef                  = useRef(null);
   const watchRef                = useRef(null);
@@ -302,6 +306,61 @@ export default function DriverDashboard() {
     showToast(t('driverDashboard.tracking_link_copied'));
   };
 
+  /* ── Pickup actions for driver ── */
+  const fetchMyPickups = useCallback(async () => {
+    setPickupsLoading(true);
+    try {
+      const res = await api.get('/pickup/driver/my-pickups');
+      if (res.success) setMyPickups(res.data || []);
+    } catch (e) { console.error('fetchMyPickups error:', e); }
+    finally { setPickupsLoading(false); }
+  }, []);
+
+  useEffect(() => {
+    if (tab === 'pickups') fetchMyPickups();
+  }, [tab]);
+
+  const handlePickupArrived = async (orderId) => {
+    setPickupUpdating(orderId);
+    const gps = await getGPS();
+    try {
+      const res = await api.post(`/pickup/${orderId}/arrived`, { lat: gps?.lat, lng: gps?.lng });
+      if (res.success) {
+        showToast(t('driverDashboard.pickup_arrived_toast'));
+        fetchMyPickups();
+      } else showToast(res.message || t('driverDashboard.failed_to_update'), 'error');
+    } catch { showToast(t('driverDashboard.network_error'), 'error'); }
+    finally { setPickupUpdating(null); }
+  };
+
+  const handlePickupConfirm = async (orderId) => {
+    setPickupUpdating(orderId);
+    const gps = await getGPS();
+    try {
+      const res = await api.post(`/pickup/${orderId}/confirm`, { lat: gps?.lat, lng: gps?.lng });
+      if (res.success) {
+        showToast(t('driverDashboard.pickup_confirmed_toast'));
+        fetchMyPickups();
+        fetchOrders(); // refresh delivery orders too since status changed
+      } else showToast(res.message || t('driverDashboard.failed_to_update'), 'error');
+    } catch { showToast(t('driverDashboard.network_error'), 'error'); }
+    finally { setPickupUpdating(null); }
+  };
+
+  const handlePickupFailed = async (orderId) => {
+    const reason = prompt(t('driverDashboard.pickup_fail_reason'));
+    setPickupUpdating(orderId);
+    const gps = await getGPS();
+    try {
+      const res = await api.post(`/pickup/${orderId}/fail`, { reason: reason || 'Pickup failed', lat: gps?.lat, lng: gps?.lng });
+      if (res.success) {
+        showToast(t('driverDashboard.pickup_failed_toast'), 'error');
+        fetchMyPickups();
+      } else showToast(res.message || t('driverDashboard.failed_to_update'), 'error');
+    } catch { showToast(t('driverDashboard.network_error'), 'error'); }
+    finally { setPickupUpdating(null); }
+  };
+
   const stats = data?.stats || {};
   const allTimeStats = data?.allTimeStats || {};
   const tabCounts = data?.tabCounts || {};
@@ -441,6 +500,7 @@ export default function DriverDashboard() {
       <div className="dp-tabs">
         {[
           { key: 'active',    label: t('driverDashboard.tab_active'),    count: tabCounts.active,    color: '#f97316' },
+          { key: 'pickups',   label: t('driverDashboard.tab_pickups'),   count: myPickups.length || null, color: '#7c3aed' },
           { key: 'completed', label: t('driverDashboard.tab_delivered'), count: tabCounts.delivered, color: '#16a34a' },
           { key: 'failed',    label: t('driverDashboard.tab_failed'),    count: tabCounts.failed,    color: '#dc2626' },
         ].map(tabItem => (
@@ -458,8 +518,198 @@ export default function DriverDashboard() {
         ))}
       </div>
 
-      {/* ═══ Orders List ═══ */}
-      {loading ? (
+      {/* ═══ Pickups Tab Content ═══ */}
+      {tab === 'pickups' ? (
+        pickupsLoading ? (
+          <div className="dp-loading">
+            <div className="dp-spinner" />
+            <p className="dp-loading-text">{t('driverDashboard.loading_pickups')}</p>
+          </div>
+        ) : myPickups.length === 0 ? (
+          <div className="dp-empty">
+            <div className="dp-empty-icon">
+              <HandBrake width={40} height={40} style={{ color: '#cbd5e1' }} />
+            </div>
+            <h3>{t('driverDashboard.no_pickups')}</h3>
+            <p>{t('driverDashboard.no_pickups_hint')}</p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {myPickups.map(p => {
+              const isPending = p.pickup_status === 'pending_pickup';
+              const isScheduled = p.pickup_status === 'pickup_scheduled';
+              const isDriverArrived = p.pickup_status === 'driver_arrived';
+              const isUpdating = pickupUpdating === p.id;
+              const scheduleTime = p.pickup_scheduled_at ? new Date(p.pickup_scheduled_at) : null;
+              const scheduleEnd = p.pickup_scheduled_end ? new Date(p.pickup_scheduled_end) : null;
+
+              return (
+                <div key={p.id} className="dp-order-card">
+                  {/* Header */}
+                  <div className="dp-order-header" style={{
+                    background: isDriverArrived
+                      ? 'linear-gradient(135deg, #16a34a, #15803d)'
+                      : isScheduled
+                        ? 'linear-gradient(135deg, #3b82f6, #2563eb)'
+                        : 'linear-gradient(135deg, #f59e0b, #d97706)',
+                  }}>
+                    <div>
+                      <div className="dp-order-number">{p.order_number}</div>
+                      <div className="dp-order-time">
+                        <HandBrake width={10} height={10} /> {t('driverDashboard.pickup_order')}
+                      </div>
+                    </div>
+                    <div className="dp-order-badges">
+                      <span className="dp-status-pill">
+                        {isDriverArrived ? t('driverDashboard.pickup_arrived') : isScheduled ? t('driverDashboard.pickup_scheduled') : t('driverDashboard.pickup_pending')}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Pickup Progress Steps */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 0, margin: '12px 16px 8px', padding: '0 4px' }}>
+                    {[
+                      { key: 'assigned', label: t('driverDashboard.step_assigned'), color: '#7c3aed' },
+                      { key: 'en_route', label: t('driverDashboard.pickup_en_route'), color: '#f59e0b' },
+                      { key: 'arrived', label: t('driverDashboard.pickup_arrived'), color: '#3b82f6' },
+                      { key: 'picked_up', label: t('driverDashboard.step_picked_up'), color: '#16a34a' },
+                    ].map((step, i, arr) => {
+                      const stepOrder = ['pending_pickup', 'pickup_scheduled', 'driver_arrived', 'picked_up'];
+                      const currentIdx = stepOrder.indexOf(p.pickup_status);
+                      const done = i <= currentIdx;
+                      const active = i === currentIdx;
+                      return (
+                        <div key={step.key} style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                            <div style={{
+                              width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              background: done ? step.color : '#e2e8f0', color: done ? '#fff' : '#94a3b8',
+                              fontSize: 10, fontWeight: 700, flexShrink: 0, transition: 'all 0.3s',
+                              boxShadow: active ? `0 0 0 4px ${step.color}25` : 'none',
+                            }}>
+                              {done ? <Check width={13} height={13} /> : i + 1}
+                            </div>
+                            <span style={{ fontSize: 9, fontWeight: 600, color: done ? step.color : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
+                              {step.label}
+                            </span>
+                          </div>
+                          {i < arr.length - 1 && (
+                            <div style={{ flex: 1, height: 3, background: i < currentIdx ? step.color : '#e2e8f0', borderRadius: 2, transition: 'all 0.3s', marginBottom: 16 }} />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Pickup From (Sender Info) */}
+                  <div className="dp-recipient">
+                    <div style={{
+                      fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase',
+                      letterSpacing: '0.05em', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4,
+                    }}>
+                      <HandBrake width={11} height={11} /> {t('driverDashboard.pickup_from')}
+                    </div>
+                    <div className="dp-recipient-row">
+                      <div className="dp-recipient-avatar" style={{ background: '#ede9fe' }}>
+                        <User width={18} height={18} color="#7c3aed" />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div className="dp-recipient-name">{p.sender_name || p.client_name || '—'}</div>
+                        {p.sender_phone && (
+                          <a href={`tel:${p.sender_phone}`} className="dp-recipient-phone">
+                            <Phone width={11} height={11} /> {p.sender_phone}
+                          </a>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Sender address */}
+                    {p.sender_address && (
+                      <div className="dp-address">
+                        <MapPin width={14} height={14} color="#94a3b8" style={{ marginTop: 2, flexShrink: 0 }} />
+                        <span>{p.sender_address}</span>
+                      </div>
+                    )}
+
+                    {/* Navigate to sender */}
+                    {p.sender_address && (
+                      <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(p.sender_address)}`}
+                        target="_blank" rel="noreferrer" className="dp-navigate no-coords">
+                        <MapPin width={14} height={14} /> {t('driverDashboard.navigate_to_pickup')}
+                      </a>
+                    )}
+                  </div>
+
+                  {/* Deliver To (brief) */}
+                  <div style={{ margin: '0 16px 12px', background: '#f8fafc', borderRadius: 10, padding: '10px 12px' }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 3 }}>
+                      {t('driverDashboard.deliver_to')}
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>
+                      {p.recipient_name} · {[p.recipient_area, p.recipient_emirate].filter(Boolean).join(', ') || p.recipient_address || '—'}
+                    </div>
+                  </div>
+
+                  {/* Schedule info */}
+                  {scheduleTime && (
+                    <div style={{ margin: '0 16px 12px', display: 'flex', alignItems: 'center', gap: 8, background: '#eff6ff', borderRadius: 10, padding: '10px 12px' }}>
+                      <Calendar width={14} height={14} color="#3b82f6" />
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#1d4ed8' }}>
+                        {scheduleTime.toLocaleDateString('en-AE', { day: '2-digit', month: 'short' })}
+                        {' '}
+                        {scheduleTime.toLocaleTimeString('en-AE', { hour: '2-digit', minute: '2-digit' })}
+                        {scheduleEnd && (<> — {scheduleEnd.toLocaleTimeString('en-AE', { hour: '2-digit', minute: '2-digit' })}</>)}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Pickup notes */}
+                  {p.pickup_notes && (
+                    <div className="dp-instructions" style={{ margin: '0 16px 12px' }}>
+                      <WarningTriangle width={14} height={14} style={{ flexShrink: 0, marginTop: 1 }} />
+                      <span><strong>{t('driverDashboard.note')}</strong> {p.pickup_notes}</span>
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="dp-actions">
+                    <div className="dp-action-row">
+                      {(isPending || isScheduled) && (
+                        <button onClick={() => handlePickupArrived(p.id)} disabled={isUpdating}
+                          className="dp-btn-advance"
+                          style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', boxShadow: '0 4px 16px rgba(59,130,246,0.35)' }}>
+                          {isUpdating ? (
+                            <><div className="dp-btn-spinner" /> {t('driverDashboard.processing')}</>
+                          ) : (
+                            <><MapPin width={16} height={16} /> {t('driverDashboard.arrived_at_pickup')}</>
+                          )}
+                        </button>
+                      )}
+                      {isDriverArrived && (
+                        <button onClick={() => handlePickupConfirm(p.id)} disabled={isUpdating}
+                          className="dp-btn-advance"
+                          style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)', boxShadow: '0 4px 16px rgba(34,197,94,0.35)' }}>
+                          {isUpdating ? (
+                            <><div className="dp-btn-spinner" /> {t('driverDashboard.processing')}</>
+                          ) : (
+                            <><CheckCircle width={16} height={16} /> {t('driverDashboard.confirm_pickup')}</>
+                          )}
+                        </button>
+                      )}
+                      <button onClick={() => handlePickupFailed(p.id)} disabled={isUpdating} className="dp-btn-fail">
+                        <Xmark width={14} height={14} /> {t('driverDashboard.pickup_fail')}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )
+      ) : (
+
+      /* ═══ Orders List ═══ */
+      loading ? (
         <div className="dp-loading">
           <div className="dp-spinner" />
           <p className="dp-loading-text">{t("driverDashboard.loading_orders")}</p>
@@ -697,7 +947,7 @@ export default function DriverDashboard() {
             );
           })}
         </div>
-      )}
+      ))}
 
       <Toast toasts={toasts} />
     </div>

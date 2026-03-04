@@ -5,6 +5,7 @@ import QRCode from 'qrcode';
 import {
   Printer, ScanBarcode, Package, Search, XmarkCircle,
   CheckSquareSolid, Square, Plus, Trash, Link as LinkIcon,
+  Xmark,
 } from 'iconoir-react';
 import api from '../lib/api';
 import './CRMPages.css';
@@ -130,12 +131,12 @@ function PreGenCard({ token, highlighted }) {
             background: isUsed ? '#dcfce7' : isExpired ? '#fee2e2' : '#fef3c7',
             color: isUsed ? '#16a34a' : isExpired ? '#dc2626' : '#d97706'
           }}>
-            {isUsed ? `✓ ${token.order_number || 'Linked'}` : isExpired ? 'Expired' : 'Available'}
+            {isUsed ? `✓ ${token.order_number || t('barcode.status_linked')}` : isExpired ? t('barcode.status_expired') : t('barcode.status_available')}
           </span>
         </div>
         <div className="bc-meta">
           {token.batch_name && <>{token.batch_name} · </>}
-          {token.days_remaining != null && !isUsed && !isExpired ? `${token.days_remaining}d remaining` : ''}
+          {token.days_remaining != null && !isUsed && !isExpired ? t('barcode.d_remaining', { count: token.days_remaining }) : ''}
         </div>
       </div>
       <div className="bc-body">
@@ -149,7 +150,7 @@ function PreGenCard({ token, highlighted }) {
       </div>
       <div className="bc-footer">
         <span className="bc-token">{token.tracking_token}</span>
-        <span className="bc-type" style={{ fontSize: 10, opacity: 0.7 }}>PRE-PRINT</span>
+        <span className="bc-type" style={{ fontSize: 10, opacity: 0.7 }}>{t('barcode.pre_print_badge')}</span>
       </div>
     </div>
   );
@@ -180,7 +181,18 @@ export default function Barcode() {
   const [generating,      setGenerating]      = useState(false);
   const [preStats,        setPreStats]        = useState({ total: 0, available: 0, used: 0, expired: 0 });
   const [preFilter,       setPreFilter]       = useState('available'); // 'all' | 'available' | 'used'
+  const [preViewMode,     setPreViewMode]     = useState('grid');  // 'grid' | 'table'
   const preCardRefs = useRef({});
+
+  // ── Link-to-Order modal state ──
+  const [showLinkModal,   setShowLinkModal]   = useState(false);
+  const [linkTokenId,     setLinkTokenId]     = useState(null);
+  const [linkTokenCode,   setLinkTokenCode]   = useState('');
+  const [linkSearch,      setLinkSearch]      = useState('');
+  const [linkOrders,      setLinkOrders]      = useState([]);
+  const [linkSearching,   setLinkSearching]   = useState(false);
+  const [linking,         setLinking]         = useState(false);
+  const linkSearchTimer   = useRef(null);
 
   useEffect(() => {
     api.get('/orders?limit=500').then(res => {
@@ -228,11 +240,70 @@ export default function Barcode() {
   };
 
   const handleDeleteToken = async (id) => {
-    if (!confirm('Delete this unused token?')) return;
+    if (!confirm(t('barcode.confirm_delete_token'))) return;
     const res = await api.delete(`/orders/pre-generated/${id}`);
     if (res.success) {
       setPreTokens(prev => prev.filter(t => t.id !== id));
       setPreStats(prev => ({ ...prev, available: Math.max(0, (prev.available || 0) - 1), total: Math.max(0, (prev.total || 0) - 1) }));
+    }
+  };
+
+  // ── Refresh pre-print data helper ──
+  const refreshPrePrint = async () => {
+    const usedParam = preFilter === 'available' ? '&used=false' : preFilter === 'used' ? '&used=true' : '';
+    const [tokensRes, statsRes] = await Promise.all([
+      api.get(`/orders/pre-generated?limit=500${usedParam}`),
+      api.get('/orders/pre-generated/stats'),
+    ]);
+    if (tokensRes.success) setPreTokens(tokensRes.data || []);
+    if (statsRes.success) setPreStats(statsRes.data || {});
+  };
+
+  // ── Link-to-order modal helpers ──
+  const openLinkModal = (tokenId, tokenCode) => {
+    setLinkTokenId(tokenId);
+    setLinkTokenCode(tokenCode);
+    setLinkSearch('');
+    setLinkOrders([]);
+    setShowLinkModal(true);
+    // Load recent orders immediately
+    api.get('/orders/linkable').then(res => {
+      if (res.success) setLinkOrders(res.data || []);
+    });
+  };
+
+  const searchLinkOrders = (q) => {
+    setLinkSearch(q);
+    clearTimeout(linkSearchTimer.current);
+    linkSearchTimer.current = setTimeout(async () => {
+      setLinkSearching(true);
+      const res = await api.get(`/orders/linkable?q=${encodeURIComponent(q)}`);
+      if (res.success) setLinkOrders(res.data || []);
+      setLinkSearching(false);
+    }, 300);
+  };
+
+  const handleLinkToOrder = async (orderId) => {
+    setLinking(true);
+    try {
+      const res = await api.post(`/orders/pre-generated/${linkTokenId}/link`, { order_id: orderId });
+      if (res.success) {
+        setShowLinkModal(false);
+        await refreshPrePrint();
+      } else {
+        alert(res.message || t('barcode.link_failed'));
+      }
+    } catch (err) { alert(t('barcode.link_failed')); }
+    setLinking(false);
+  };
+
+  const handleUnlink = async (tokenId) => {
+    if (!confirm(t('barcode.confirm_unlink'))) return;
+    const res = await api.post(`/orders/pre-generated/${tokenId}/unlink`);
+    if (res.success) {
+      await refreshPrePrint();
+    } else {
+      alert(res.message || t('barcode.unlink_failed'));
     }
   };
 
@@ -373,7 +444,7 @@ export default function Barcode() {
                 ? (selected.size > 0
                     ? t('barcode.subtitle', { total: filtered.length, selected: selected.size })
                     : t('barcode.subtitle_none', { total: filtered.length }))
-                : `Pre-printed barcodes: ${preStats.available || 0} available, ${preStats.used || 0} used`}
+                : t('barcode.preprint_subtitle', { available: preStats.available || 0, used: preStats.used || 0 })}
             </p>
           </div>
           <div className="module-hero-actions">
@@ -430,7 +501,7 @@ export default function Barcode() {
             ) : (
               <>
                 <button className="module-btn module-btn-outline" onClick={() => setShowGenModal(true)}>
-                  <Plus width={15} height={15} /> Generate Barcodes
+                  <Plus width={15} height={15} /> {t('barcode.generate_barcodes')}
                 </button>
                 <button
                   className="module-btn module-btn-primary"
@@ -439,7 +510,7 @@ export default function Barcode() {
                   style={{ background: '#f97316', borderColor: '#f97316' }}
                 >
                   <Printer width={15} height={15} />
-                  {preSelected.size > 0 ? `Print Selected (${preSelected.size})` : `Print All Available (${preTokens.filter(t => !t.is_used).length})`}
+                  {preSelected.size > 0 ? t('barcode.print_selected', { count: preSelected.size }) : t('barcode.print_all_available', { count: preTokens.filter(t => !t.is_used).length })}
                 </button>
               </>
             )}
@@ -459,7 +530,7 @@ export default function Barcode() {
             }}
           >
             <Package width={14} height={14} style={{ marginRight: 6, verticalAlign: -2 }} />
-            Order Barcodes
+            {t('barcode.tab_orders')}
           </button>
           <button
             onClick={() => setActiveTab('preprint')}
@@ -472,7 +543,7 @@ export default function Barcode() {
             }}
           >
             <ScanBarcode width={14} height={14} style={{ marginRight: 6, verticalAlign: -2 }} />
-            Pre-Print
+            {t('barcode.tab_preprint')}
             {preStats.available > 0 && (
               <span style={{ background: '#fef3c7', color: '#d97706', fontSize: 11, padding: '2px 7px', borderRadius: 10, marginLeft: 8 }}>
                 {preStats.available}
@@ -583,10 +654,10 @@ export default function Barcode() {
             {/* Stats bar */}
             <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
               {[
-                { label: 'Total', value: preStats.total || 0, bg: '#f1f5f9', color: '#475569' },
-                { label: 'Available', value: preStats.available || 0, bg: '#fef3c7', color: '#d97706' },
-                { label: 'Used', value: preStats.used || 0, bg: '#dcfce7', color: '#16a34a' },
-                { label: 'Expired', value: preStats.expired || 0, bg: '#fee2e2', color: '#dc2626' },
+                { label: t('barcode.stats_total'), value: preStats.total || 0, bg: '#f1f5f9', color: '#475569' },
+                { label: t('barcode.stats_available'), value: preStats.available || 0, bg: '#fef3c7', color: '#d97706' },
+                { label: t('barcode.stats_used'), value: preStats.used || 0, bg: '#dcfce7', color: '#16a34a' },
+                { label: t('barcode.stats_expired'), value: preStats.expired || 0, bg: '#fee2e2', color: '#dc2626' },
               ].map(s => (
                 <div key={s.label} style={{
                   padding: '10px 18px', borderRadius: 10, background: s.bg,
@@ -601,10 +672,25 @@ export default function Barcode() {
             {/* Filter */}
             <div className="bc-filter-row">
               <select className="filter-select" value={preFilter} onChange={e => setPreFilter(e.target.value)}>
-                <option value="all">All Tokens</option>
-                <option value="available">Available Only</option>
-                <option value="used">Used Only</option>
+                <option value="all">{t('barcode.filter_all')}</option>
+                <option value="available">{t('barcode.filter_available')}</option>
+                <option value="used">{t('barcode.filter_used')}</option>
               </select>
+              {/* View mode toggle */}
+              <div style={{ display:'flex', borderRadius:8, overflow:'hidden', border:'1px solid #e2e8f0', fontSize:12, fontWeight:600 }}>
+                <button onClick={() => setPreViewMode('grid')}
+                  style={{ padding:'6px 12px', border:'none', cursor:'pointer',
+                    background: preViewMode === 'grid' ? '#f97316' : '#fff',
+                    color: preViewMode === 'grid' ? '#fff' : '#64748b' }}>
+                  {t('barcode.view_grid')}
+                </button>
+                <button onClick={() => setPreViewMode('table')}
+                  style={{ padding:'6px 12px', border:'none', cursor:'pointer', borderLeft:'1px solid #e2e8f0',
+                    background: preViewMode === 'table' ? '#f97316' : '#fff',
+                    color: preViewMode === 'table' ? '#fff' : '#64748b' }}>
+                  {t('barcode.view_table')}
+                </button>
+              </div>
               <button
                 className="module-btn module-btn-outline"
                 onClick={() => {
@@ -613,8 +699,8 @@ export default function Barcode() {
                 }}
               >
                 {preAllSelected
-                  ? <><CheckSquareSolid width={15} height={15} /> Deselect All</>
-                  : <><Square width={15} height={15} /> Select All</>}
+                  ? <><CheckSquareSolid width={15} height={15} /> {t('barcode.deselect_all')}</>
+                  : <><Square width={15} height={15} /> {t('barcode.select_all')}</>}
               </button>
             </div>
 
@@ -628,19 +714,103 @@ export default function Barcode() {
             ) : preTokens.length === 0 ? (
               <div className="ord-empty">
                 <div className="ord-empty-icon"><ScanBarcode width={48} height={48} /></div>
-                <h3>No pre-generated barcodes yet</h3>
-                <p style={{ color: '#64748b', marginTop: 8 }}>Generate barcodes to print and stick on packages before creating orders.</p>
+                <h3>{t('barcode.no_pregenerated')}</h3>
+                <p style={{ color: '#64748b', marginTop: 8 }}>{t('barcode.no_pregenerated_hint')}</p>
                 <button
                   className="module-btn module-btn-primary"
                   onClick={() => setShowGenModal(true)}
                   style={{ marginTop: 16, background: '#f97316', borderColor: '#f97316' }}
                 >
-                  <Plus width={15} height={15} /> Generate Barcodes
+                  <Plus width={15} height={15} /> {t('barcode.generate_barcodes')}
                 </button>
               </div>
+            ) : preViewMode === 'table' ? (
+              /* ── TABLE VIEW ── */
+              <div style={{ background:'#fff', borderRadius:12, border:'1px solid #e2e8f0', overflow:'hidden' }}>
+                <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+                  <thead>
+                    <tr style={{ background:'#f8fafc', borderBottom:'2px solid #e2e8f0' }}>
+                      <th style={{ padding:'12px 16px', textAlign:'left', fontWeight:700, color:'#374151', fontSize:11, textTransform:'uppercase', letterSpacing:'0.05em' }}>{t('barcode.th_token')}</th>
+                      <th style={{ padding:'12px 16px', textAlign:'left', fontWeight:700, color:'#374151', fontSize:11, textTransform:'uppercase', letterSpacing:'0.05em' }}>{t('barcode.th_batch')}</th>
+                      <th style={{ padding:'12px 16px', textAlign:'left', fontWeight:700, color:'#374151', fontSize:11, textTransform:'uppercase', letterSpacing:'0.05em' }}>{t('barcode.th_status')}</th>
+                      <th style={{ padding:'12px 16px', textAlign:'left', fontWeight:700, color:'#374151', fontSize:11, textTransform:'uppercase', letterSpacing:'0.05em' }}>{t('barcode.th_linked_order')}</th>
+                      <th style={{ padding:'12px 16px', textAlign:'left', fontWeight:700, color:'#374151', fontSize:11, textTransform:'uppercase', letterSpacing:'0.05em' }}>{t('barcode.th_created')}</th>
+                      <th style={{ padding:'12px 16px', textAlign:'left', fontWeight:700, color:'#374151', fontSize:11, textTransform:'uppercase', letterSpacing:'0.05em' }}>{t('barcode.th_expires')}</th>
+                      <th style={{ padding:'12px 16px', textAlign:'center', fontWeight:700, color:'#374151', fontSize:11, textTransform:'uppercase', letterSpacing:'0.05em' }}>{t('barcode.th_actions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {preTokens.map(tok => {
+                      const isUsed = tok.is_used === 1 || tok.is_used === true;
+                      const isExpired = tok.days_remaining !== null && tok.days_remaining !== undefined && tok.days_remaining <= 0 && !isUsed;
+                      return (
+                        <tr key={tok.id} style={{ borderBottom:'1px solid #f1f5f9' }}>
+                          <td style={{ padding:'10px 16px' }}>
+                            <code style={{ fontFamily:'monospace', fontWeight:600, fontSize:13, color:'#1e293b' }}>
+                              {tok.tracking_token}
+                            </code>
+                          </td>
+                          <td style={{ padding:'10px 16px', color:'#64748b' }}>{tok.batch_name || '—'}</td>
+                          <td style={{ padding:'10px 16px' }}>
+                            <span style={{
+                              display:'inline-block', padding:'3px 10px', borderRadius:20, fontSize:11, fontWeight:700,
+                              background: isUsed ? '#dcfce7' : isExpired ? '#fee2e2' : '#fef3c7',
+                              color: isUsed ? '#16a34a' : isExpired ? '#dc2626' : '#d97706',
+                            }}>
+                              {isUsed ? t('barcode.status_linked') : isExpired ? t('barcode.status_expired') : t('barcode.status_available')}
+                            </span>
+                          </td>
+                          <td style={{ padding:'10px 16px', fontWeight:500, color:'#1e293b' }}>
+                            {tok.order_number || '—'}
+                          </td>
+                          <td style={{ padding:'10px 16px', color:'#64748b', fontSize:12 }}>
+                            {tok.created_at ? new Date(tok.created_at).toLocaleDateString() : '—'}
+                          </td>
+                          <td style={{ padding:'10px 16px' }}>
+                            {tok.expires_at ? (
+                              <span style={{ color: tok.days_remaining <= 0 ? '#ef4444' : tok.days_remaining <= 7 ? '#f59e0b' : '#64748b', fontSize:12 }}>
+                                {tok.days_remaining > 0 ? t('barcode.days_remaining', { count: tok.days_remaining }) : t('barcode.status_expired')}
+                              </span>
+                            ) : '—'}
+                          </td>
+                          <td style={{ padding:'10px 16px', textAlign:'center' }}>
+                            <div style={{ display:'flex', gap:6, justifyContent:'center' }}>
+                              {!isUsed && !isExpired && (
+                                <button onClick={() => openLinkModal(tok.id, tok.tracking_token)}
+                                  style={{ padding:'5px 10px', borderRadius:7, border:'1px solid #3b82f6', background:'#eff6ff',
+                                    color:'#2563eb', fontSize:11, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}>
+                                  <LinkIcon width={12} height={12} /> {t('barcode.link')}
+                                </button>
+                              )}
+                              {isUsed && (
+                                <button onClick={() => handleUnlink(tok.id)}
+                                  style={{ padding:'5px 10px', borderRadius:7, border:'1px solid #f97316', background:'#fff7ed',
+                                    color:'#ea580c', fontSize:11, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}>
+                                  <Xmark width={12} height={12} /> {t('barcode.unlink')}
+                                </button>
+                              )}
+                              {!isUsed && (
+                                <button onClick={() => handleDeleteToken(tok.id)}
+                                  style={{ padding:'5px 10px', borderRadius:7, border:'1px solid #ef4444', background:'#fef2f2',
+                                    color:'#dc2626', fontSize:11, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}>
+                                  <Trash width={12} height={12} />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             ) : (
+              /* ── GRID VIEW (existing) ── */
               <div className="bc-grid">
-                {preTokens.map(token => (
+                {preTokens.map(token => {
+                  const isUsed = token.is_used === 1 || token.is_used === true;
+                  const isExpired = token.days_remaining !== null && token.days_remaining !== undefined && token.days_remaining <= 0 && !isUsed;
+                  return (
                   <div
                     key={token.id}
                     ref={el => { preCardRefs.current[token.id] = el; }}
@@ -660,21 +830,39 @@ export default function Barcode() {
                         : <Square width={18} height={18} />}
                     </div>
                     <PreGenCard token={token} />
-                    {/* Delete button for unused tokens */}
-                    {!token.is_used && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleDeleteToken(token.id); }}
-                        style={{
-                          position: 'absolute', top: 8, right: 8, background: '#fee2e2', border: 'none',
-                          borderRadius: 6, padding: '4px 6px', cursor: 'pointer', color: '#dc2626', zIndex: 2,
-                        }}
-                        title="Delete token"
-                      >
-                        <Trash width={14} height={14} />
-                      </button>
-                    )}
+                    {/* Action buttons for tokens */}
+                    <div style={{ position:'absolute', top:8, right:8, display:'flex', gap:4, zIndex:2 }}>
+                      {!isUsed && !isExpired && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); openLinkModal(token.id, token.tracking_token); }}
+                          style={{ background:'#eff6ff', border:'1px solid #3b82f6', borderRadius:6,
+                            padding:'4px 8px', cursor:'pointer', color:'#2563eb', display:'flex', alignItems:'center', gap:3, fontSize:11, fontWeight:600 }}
+                          title={t('barcode.link_to_order')}>
+                          <LinkIcon width={12} height={12} /> {t('barcode.link')}
+                        </button>
+                      )}
+                      {isUsed && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleUnlink(token.id); }}
+                          style={{ background:'#fff7ed', border:'1px solid #f97316', borderRadius:6,
+                            padding:'4px 8px', cursor:'pointer', color:'#ea580c', display:'flex', alignItems:'center', gap:3, fontSize:11, fontWeight:600 }}
+                          title={t('barcode.unlink_from_order')}>
+                          <Xmark width={12} height={12} /> {t('barcode.unlink')}
+                        </button>
+                      )}
+                      {!isUsed && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDeleteToken(token.id); }}
+                          style={{ background:'#fee2e2', border:'none', borderRadius:6,
+                            padding:'4px 6px', cursor:'pointer', color:'#dc2626' }}
+                          title={t('barcode.delete_token')}>
+                          <Trash width={14} height={14} />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </>
@@ -691,13 +879,13 @@ export default function Barcode() {
             background: '#fff', borderRadius: 16, padding: 32, width: 400, maxWidth: '90vw',
             boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
           }} onClick={e => e.stopPropagation()}>
-            <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, marginBottom: 4 }}>Generate Pre-Print Barcodes</h3>
+            <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, marginBottom: 4 }}>{t('barcode.generate_modal_title')}</h3>
             <p style={{ margin: 0, color: '#64748b', fontSize: 13, marginBottom: 20 }}>
-              Create barcode labels to print and stick on packages before creating orders.
+              {t('barcode.generate_modal_desc')}
             </p>
 
             <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 6, textTransform: 'uppercase' }}>
-              Quantity (1–200)
+              {t('barcode.quantity_label')}
             </label>
             <input
               type="number"
@@ -711,11 +899,11 @@ export default function Barcode() {
             />
 
             <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 6, textTransform: 'uppercase' }}>
-              Batch Name (optional)
+              {t('barcode.batch_name_label')}
             </label>
             <input
               type="text"
-              placeholder="e.g. March Batch, Warehouse A"
+              placeholder={t('barcode.batch_placeholder')}
               value={genBatchName}
               onChange={e => setGenBatchName(e.target.value)}
               style={{
@@ -730,7 +918,7 @@ export default function Barcode() {
                 onClick={() => setShowGenModal(false)}
                 disabled={generating}
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 className="module-btn module-btn-primary"
@@ -738,8 +926,111 @@ export default function Barcode() {
                 disabled={generating}
                 style={{ background: '#f97316', borderColor: '#f97316' }}
               >
-                {generating ? 'Generating...' : `Generate ${genCount} Barcodes`}
+                {generating ? t('barcode.generating') : t('barcode.generate_count', { count: genCount })}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Link-to-Order Modal ───────────────────────── */}
+      {showLinkModal && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }} onClick={() => setShowLinkModal(false)}>
+          <div style={{
+            background: '#fff', borderRadius: 16, padding: 0, width: 520, maxWidth: '94vw',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.2)', maxHeight: '80vh', display: 'flex', flexDirection: 'column',
+          }} onClick={e => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div style={{ padding:'20px 24px 16px', borderBottom:'1px solid #e2e8f0' }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
+                <h3 style={{ margin:0, fontSize:18, fontWeight:700, display:'flex', alignItems:'center', gap:8 }}>
+                  <LinkIcon width={20} height={20} color="#3b82f6" /> {t('barcode.link_modal_title')}
+                </h3>
+                <button onClick={() => setShowLinkModal(false)}
+                  style={{ background:'#f1f5f9', border:'none', borderRadius:8, width:32, height:32,
+                    cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  <Xmark width={16} height={16} />
+                </button>
+              </div>
+              <div style={{ background:'#f0f9ff', padding:'10px 14px', borderRadius:8, border:'1px solid #bae6fd', marginBottom:12 }}>
+                <span style={{ fontSize:12, color:'#0369a1', fontWeight:600 }}>{t('barcode.link_modal_token')} </span>
+                <code style={{ fontFamily:'monospace', fontWeight:700, color:'#0c4a6e' }}>{linkTokenCode}</code>
+              </div>
+              {/* Search */}
+              <div style={{ position:'relative' }}>
+                <Search width={15} height={15} style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'#94a3b8' }} />
+                <input
+                  type="text"
+                  placeholder={t('barcode.link_search_placeholder')}
+                  value={linkSearch}
+                  onChange={e => searchLinkOrders(e.target.value)}
+                  autoFocus
+                  style={{
+                    width:'100%', padding:'10px 14px 10px 36px', borderRadius:9,
+                    border:'1px solid #e2e8f0', fontSize:14, boxSizing:'border-box',
+                  }}
+                />
+                {linkSearching && (
+                  <div style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)' }}>
+                    <div className="loading-spinner" style={{ width:16, height:16, borderWidth:2 }} />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Order List */}
+            <div style={{ overflowY:'auto', flex:1, padding:'8px 0' }}>
+              {linkOrders.length === 0 ? (
+                <div style={{ textAlign:'center', padding:'40px 20px', color:'#94a3b8' }}>
+                  <Package width={36} height={36} />
+                  <p style={{ marginTop:8, fontSize:14 }}>{linkSearch ? t('barcode.link_no_match') : t('barcode.link_no_orders')}</p>
+                </div>
+              ) : (
+                linkOrders.map(o => {
+                  const sc = STATUS_COLORS[o.status] || STATUS_COLORS.pending;
+                  return (
+                    <div key={o.id}
+                      onClick={() => !linking && handleLinkToOrder(o.id)}
+                      style={{
+                        display:'flex', alignItems:'center', gap:14, padding:'12px 24px',
+                        cursor: linking ? 'not-allowed' : 'pointer', transition:'background 0.15s',
+                        borderBottom:'1px solid #f8fafc',
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#f0f9ff'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:3 }}>
+                          <span style={{ fontWeight:700, fontSize:14, color:'#1e293b' }}>{o.order_number}</span>
+                          <span style={{ display:'inline-block', padding:'2px 8px', borderRadius:20, fontSize:10, fontWeight:700, background:sc.bg, color:sc.color }}>
+                            {o.status?.replace(/_/g,' ')}
+                          </span>
+                        </div>
+                        <div style={{ fontSize:12, color:'#64748b', display:'flex', gap:12 }}>
+                          <span>{o.recipient_name || '—'}</span>
+                          <span style={{ fontFamily:'monospace', fontSize:11 }}>{o.tracking_token}</span>
+                        </div>
+                      </div>
+                      <div style={{
+                        padding:'6px 14px', borderRadius:8, background:'#3b82f6', color:'#fff',
+                        fontSize:12, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap',
+                        opacity: linking ? 0.6 : 1,
+                      }}>
+                        {linking ? '...' : t('barcode.link')}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Footer */}
+            <div style={{ padding:'12px 24px', borderTop:'1px solid #e2e8f0', background:'#f8fafc',
+              borderRadius:'0 0 16px 16px', fontSize:12, color:'#94a3b8', textAlign:'center' }}>
+              {t('barcode.link_footer', { token: linkTokenCode })}
             </div>
           </div>
         </div>
