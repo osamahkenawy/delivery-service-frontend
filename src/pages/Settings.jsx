@@ -9,6 +9,8 @@ import {
 } from 'iconoir-react';
 import api from '../lib/api';
 import Toast, { useToast } from '../components/Toast';
+import usePlanUsage from '../hooks/usePlanUsage';
+import UpgradeModal from '../components/dashboard/UpgradeModal';
 import './Settings.css';
 
 /* ── helpers ──────────────────────────────────────────────── */
@@ -1458,6 +1460,116 @@ function UsersTab({ toast }) {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   D.6 — SUBSCRIPTION TAB
+═══════════════════════════════════════════════════════════════ */
+function SubscriptionTab({ toast }) {
+  const { t } = useTranslation();
+  const { planData, loading, refresh, plan, planName, usage, limits, features, isTrial, trialDaysRemaining, trialExpired } = usePlanUsage();
+  const [showUpgrade, setShowUpgrade] = useState(false);
+
+  if (loading) return <div className="stg-loader">Loading subscription data...</div>;
+  if (!planData) return <div className="stg-loader">Unable to load subscription info</div>;
+
+  const PLAN_COLORS = {
+    trial: '#f59e0b', starter: '#3b82f6', professional: '#8b5cf6', enterprise: '#10b981', self_hosted: '#6b7280',
+  };
+  const planColor = PLAN_COLORS[plan] || '#6b7280';
+
+  return (
+    <div>
+      {/* Current plan card */}
+      <div style={{ background: planColor + '10', border: `2px solid ${planColor}30`, borderRadius: 14, padding: 20, marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <div>
+            <div style={{ fontSize: 12, color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1 }}>Current Plan</div>
+            <div style={{ fontSize: 24, fontWeight: 800, color: planColor }}>{planName}</div>
+          </div>
+          <button
+            onClick={() => setShowUpgrade(true)}
+            style={{ background: planColor, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+          >
+            {plan === 'enterprise' ? 'Manage Plan' : 'Upgrade Plan'}
+          </button>
+        </div>
+
+        {isTrial && trialDaysRemaining !== null && (
+          <div style={{ background: trialExpired ? '#fee2e2' : '#fef3c7', color: trialExpired ? '#dc2626' : '#92400e', padding: '8px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, marginBottom: 12 }}>
+            {trialExpired
+              ? '⚠️ Your trial has expired. Subscribe to continue.'
+              : `⏰ Trial expires in ${trialDaysRemaining} day${trialDaysRemaining !== 1 ? 's' : ''}`}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <span style={{ background: planColor + '20', color: planColor, padding: '4px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600 }}>
+            Status: {planData.status || 'Active'}
+          </span>
+          {planData.current_period_end && (
+            <span style={{ background: '#f3f4f6', padding: '4px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600, color: '#6b7280' }}>
+              Next billing: {new Date(planData.current_period_end).toLocaleDateString()}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Usage section */}
+      <h3 style={{ fontSize: 16, fontWeight: 700, color: '#1f2937', margin: '20px 0 12px' }}>Usage This Month</h3>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+        <UsageCard label="Orders" current={usage.orders_this_month} max={usage.orders_limit} pct={usage.orders_pct} color={planColor} />
+        <UsageCard label="Active Drivers" current={usage.active_drivers} max={usage.drivers_limit} pct={usage.drivers_pct} color={planColor} />
+        <UsageCard label="Active Users" current={usage.active_users} max={usage.users_limit} pct={usage.users_pct} color={planColor} />
+      </div>
+
+      {/* Features section */}
+      <h3 style={{ fontSize: 16, fontWeight: 700, color: '#1f2937', margin: '24px 0 12px' }}>Plan Features</h3>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 8 }}>
+        {Object.entries(features).map(([key, val]) => (
+          <div key={key} style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '8px 12px', background: '#f9fafb', borderRadius: 8, fontSize: 13,
+          }}>
+            <span style={{ color: '#4b5563' }}>{key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</span>
+            <span style={{ fontWeight: 700, color: val === true ? '#10b981' : val === false ? '#dc2626' : planColor }}>
+              {val === true ? '✓' : val === false ? '✗' : typeof val === 'number' ? (val >= 999 ? '∞' : val) : String(val)}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ marginTop: 20, textAlign: 'center' }}>
+        <button onClick={refresh} style={{ background: '#f3f4f6', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', color: '#6b7280' }}>
+          ↻ Refresh Usage Data
+        </button>
+      </div>
+
+      {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
+    </div>
+  );
+}
+
+function UsageCard({ label, current = 0, max = 0, pct = 0, color }) {
+  const isWarn = pct >= 80;
+  const isFull = pct >= 100;
+  const barColor = isFull ? '#dc2626' : isWarn ? '#f59e0b' : color;
+  const displayMax = max >= 999999 ? '∞' : max.toLocaleString();
+
+  return (
+    <div style={{ padding: '14px 16px', background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: '#4b5563' }}>{label}</span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: isFull ? '#dc2626' : isWarn ? '#f59e0b' : '#1f2937' }}>
+          {current.toLocaleString()} / {displayMax}
+        </span>
+      </div>
+      <div style={{ height: 6, background: '#e5e7eb', borderRadius: 3, overflow: 'hidden' }}>
+        <div style={{ width: `${Math.min(pct, 100)}%`, height: '100%', background: barColor, borderRadius: 3, transition: 'width 0.4s' }} />
+      </div>
+      <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>{pct}% used</div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
    MAIN SETTINGS PAGE
 ═══════════════════════════════════════════════════════════════ */
 const TABS = [
@@ -1468,6 +1580,7 @@ const TABS = [
   { id:'categories',    icon: Tag,           color:'#0d9488' },
   { id:'roles',         icon: ShieldCheck,   color:'#7c3aed' },
   { id:'users',         icon: User,          color:'#f43f5e' },
+  { id:'subscription',  icon: Wallet,        color:'#10b981' },
 ];
 
 export default function Settings() {
@@ -1564,6 +1677,7 @@ export default function Settings() {
             {tab==='categories'    && <CategoriesTab    toast={toast}/>}
             {tab==='roles'         && <RolesTab         toast={toast}/>}
             {tab==='users'         && <UsersTab         toast={toast}/>}
+            {tab==='subscription'  && <SubscriptionTab  toast={toast}/>}
           </div>
         </div>
       )}

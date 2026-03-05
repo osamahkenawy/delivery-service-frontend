@@ -344,3 +344,43 @@
   cursor: pointer;
   flex-shrink: 0;
 }
+
+/* ── API Documentation Tab ───────────────────────────── */
+.intg-docs-code-inline {
+  background: #f1f5f9;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: 'SF Mono', Consolas, monospace;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+}
+
+.intg-docs-perm-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  min-width: 140px;
+}
+.intg-docs-perm-card strong {
+  font-size: 13px;
+  color: #1e293b;
+}
+.intg-docs-perm-card span {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.intg-docs-method {
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'SF Mono', Consolas, monospace;
+  letter-spacing: 0.5px;
+}

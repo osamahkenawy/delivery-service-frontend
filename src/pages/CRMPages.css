@@ -1993,3 +1993,14 @@ textarea.form-control {
   background: #20BD5A;
   transform: scale(1.04);
 }
+
+/* ── Barcode Scanner Animation ── */
+@keyframes scanPulse {
+  0%, 100% { border-color: rgba(59,130,246,0.6); box-shadow: 0 0 0 2000px rgba(0,0,0,0.3); }
+  50% { border-color: rgba(59,130,246,1); box-shadow: 0 0 0 2000px rgba(0,0,0,0.4), 0 0 20px rgba(59,130,246,0.3); }
+}
+
+@keyframes scanLine {
+  0% { top: 0; }
+  100% { top: calc(100% - 2px); }
+}

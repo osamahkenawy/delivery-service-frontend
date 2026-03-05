@@ -9,6 +9,8 @@ import {
   RefreshDouble, CreditCard, Medal, Search, QrCode, ScanBarcode
 } from 'iconoir-react';
 import NotificationBell from './NotificationBell';
+import PlanBadge from './dashboard/PlanBadge';
+import TrialBanner from './dashboard/TrialBanner';
 import './Layout.css';
 
 const iconMap = {
@@ -249,6 +251,11 @@ export default function Layout({ children }) {
             </div>
           ))}
         </nav>
+
+        {/* D.5 — Plan usage badge in sidebar */}
+        {user?.role !== 'driver' && (
+          <PlanBadge collapsed={!sidebarOpen && !isMobile} />
+        )}
       </aside>
 
       <header className={`custom-topbar ${!sidebarOpen ? 'sidebar-closed' : ''}`}>
@@ -332,6 +339,8 @@ export default function Layout({ children }) {
       </header>
 
       <main className={`main-content ${!sidebarOpen ? 'sidebar-closed' : ''}`}>
+        {/* D.5 — Trial expiry banner */}
+        <TrialBanner />
         {children}
       </main>
 

@@ -1589,7 +1589,59 @@
     "sidebar": {
       "unassigned": "Unassigned ({{count}})",
       "active": "Active ({{count}})"
+    },
+    "tab_deliveries": "Deliveries",
+    "tab_pickups": "Pickups",
+    "pickup_count": "{{count}} pending",
+    "search_placeholder": "Search by order #, barcode, or recipient...",
+    "scan_barcode": "Scan Barcode",
+    "scanner_title": "Scan Barcode / QR Code",
+    "scanner_hint": "Point your camera at a barcode or QR code",
+    "scanner_manual": "Or enter barcode manually",
+    "scanner_not_supported": "Camera scanner not supported in this browser.",
+    "scanner_no_camera": "Unable to access camera.",
+    "scanner_search": "Search",
+    "filter_results": "Showing results for",
+    "results_found": "results found",
+    "clear_filter": "Clear",
+    "no_results": "No matching orders found",
+    "stats_total": "Total Orders",
+    "stats_unassigned": "Unassigned",
+    "stats_active": "In Progress",
+    "stats_drivers": "Available Drivers",
+    "fee": "Fee",
+    "payment": {
+      "cod": "COD",
+      "prepaid": "Prepaid",
+      "credit": "Credit",
+      "wallet": "Wallet"
     }
+  },
+  "pickup": {
+    "stat_pending": "Pending Pickup",
+    "stat_scheduled": "Scheduled",
+    "stat_picked_today": "Picked Up Today",
+    "stat_total_awaiting": "Total Awaiting",
+    "orders_need_pickup": "Orders needing pickup",
+    "no_pending": "No Pending Pickups",
+    "no_pending_hint": "Use the Request Pickup buttons above to initiate pickups for orders.",
+    "from_label": "Pickup From",
+    "deliver_to": "Deliver To",
+    "status_pending": "Pending Pickup",
+    "status_scheduled": "Scheduled",
+    "pickup_driver": "Pickup Driver",
+    "schedule": "Schedule",
+    "assign_driver": "Assign Driver...",
+    "schedule_title": "Schedule Pickup",
+    "schedule_start": "Pickup Time (Start)",
+    "schedule_end": "Pickup Time (End)",
+    "assign_pickup_driver": "Assign Pickup Driver",
+    "optional_driver": "— Select driver (optional) —",
+    "notes": "Notes",
+    "notes_placeholder": "Special instructions for pickup...",
+    "confirm_schedule": "Schedule Pickup",
+    "tab_deliveries": "Deliveries",
+    "tab_pickups": "Pickups"
   },
   "performance": {
     "title": "Performance & SLA",
@@ -2414,6 +2466,7 @@
     },
     "tab_webhooks": "Webhooks",
     "tab_delivery_log": "Delivery Log",
+    "tab_api_docs": "API Docs",
     "delete_key_confirm": "Delete this key?",
     "delete_webhook_confirm": "Delete this webhook?",
     "active": "Active",
@@ -2519,7 +2572,8 @@
       "notifications": "Notifications",
       "categories": "Categories",
       "roles": "Mga Tungkulin",
-      "users": "Users"
+      "users": "Users",
+      "subscription": "Subscription"
     },
     "tab_descriptions": {
       "general": "Company info, branding and regional preferences",
@@ -2528,7 +2582,8 @@
       "notifications": "Email SMTP and SMS gateway configuration",
       "categories": "Manage order categories and shipment types",
       "roles": "Tukuyin ang mga tungkulin at i-configure ang mga pahintulot ng module",
-      "users": "Manage team members and their roles"
+      "users": "Manage team members and their roles",
+      "subscription": "Tingnan ang kasalukuyang plano, mga limitasyon sa paggamit at mga opsyon sa pag-upgrade"
     },
     "general": {
       "company_info": "Company Information",

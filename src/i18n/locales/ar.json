@@ -1524,7 +1524,23 @@
     },
     "tab_deliveries": "التوصيلات",
     "tab_pickups": "الاستلام",
-    "pickup_count": "{{count}} بانتظار"
+    "pickup_count": "{{count}} بانتظار",
+    "search_placeholder": "بحث برقم الطلب، الباركود، أو اسم المستلم...",
+    "scan_barcode": "مسح الباركود",
+    "scanner_title": "مسح الباركود / رمز QR",
+    "scanner_hint": "وجّه الكاميرا نحو الباركود أو رمز QR",
+    "scanner_manual": "أو أدخل الباركود يدوياً",
+    "scanner_not_supported": "ماسح الكاميرا غير مدعوم في هذا المتصفح. يرجى كتابة الباركود يدوياً.",
+    "scanner_no_camera": "تعذر الوصول إلى الكاميرا. يرجى التحقق من الصلاحيات والمحاولة مرة أخرى.",
+    "scanner_search": "بحث",
+    "filter_results": "عرض نتائج",
+    "results_found": "نتائج",
+    "clear_filter": "مسح",
+    "no_results": "لا توجد طلبات مطابقة",
+    "stats_total": "إجمالي الطلبات",
+    "stats_unassigned": "غير مخصصة",
+    "stats_active": "قيد التنفيذ",
+    "stats_drivers": "السائقون المتاحون"
   },
   "pickup": {
     "stat_pending": "بانتظار الاستلام",
@@ -2449,6 +2465,7 @@
     },
     "tab_webhooks": "الخطّافات",
     "tab_delivery_log": "سجل التوصيل",
+    "tab_api_docs": "وثائق API",
     "delete_key_confirm": "هل تريد حذف هذا المفتاح؟",
     "delete_webhook_confirm": "هل تريد حذف هذا الخطّاف؟",
     "active": "نشط",
@@ -2554,7 +2571,8 @@
       "notifications": "الإشعارات",
       "categories": "الفئات",
       "roles": "الأدوار",
-      "users": "المستخدمون"
+      "users": "المستخدمون",
+      "subscription": "الاشتراك"
     },
     "tab_descriptions": {
       "general": "معلومات الشركة والعلامة التجارية والتفضيلات الإقليمية",
@@ -2563,7 +2581,8 @@
       "notifications": "تكوين البريد الإلكتروني SMTP وبوابة الرسائل النصية",
       "categories": "إدارة فئات الطلبات وأنواع الشحنات",
       "roles": "تحديد الأدوار وتكوين صلاحيات الوحدات",
-      "users": "إدارة أعضاء الفريق وأدوارهم"
+      "users": "إدارة أعضاء الفريق وأدوارهم",
+      "subscription": "عرض خطتك الحالية وحدود الاستخدام وخيارات الترقية"
     },
     "general": {
       "company_info": "معلومات الشركة",

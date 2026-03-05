@@ -116,7 +116,7 @@ const SuperAdminSubscriptions = () => {
           {tab === 'plans' && (
             <>
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-                <button className="sa-primary-btn" onClick={() => { setEditPlan({ name: '', slug: '', description: '', max_drivers: 10, max_users: 5, max_orders_per_month: 1000, price_aed: 0, setup_fee_aed: 15000, features: [], is_active: true }); setShowPlanModal(true); }}>
+                <button className="sa-primary-btn" onClick={() => { setEditPlan({ name: '', slug: '', description: '', max_drivers: 10, max_users: 5, max_orders_per_month: 1000, price_aed: 0, setup_fee_aed: 0, features: [], is_active: true, base_stops: 0, extra_rate_aed: 0, is_featured: false, badge_key: '', landing_features: [], landing_visible: true, sort_order: 0 }); setShowPlanModal(true); }}>
                   <Plus size={16} /> New Plan
                 </button>
               </div>
@@ -126,7 +126,7 @@ const SuperAdminSubscriptions = () => {
                   return (
                   <div key={plan.id} className="sa-plan-card">
                     <div className="sa-plan-header" style={{ borderBottomColor: planColor }}>
-                      <h3>{plan.name}</h3>
+                      <h3>{plan.name} {plan.is_featured ? <span style={{ fontSize: 11, background: '#3b82f620', color: '#3b82f6', padding: '2px 8px', borderRadius: 8, marginLeft: 6 }}>★ Featured</span> : null}</h3>
                       <span className="sa-badge-pill" style={{ background: plan.is_active ? '#dcfce7' : '#fef2f2', color: plan.is_active ? '#16a34a' : '#dc2626' }}>
                         {plan.is_active ? 'Active' : 'Inactive'}
                       </span>
@@ -134,6 +134,11 @@ const SuperAdminSubscriptions = () => {
                     {plan.description && <p style={{ fontSize: 13, color: '#6b7280', margin: '8px 0 4px', fontStyle: 'italic' }}>{plan.description}</p>}
                     <div className="sa-plan-price">{fmtCur(plan.price_aed)}<span>/mo</span></div>
                     {plan.setup_fee_aed > 0 && <div style={{ fontSize: 11, color: '#9ca3af', marginTop: -4 }}>One-time setup: {fmtCur(plan.setup_fee_aed)}</div>}
+                    {plan.base_stops > 0 && (
+                      <div style={{ fontSize: 12, color: '#6366f1', marginTop: 4, fontWeight: 500 }}>
+                        🚚 {Number(plan.base_stops).toLocaleString()} base stops · +{Number(plan.extra_rate_aed || 0).toFixed(4)} AED/extra
+                      </div>
+                    )}
                     <div className="sa-plan-features">
                       <div className="sa-plan-limit"><strong>{plan.max_users || 5}</strong> Users</div>
                       <div className="sa-plan-limit"><strong>{plan.max_drivers}</strong> Drivers</div>
@@ -142,6 +147,11 @@ const SuperAdminSubscriptions = () => {
                         <div key={i} className="sa-plan-feature"><CheckCircle size={14} style={{ color: planColor }} /> {f}</div>
                       ))}
                     </div>
+                    {plan.landing_visible ? (
+                      <div style={{ fontSize: 11, color: '#10b981', marginTop: 6 }}>✓ Visible on landing page (order: {plan.sort_order})</div>
+                    ) : (
+                      <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 6 }}>Hidden from landing page</div>
+                    )}
                     <div className="sa-plan-actions">
                       <button onClick={() => { setEditPlan(plan); setShowPlanModal(true); }} className="sa-icon-btn"><EditPencil size={16} /></button>
                       <button onClick={() => deletePlan(plan.id)} className="sa-icon-btn danger"><Trash size={16} /></button>
@@ -268,12 +278,14 @@ const SuperAdminSubscriptions = () => {
       {/* Plan Modal */}
       {showPlanModal && editPlan && (
         <div className="sa-modal-backdrop" onClick={() => setShowPlanModal(false)}>
-          <div className="sa-modal" onClick={e => e.stopPropagation()}>
+          <div className="sa-modal" style={{ maxWidth: 700 }} onClick={e => e.stopPropagation()}>
             <div className="sa-modal-header">
               <h2>{editPlan.id ? 'Edit Plan' : 'New Plan'}</h2>
               <button className="sa-modal-close" onClick={() => setShowPlanModal(false)}>×</button>
             </div>
-            <div className="sa-modal-body">
+            <div className="sa-modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+              {/* Core Plan Fields */}
+              <h4 style={{ fontSize: 14, fontWeight: 600, color: '#374151', margin: '0 0 10px', borderBottom: '1px solid #e5e7eb', paddingBottom: 6 }}>Core Plan Settings</h4>
               <div className="sa-form-grid">
                 <div className="sa-form-group">
                   <label>Plan Name</label>
@@ -293,7 +305,7 @@ const SuperAdminSubscriptions = () => {
                 </div>
                 <div className="sa-form-group">
                   <label>Setup Fee (AED)</label>
-                  <input type="number" value={editPlan.setup_fee_aed || 15000} onChange={e => setEditPlan({ ...editPlan, setup_fee_aed: parseFloat(e.target.value) })} />
+                  <input type="number" value={editPlan.setup_fee_aed || 0} onChange={e => setEditPlan({ ...editPlan, setup_fee_aed: parseFloat(e.target.value) })} />
                 </div>
                 <div className="sa-form-group">
                   <label>Max Users</label>
@@ -310,10 +322,50 @@ const SuperAdminSubscriptions = () => {
                 <div className="sa-form-group full-width">
                   <label>Features (comma-separated)</label>
                   <textarea
-                    rows={4}
+                    rows={3}
                     value={safeFeatures(editPlan.features).join(', ')}
                     onChange={e => setEditPlan({ ...editPlan, features: e.target.value.split(',').map(f => f.trim()).filter(Boolean) })}
                     placeholder="Feature 1, Feature 2, ..."
+                  />
+                </div>
+              </div>
+
+              {/* Landing Page Pricing Section */}
+              <h4 style={{ fontSize: 14, fontWeight: 600, color: '#6366f1', margin: '18px 0 10px', borderBottom: '1px solid #e5e7eb', paddingBottom: 6 }}>🌐 Landing Page Pricing</h4>
+              <div className="sa-form-grid">
+                <div className="sa-form-group">
+                  <label>Base Stops (included deliveries)</label>
+                  <input type="number" value={editPlan.base_stops || 0} onChange={e => setEditPlan({ ...editPlan, base_stops: parseInt(e.target.value) })} placeholder="e.g. 1000" />
+                </div>
+                <div className="sa-form-group">
+                  <label>Extra Rate (AED/delivery)</label>
+                  <input type="number" step="0.0001" value={editPlan.extra_rate_aed || 0} onChange={e => setEditPlan({ ...editPlan, extra_rate_aed: parseFloat(e.target.value) })} placeholder="e.g. 0.04" />
+                </div>
+                <div className="sa-form-group">
+                  <label>Sort Order</label>
+                  <input type="number" value={editPlan.sort_order || 0} onChange={e => setEditPlan({ ...editPlan, sort_order: parseInt(e.target.value) })} />
+                </div>
+                <div className="sa-form-group">
+                  <label>Badge i18n Key</label>
+                  <input value={editPlan.badge_key || ''} onChange={e => setEditPlan({ ...editPlan, badge_key: e.target.value })} placeholder="e.g. pricing.bestForFleets" />
+                </div>
+                <div className="sa-form-group" style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                    <input type="checkbox" checked={!!editPlan.is_featured} onChange={e => setEditPlan({ ...editPlan, is_featured: e.target.checked })} />
+                    Featured Plan
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                    <input type="checkbox" checked={editPlan.landing_visible !== false && editPlan.landing_visible !== 0} onChange={e => setEditPlan({ ...editPlan, landing_visible: e.target.checked })} />
+                    Visible on Landing
+                  </label>
+                </div>
+                <div className="sa-form-group full-width">
+                  <label>Landing Feature Keys (comma-separated i18n keys)</label>
+                  <textarea
+                    rows={2}
+                    value={safeFeatures(editPlan.landing_features).join(', ')}
+                    onChange={e => setEditPlan({ ...editPlan, landing_features: e.target.value.split(',').map(f => f.trim()).filter(Boolean) })}
+                    placeholder="starterF1, starterF2, starterF3"
                   />
                 </div>
               </div>

@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect, createContext } from 'react';
 import ErrorBoundary from './components/ErrorBoundary';
+import UpgradeListener from './components/dashboard/UpgradeListener';
 
 // Delivery Platform Pages
 import LoginPage from './pages/LoginPage';
@@ -245,6 +246,8 @@ function App() {
   return (
     <ErrorBoundary>
       <AuthContext.Provider value={{ user, tenant, login, logout, checkSession, setUser, setTenant }}>
+        {/* D.6 — Global upgrade modal listener */}
+        <UpgradeListener />
         <Routes>
         {/* Public routes */}
         <Route path="/login" element={user ? <Navigate to={homeRoute} /> : <LoginPage />} />

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Key, Network, DataTransferBoth, Plus, Trash, RefreshDouble,
-  Copy, Check, ArrowUpRight, Lock, CheckCircle, Clock
+  Copy, Check, ArrowUpRight, Lock, CheckCircle, Clock, Book
 } from 'iconoir-react';
 import api from '../lib/api';
 import './Integrations.css';
@@ -390,10 +390,158 @@ function DeliveryLogTab() {
   );
 }
 
+function APIDocsTab() {
+  const { t } = useTranslation();
+  const [keys, setKeys] = useState([]);
+  const [selectedKey, setSelectedKey] = useState('YOUR_API_KEY');
+  const [copiedIdx, setCopiedIdx] = useState(null);
+
+  useEffect(() => {
+    api.get('/integrations').then(res => {
+      if (res.success && res.data?.length) {
+        setKeys(res.data);
+        const active = res.data.find(k => k.is_active);
+        if (active?.api_key) setSelectedKey(active.api_key.slice(0, 22) + '…');
+      }
+    });
+  }, []);
+
+  const baseUrl = window.location.origin.replace(/:\d+$/, ':4001') + '/api/v1';
+
+  const copySnippet = (text, idx) => {
+    navigator.clipboard.writeText(text);
+    setCopiedIdx(idx);
+    setTimeout(() => setCopiedIdx(null), 2000);
+  };
+
+  const ENDPOINTS = [
+    {
+      method: 'GET', path: '/orders', title: t('integrations.docs.list_orders', 'List Orders'),
+      desc: t('integrations.docs.list_orders_desc', 'Fetch orders with pagination and optional filters.'),
+      perms: 'orders:read',
+      params: 'page, limit, status, from, to, tracking_token',
+      curl: `curl -s "${baseUrl}/orders?limit=10&status=pending" \\\n  -H "X-API-Key: ${selectedKey}"`,
+    },
+    {
+      method: 'GET', path: '/orders/:id', title: t('integrations.docs.get_order', 'Get Order'),
+      desc: t('integrations.docs.get_order_desc', 'Fetch a single order by ID or tracking token. Includes status history.'),
+      perms: 'orders:read',
+      curl: `curl -s "${baseUrl}/orders/123" \\\n  -H "X-API-Key: ${selectedKey}"`,
+    },
+    {
+      method: 'POST', path: '/orders', title: t('integrations.docs.create_order', 'Create Order'),
+      desc: t('integrations.docs.create_order_desc', 'Create a new delivery order. Required fields: recipient_name, recipient_phone, recipient_address.'),
+      perms: 'orders:write',
+      curl: `curl -s "${baseUrl}/orders" \\\n  -X POST \\\n  -H "X-API-Key: ${selectedKey}" \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "recipient_name": "Ahmed Ali",\n    "recipient_phone": "0501234567",\n    "recipient_address": "Downtown Dubai, Tower 1",\n    "payment_method": "cod",\n    "cod_amount": 150,\n    "delivery_fee": 25\n  }'`,
+    },
+    {
+      method: 'PATCH', path: '/orders/:id/cancel', title: t('integrations.docs.cancel_order', 'Cancel Order'),
+      desc: t('integrations.docs.cancel_order_desc', 'Cancel a pending/confirmed order. Cannot cancel orders already in transit or delivered.'),
+      perms: 'orders:write',
+      curl: `curl -s "${baseUrl}/orders/123/cancel" \\\n  -X PATCH \\\n  -H "X-API-Key: ${selectedKey}" \\\n  -H "Content-Type: application/json" \\\n  -d '{"reason": "Customer requested cancellation"}'`,
+    },
+    {
+      method: 'GET', path: '/tracking/:token', title: t('integrations.docs.track_order', 'Track Order'),
+      desc: t('integrations.docs.track_order_desc', 'Track an order by its tracking token. Returns current status and full status history.'),
+      perms: 'tracking:read',
+      curl: `curl -s "${baseUrl}/tracking/TR0B64E7E75FBF" \\\n  -H "X-API-Key: ${selectedKey}"`,
+    },
+    {
+      method: 'GET', path: '/clients', title: t('integrations.docs.list_clients', 'List Clients'),
+      desc: t('integrations.docs.list_clients_desc', 'List all merchant clients. Useful for getting client_id to associate with orders.'),
+      perms: 'clients:read',
+      curl: `curl -s "${baseUrl}/clients" \\\n  -H "X-API-Key: ${selectedKey}"`,
+    },
+  ];
+
+  const METHOD_COLORS = { GET: '#16a34a', POST: '#2563eb', PATCH: '#d97706', DELETE: '#dc2626' };
+
+  return (
+    <div className="intg-docs">
+      <div className="intg-section-header">
+        <div>
+          <h3 className="intg-section-title">{t('integrations.docs.title', 'API Documentation')}</h3>
+          <p className="intg-section-sub">{t('integrations.docs.subtitle', 'Integrate with the Trasealla API using your API keys.')}</p>
+        </div>
+      </div>
+
+      {/* Auth Info */}
+      <div className="data-card" style={{marginBottom: 20, padding: 20}}>
+        <h4 style={{margin: '0 0 12px', fontWeight: 600}}>{t('integrations.docs.authentication', 'Authentication')}</h4>
+        <p style={{margin: '0 0 12px', color: '#64748b', fontSize: 14}}>
+          {t('integrations.docs.auth_desc', 'Include your API key in every request using one of these headers:')}
+        </p>
+        <div style={{display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 16}}>
+          <code className="intg-docs-code-inline">X-API-Key: td_XXXXXXXXXXXX</code>
+          <span style={{color: '#94a3b8', alignSelf: 'center'}}>{t('common.or', 'or')}</span>
+          <code className="intg-docs-code-inline">Authorization: Bearer td_XXXXXXXXXXXX</code>
+        </div>
+        <div style={{display: 'flex', gap: 16, flexWrap: 'wrap'}}>
+          <div className="intg-docs-perm-card">
+            <strong>read</strong>
+            <span>orders:read, tracking:read</span>
+          </div>
+          <div className="intg-docs-perm-card">
+            <strong>write</strong>
+            <span>orders:read, orders:write, tracking:read</span>
+          </div>
+          <div className="intg-docs-perm-card">
+            <strong>full</strong>
+            <span>All permissions including clients &amp; webhooks</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Base URL */}
+      <div className="data-card" style={{marginBottom: 20, padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+        <div>
+          <span style={{fontSize: 13, color: '#64748b'}}>{t('integrations.docs.base_url', 'Base URL')}</span>
+          <code style={{display: 'block', fontSize: 15, fontWeight: 600, marginTop: 4}}>{baseUrl}</code>
+        </div>
+        <button className="btn-ghost-sm" onClick={() => copySnippet(baseUrl, 'base')}>
+          {copiedIdx === 'base' ? <Check width={14}/> : <Copy width={14}/>}
+        </button>
+      </div>
+
+      {/* Rate Limits */}
+      <div className="data-card" style={{marginBottom: 20, padding: '14px 20px'}}>
+        <span style={{fontSize: 13, color: '#64748b'}}>{t('integrations.docs.rate_limits', 'Rate Limits')}</span>
+        <p style={{margin: '6px 0 0', fontSize: 14}}>500 {t('integrations.docs.requests_per', 'requests per')} 15 {t('integrations.docs.minutes', 'minutes')}</p>
+      </div>
+
+      {/* Endpoints */}
+      <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
+        {ENDPOINTS.map((ep, idx) => (
+          <div key={idx} className="data-card" style={{padding: 0, overflow: 'hidden'}}>
+            <div style={{padding: '16px 20px', borderBottom: '1px solid #f1f5f9'}}>
+              <div style={{display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8}}>
+                <span className="intg-docs-method" style={{background: METHOD_COLORS[ep.method] + '18', color: METHOD_COLORS[ep.method]}}>{ep.method}</span>
+                <code style={{fontSize: 14, fontWeight: 600}}>{ep.path}</code>
+                <span className="badge badge-blue" style={{fontSize: 11, marginLeft: 'auto'}}>{ep.perms}</span>
+              </div>
+              <h4 style={{margin: '0 0 4px', fontWeight: 600, fontSize: 15}}>{ep.title}</h4>
+              <p style={{margin: 0, color: '#64748b', fontSize: 13}}>{ep.desc}</p>
+              {ep.params && <p style={{margin: '8px 0 0', fontSize: 12, color: '#94a3b8'}}>Params: {ep.params}</p>}
+            </div>
+            <div style={{position: 'relative', background: '#1e293b', padding: '14px 20px', borderRadius: '0 0 12px 12px'}}>
+              <button className="intg-copy-btn" style={{position: 'absolute', top: 10, right: 14, background: 'rgba(255,255,255,0.1)', color: '#fff'}}
+                onClick={() => copySnippet(ep.curl, idx)}>
+                {copiedIdx === idx ? <Check width={13}/> : <Copy width={13}/>}
+              </button>
+              <pre style={{margin: 0, color: '#e2e8f0', fontSize: 12, lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-all', paddingRight: 40}}>{ep.curl}</pre>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const TABS = [
   { id:'api-keys', labelKey:'integrations.api_keys',         icon: Key },
   { id:'webhooks', labelKey:'integrations.tab_webhooks',     icon: Network },
   { id:'log',      labelKey:'integrations.tab_delivery_log', icon: DataTransferBoth },
+  { id:'docs',     labelKey:'integrations.tab_api_docs',     icon: Book },
 ];
 
 export default function Integrations() {
@@ -418,6 +566,7 @@ export default function Integrations() {
         {tab==='api-keys' && <APIKeysTab />}
         {tab==='webhooks' && <WebhooksTab />}
         {tab==='log'      && <DeliveryLogTab />}
+        {tab==='docs'     && <APIDocsTab />}
       </div>
     </div>
   );

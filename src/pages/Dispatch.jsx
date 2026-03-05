@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Package, DeliveryTruck, MapPin, Refresh, Check, Xmark, WarningTriangle, Map as MapIcon, ViewGrid,
   Weight, Wallet, CreditCard, Box3dPoint, Clock, Calendar, User, Phone, ArrowRight, HandBrake,
+  Search, ScanBarcode, QrCode, Camera,
 } from 'iconoir-react';
 import JsBarcode from 'jsbarcode';
 import api from '../lib/api';
@@ -65,6 +66,10 @@ export default function Dispatch() {
   const [scheduleModal, setScheduleModal] = useState(null);  // order being scheduled
   const [scheduleForm, setScheduleForm]   = useState({ scheduled_at: '', scheduled_end: '', driver_id: '', notes: '' });
   const [pickupError, setPickupError]     = useState('');
+
+  /* ── Search & Scanner state ── */
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showScanner, setShowScanner] = useState(false);
 
   useEffect(() => {
     fetchBoard();
@@ -142,6 +147,199 @@ export default function Dispatch() {
     if (!window.confirm(t('dispatch.confirm_unassign'))) return;
     try { await api.post('/dispatch/unassign', { order_id: orderId }); fetchBoard(); }
     catch { /* ignore */ }
+  };
+
+  /* ── Filter logic ── */
+  const filterOrders = (orders) => {
+    if (!searchQuery.trim()) return orders;
+    const q = searchQuery.trim().toLowerCase();
+    return orders.filter(o =>
+      String(o.order_number || o.id).toLowerCase().includes(q) ||
+      (o.recipient_name || '').toLowerCase().includes(q) ||
+      (o.sender_name || '').toLowerCase().includes(q) ||
+      (o.recipient_phone || '').toLowerCase().includes(q) ||
+      (o.recipient_area || '').toLowerCase().includes(q) ||
+      (o.barcode || '').toLowerCase().includes(q)
+    );
+  };
+
+  const filteredUnassigned = filterOrders(board.unassigned || []);
+  const filteredActive = filterOrders(board.active_deliveries || []);
+  const filteredPickups = searchQuery.trim()
+    ? pickups.filter(p => {
+        const q = searchQuery.trim().toLowerCase();
+        return String(p.order_number || p.id).toLowerCase().includes(q) ||
+          (p.sender_name || '').toLowerCase().includes(q) ||
+          (p.recipient_name || '').toLowerCase().includes(q) ||
+          (p.barcode || '').toLowerCase().includes(q);
+      })
+    : pickups;
+
+  /* ── Barcode / QR Scanner Component ── */
+  const ScannerModal = () => {
+    const videoRef = useRef(null);
+    const [manualInput, setManualInput] = useState('');
+    const [scanError, setScanError] = useState('');
+    const [scanning, setScanning] = useState(false);
+
+    useEffect(() => {
+      let stream = null;
+      let animFrame = null;
+
+      const startCamera = async () => {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } }
+          });
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+            setScanning(true);
+          }
+
+          if ('BarcodeDetector' in window) {
+            const detector = new BarcodeDetector({
+              formats: ['code_128', 'qr_code', 'ean_13', 'ean_8', 'code_39']
+            });
+            const scanFrame = async () => {
+              if (videoRef.current && videoRef.current.readyState === 4) {
+                try {
+                  const barcodes = await detector.detect(videoRef.current);
+                  if (barcodes.length > 0) {
+                    const val = barcodes[0].rawValue;
+                    setSearchQuery(val);
+                    setShowScanner(false);
+                    if (stream) stream.getTracks().forEach(t => t.stop());
+                    return;
+                  }
+                } catch {}
+              }
+              animFrame = requestAnimationFrame(scanFrame);
+            };
+            videoRef.current?.addEventListener('loadeddata', () => scanFrame());
+          } else {
+            setScanError(t('dispatch.scanner_not_supported'));
+          }
+        } catch (e) {
+          setScanError(t('dispatch.scanner_no_camera'));
+        }
+      };
+
+      startCamera();
+
+      return () => {
+        if (stream) stream.getTracks().forEach(t => t.stop());
+        if (animFrame) cancelAnimationFrame(animFrame);
+      };
+    }, []);
+
+    const handleManualSubmit = () => {
+      if (manualInput.trim()) {
+        setSearchQuery(manualInput.trim());
+        setShowScanner(false);
+      }
+    };
+
+    return (
+      <div style={{
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 99999,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
+        backdropFilter: 'blur(4px)',
+      }} onClick={() => setShowScanner(false)}>
+        <div onClick={e => e.stopPropagation()} style={{
+          background: '#fff', borderRadius: 20, width: '100%', maxWidth: 460,
+          boxShadow: '0 25px 70px rgba(0,0,0,0.25)', overflow: 'hidden',
+        }}>
+          {/* Header */}
+          <div style={{
+            padding: '18px 22px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            background: 'linear-gradient(135deg, #1e293b, #334155)', color: '#fff',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.15)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <ScanBarcode width={20} height={20} />
+              </div>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 15 }}>{t('dispatch.scanner_title')}</div>
+                <div style={{ fontSize: 11, opacity: 0.7 }}>{t('dispatch.scanner_hint')}</div>
+              </div>
+            </div>
+            <button onClick={() => setShowScanner(false)} style={{
+              background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 8,
+              width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', color: '#fff',
+            }}>
+              <Xmark width={18} height={18} />
+            </button>
+          </div>
+
+          {/* Camera */}
+          <div style={{ background: '#000', position: 'relative', minHeight: 260 }}>
+            <video ref={videoRef} autoPlay playsInline muted style={{
+              width: '100%', height: 260, objectFit: 'cover', display: 'block',
+            }} />
+            {/* Scan overlay */}
+            {scanning && (
+              <div style={{
+                position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                pointerEvents: 'none',
+              }}>
+                <div style={{
+                  width: 220, height: 140, border: '3px solid rgba(59,130,246,0.8)',
+                  borderRadius: 16, position: 'relative',
+                  boxShadow: '0 0 0 2000px rgba(0,0,0,0.3)',
+                  animation: 'scanPulse 2s ease-in-out infinite',
+                }}>
+                  <div style={{ position: 'absolute', top: -2, left: -2, width: 20, height: 20, borderTop: '4px solid #3b82f6', borderLeft: '4px solid #3b82f6', borderRadius: '4px 0 0 0' }} />
+                  <div style={{ position: 'absolute', top: -2, right: -2, width: 20, height: 20, borderTop: '4px solid #3b82f6', borderRight: '4px solid #3b82f6', borderRadius: '0 4px 0 0' }} />
+                  <div style={{ position: 'absolute', bottom: -2, left: -2, width: 20, height: 20, borderBottom: '4px solid #3b82f6', borderLeft: '4px solid #3b82f6', borderRadius: '0 0 0 4px' }} />
+                  <div style={{ position: 'absolute', bottom: -2, right: -2, width: 20, height: 20, borderBottom: '4px solid #3b82f6', borderRight: '4px solid #3b82f6', borderRadius: '0 0 4px 0' }} />
+                </div>
+              </div>
+            )}
+            {scanError && (
+              <div style={{
+                position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center', background: '#1e293b', color: '#94a3b8',
+              }}>
+                <Camera width={40} height={40} style={{ marginBottom: 12, opacity: 0.5 }} />
+                <div style={{ fontSize: 13, fontWeight: 600, textAlign: 'center', padding: '0 20px' }}>{scanError}</div>
+              </div>
+            )}
+          </div>
+
+          {/* Manual input */}
+          <div style={{ padding: '18px 22px' }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              {t('dispatch.scanner_manual')}
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input
+                type="text"
+                value={manualInput}
+                onChange={e => setManualInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleManualSubmit()}
+                placeholder={t('dispatch.search_placeholder')}
+                autoFocus={!!scanError}
+                style={{
+                  flex: 1, padding: '11px 14px', borderRadius: 12, border: '2px solid #e2e8f0',
+                  fontSize: 14, fontWeight: 500, outline: 'none', transition: 'border-color 0.2s',
+                  fontFamily: 'monospace',
+                }}
+              />
+              <button onClick={handleManualSubmit} style={{
+                padding: '11px 20px', borderRadius: 12, border: 'none',
+                background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: '#fff',
+                fontWeight: 700, fontSize: 13, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}>
+                <Search width={15} height={15} /> {t('dispatch.scanner_search')}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   /* ── Popup styles ── */
@@ -527,44 +725,174 @@ export default function Dispatch() {
         </div>
       </div>
 
+      {/* ── Stats Strip ── */}
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 16,
+      }}>
+        {[
+          { label: t('dispatch.stats_total'), value: (board.unassigned?.length || 0) + (board.active_deliveries?.length || 0), color: '#6366f1', bg: 'linear-gradient(135deg, #eef2ff, #e0e7ff)', icon: <Package width={20} height={20} color="#6366f1" /> },
+          { label: t('dispatch.stats_unassigned'), value: board.unassigned?.length || 0, color: '#f59e0b', bg: 'linear-gradient(135deg, #fffbeb, #fef3c7)', icon: <Clock width={20} height={20} color="#f59e0b" /> },
+          { label: t('dispatch.stats_active'), value: board.active_deliveries?.length || 0, color: '#3b82f6', bg: 'linear-gradient(135deg, #eff6ff, #dbeafe)', icon: <DeliveryTruck width={20} height={20} color="#3b82f6" /> },
+          { label: t('dispatch.stats_drivers'), value: board.available_drivers?.length || 0, color: '#22c55e', bg: 'linear-gradient(135deg, #f0fdf4, #dcfce7)', icon: <User width={20} height={20} color="#22c55e" /> },
+        ].map(s => (
+          <div key={s.label} style={{
+            background: s.bg, borderRadius: 14, padding: '14px 16px',
+            display: 'flex', alignItems: 'center', gap: 12,
+            border: '1px solid rgba(0,0,0,0.04)',
+            transition: 'transform 0.15s, box-shadow 0.15s',
+          }}>
+            <div style={{
+              width: 44, height: 44, borderRadius: 12,
+              background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(8px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+            }}>{s.icon}</div>
+            <div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value}</div>
+              <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', marginTop: 2 }}>{s.label}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
       {/* ── Main Tab Switcher: Deliveries | Pickups ── */}
-      <div style={{ display: 'flex', gap: 0, borderBottom: '2px solid #e2e8f0', margin: '0 0 16px' }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 0, marginBottom: 0,
+        background: '#f1f5f9', borderRadius: '14px 14px 0 0', padding: 4,
+      }}>
         <button
           onClick={() => setMainTab('deliveries')}
           style={{
-            padding: '10px 20px', fontWeight: 700, fontSize: 14, cursor: 'pointer',
-            border: 'none', background: 'none',
-            borderBottom: mainTab === 'deliveries' ? '3px solid #3b82f6' : '3px solid transparent',
+            flex: 1, padding: '11px 20px', fontWeight: 700, fontSize: 14, cursor: 'pointer',
+            border: 'none', borderRadius: 10,
+            background: mainTab === 'deliveries' ? '#fff' : 'transparent',
             color: mainTab === 'deliveries' ? '#1e40af' : '#64748b',
-            display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            transition: 'all 0.25s ease',
+            boxShadow: mainTab === 'deliveries' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
           }}
         >
-          <DeliveryTruck width={16} height={16} /> {t('pickup.tab_deliveries')}
+          <DeliveryTruck width={17} height={17} /> {t('dispatch.tab_deliveries')}
           <span style={{
-            background: mainTab === 'deliveries' ? '#dbeafe' : '#f1f5f9',
+            background: mainTab === 'deliveries' ? '#dbeafe' : '#e2e8f0',
             color: mainTab === 'deliveries' ? '#1d4ed8' : '#64748b',
-            padding: '1px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700,
+            padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 800,
+            minWidth: 28, textAlign: 'center',
           }}>{(board.unassigned?.length || 0) + (board.active_deliveries?.length || 0)}</span>
         </button>
         <button
           onClick={() => setMainTab('pickups')}
           style={{
-            padding: '10px 20px', fontWeight: 700, fontSize: 14, cursor: 'pointer',
-            border: 'none', background: 'none',
-            borderBottom: mainTab === 'pickups' ? '3px solid #f59e0b' : '3px solid transparent',
+            flex: 1, padding: '11px 20px', fontWeight: 700, fontSize: 14, cursor: 'pointer',
+            border: 'none', borderRadius: 10,
+            background: mainTab === 'pickups' ? '#fff' : 'transparent',
             color: mainTab === 'pickups' ? '#92400e' : '#64748b',
-            display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            transition: 'all 0.25s ease',
+            boxShadow: mainTab === 'pickups' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
           }}
         >
-          <HandBrake width={16} height={16} /> {t('pickup.tab_pickups')}
-          {pickupStats.total_awaiting > 0 && (
-            <span style={{
-              background: '#fef3c7', color: '#92400e',
-              padding: '1px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700,
-            }}>{pickupStats.total_awaiting}</span>
-          )}
+          <Package width={17} height={17} /> {t('dispatch.tab_pickups')}
+          <span style={{
+            background: mainTab === 'pickups' ? '#fef3c7' : '#e2e8f0',
+            color: mainTab === 'pickups' ? '#92400e' : '#64748b',
+            padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 800,
+            minWidth: 28, textAlign: 'center',
+          }}>{pickupStats.total_awaiting || 0}</span>
         </button>
       </div>
+
+      {/* ── Search / Filter Bar ── */}
+      <div style={{
+        display: 'flex', gap: 10, padding: '14px 16px', marginBottom: 16,
+        background: '#fff', borderRadius: '0 0 14px 14px',
+        border: '1px solid #e2e8f0', borderTop: 'none',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.04)',
+      }}>
+        <div style={{ flex: 1, position: 'relative' }}>
+          <Search width={16} height={16} style={{
+            position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
+            color: '#94a3b8', pointerEvents: 'none',
+          }} />
+          <input
+            type="text"
+            placeholder={t('dispatch.search_placeholder')}
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            style={{
+              width: '100%', padding: '11px 40px 11px 40px', borderRadius: 12,
+              border: '2px solid #e2e8f0', fontSize: 14, fontWeight: 500,
+              outline: 'none', transition: 'border-color 0.2s, box-shadow 0.2s',
+              background: '#f8fafc',
+            }}
+            onFocus={e => { e.target.style.borderColor = '#3b82f6'; e.target.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.1)'; e.target.style.background = '#fff'; }}
+            onBlur={e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = 'none'; e.target.style.background = '#f8fafc'; }}
+          />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery('')} style={{
+              position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+              background: '#f1f5f9', border: 'none', borderRadius: 6, width: 22, height: 22,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', color: '#64748b',
+            }}>
+              <Xmark width={14} height={14} />
+            </button>
+          )}
+        </div>
+        <button onClick={() => setShowScanner(true)} style={{
+          padding: '11px 18px', borderRadius: 12, border: '2px solid #e2e8f0',
+          background: 'linear-gradient(135deg, #f8fafc, #fff)', cursor: 'pointer',
+          fontWeight: 700, fontSize: 13, color: '#475569',
+          display: 'flex', alignItems: 'center', gap: 7, transition: 'all 0.2s',
+          whiteSpace: 'nowrap',
+        }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = '#3b82f6'; e.currentTarget.style.color = '#2563eb'; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.color = '#475569'; }}
+        >
+          <ScanBarcode width={18} height={18} /> {t('dispatch.scan_barcode')}
+        </button>
+        <button onClick={() => setShowScanner(true)} style={{
+          padding: '11px 16px', borderRadius: 12, border: '2px solid #e2e8f0',
+          background: 'linear-gradient(135deg, #f8fafc, #fff)', cursor: 'pointer',
+          fontWeight: 700, fontSize: 13, color: '#475569',
+          display: 'flex', alignItems: 'center', gap: 7, transition: 'all 0.2s',
+          whiteSpace: 'nowrap',
+        }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = '#7c3aed'; e.currentTarget.style.color = '#7c3aed'; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.color = '#475569'; }}
+        >
+          <QrCode width={18} height={18} /> QR
+        </button>
+      </div>
+
+      {/* ── Active filter indicator ── */}
+      {searchQuery.trim() && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', marginBottom: 12,
+          background: 'linear-gradient(135deg, #eff6ff, #dbeafe)', borderRadius: 10,
+          border: '1px solid #bfdbfe', fontSize: 13, fontWeight: 600, color: '#1d4ed8',
+        }}>
+          <Search width={14} height={14} />
+          {t('dispatch.filter_results')} &ldquo;<span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{searchQuery}</span>&rdquo;
+          <span style={{ color: '#64748b', fontWeight: 500 }}>
+            — {mainTab === 'deliveries'
+              ? `${filteredUnassigned.length + filteredActive.length} ${t('dispatch.results_found')}`
+              : `${filteredPickups.length} ${t('dispatch.results_found')}`
+            }
+          </span>
+          <button onClick={() => setSearchQuery('')} style={{
+            marginLeft: 'auto', padding: '3px 10px', borderRadius: 6,
+            border: '1px solid #93c5fd', background: '#fff', color: '#1d4ed8',
+            fontWeight: 700, fontSize: 12, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 4,
+          }}>
+            <Xmark width={12} height={12} /> {t('dispatch.clear_filter')}
+          </button>
+        </div>
+      )}
+
+      {/* Scanner Modal */}
+      {showScanner && <ScannerModal />}
 
       {/* ═══════════════ DELIVERIES TAB ═══════════════ */}
       {mainTab === 'deliveries' && (<>
@@ -613,11 +941,11 @@ export default function Dispatch() {
             <div className="dispatch-col-header">
               <div className="col-dot" style={{ background: '#f59e0b' }} />
               <h3>{t('dispatch.col.unassigned')}</h3>
-              <span className="col-count amber">{board.unassigned?.length || 0}</span>
+              <span className="col-count amber">{filteredUnassigned.length}</span>
             </div>
-            {board.unassigned?.length === 0
-              ? <div className="empty-col">{t("dispatch.no_pending")}</div>
-              : board.unassigned.map(o => <OrderCard key={o.id} order={o} showUnassign={false} />)
+            {filteredUnassigned.length === 0
+              ? <div className="empty-col">{searchQuery ? t('dispatch.no_results') : t("dispatch.no_pending")}</div>
+              : filteredUnassigned.map(o => <OrderCard key={o.id} order={o} showUnassign={false} />)
             }
           </div>
 
@@ -626,11 +954,11 @@ export default function Dispatch() {
             <div className="dispatch-col-header">
               <div className="col-dot" style={{ background: '#3b82f6' }} />
               <h3>{t('dispatch.col.in_progress')}</h3>
-              <span className="col-count blue">{board.active_deliveries?.length || 0}</span>
+              <span className="col-count blue">{filteredActive.length}</span>
             </div>
-            {board.active_deliveries?.length === 0
-              ? <div className="empty-col">{t('dispatch.no_active')}</div>
-              : board.active_deliveries.map(o => <OrderCard key={o.id} order={o} showUnassign={true} />)
+            {filteredActive.length === 0
+              ? <div className="empty-col">{searchQuery ? t('dispatch.no_results') : t('dispatch.no_active')}</div>
+              : filteredActive.map(o => <OrderCard key={o.id} order={o} showUnassign={true} />)
             }
           </div>
 
@@ -691,15 +1019,15 @@ export default function Dispatch() {
           {/* Sidebar mini cards */}
           <div className="dispatch-map-sidebar">
             <div style={{ fontWeight:700, fontSize:'0.85rem', marginBottom:8, color:'var(--gray-700)' }}>
-              {t('dispatch.sidebar.unassigned', { count: board.unassigned?.length || 0 })}
+              {t('dispatch.sidebar.unassigned', { count: filteredUnassigned.length })}
             </div>
-            {board.unassigned?.map(o => (
+            {filteredUnassigned.map(o => (
               <OrderCard key={o.id} order={o} showUnassign={false} mini />
             ))}
             <div style={{ fontWeight:700, fontSize:'0.85rem', margin:'12px 0 8px', color:'var(--gray-700)' }}>
-              {t('dispatch.sidebar.active', { count: board.active_deliveries?.length || 0 })}
+              {t('dispatch.sidebar.active', { count: filteredActive.length })}
             </div>
-            {board.active_deliveries?.map(o => (
+            {filteredActive.map(o => (
               <OrderCard key={o.id} order={o} showUnassign={true} mini />
             ))}
           </div>
@@ -768,15 +1096,15 @@ export default function Dispatch() {
             <div className="loading-rows">
               {[1,2,3].map(i => <div key={i} className="skeleton-card" />)}
             </div>
-          ) : pickups.length === 0 ? (
+          ) : filteredPickups.length === 0 ? (
             <div className="empty-state-mini" style={{ padding: '3rem 0', textAlign: 'center' }}>
               <HandBrake width={48} height={48} style={{ color: '#cbd5e1' }} />
-              <p style={{ fontWeight: 600, marginTop: 12, color: '#64748b' }}>{t('pickup.no_pending')}</p>
-              <p style={{ color: '#94a3b8', fontSize: 13 }}>{t('pickup.no_pending_hint')}</p>
+              <p style={{ fontWeight: 600, marginTop: 12, color: '#64748b' }}>{searchQuery ? t('dispatch.no_results') : t('pickup.no_pending')}</p>
+              <p style={{ color: '#94a3b8', fontSize: 13 }}>{searchQuery ? '' : t('pickup.no_pending_hint')}</p>
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 14 }}>
-              {pickups.map(p => {
+              {filteredPickups.map(p => {
                 const isPending = p.pickup_status === 'pending_pickup';
                 const isScheduled = p.pickup_status === 'pickup_scheduled';
                 const scheduleTime = p.pickup_scheduled_at ? new Date(p.pickup_scheduled_at) : null;

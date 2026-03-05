@@ -273,8 +273,8 @@ function AddressSearch({ onSelect }) {
           style={{ ...INPUT, [isRTL?'paddingRight':'paddingLeft']:34 }} placeholder={t('orders.placeholders.search_address')} />
       </div>
       {open && results.length > 0 && (
-        <div style={{ position:'absolute', bottom:'100%', left:0, right:0, background:'#fff', borderRadius:10,
-          boxShadow:'0 8px 30px rgba(0,0,0,0.15)', border:'1px solid #e2e8f0', zIndex:50, maxHeight:220, overflowY:'auto', marginBottom:4 }}>
+        <div style={{ position:'absolute', top:'100%', left:0, right:0, background:'#fff', borderRadius:10,
+          boxShadow:'0 8px 30px rgba(0,0,0,0.15)', border:'1px solid #e2e8f0', zIndex:9999, maxHeight:220, overflowY:'auto', marginTop:4 }}>
           {results.map((r,i) => (
             <div key={i} onClick={() => { onSelect({ lat:r.lat, lng:r.lon, display:r.display_name }); setQ(r.display_name.split(',')[0]); setOpen(false); }}
               style={{ padding:'10px 14px', cursor:'pointer', borderBottom:'1px solid #f8fafc', fontSize:13, color:'#1e293b' }}
@@ -1416,8 +1416,8 @@ export default function Orders() {
             <StepBar current={step} t={t} />
             <div style={{ margin:'20px 0 0', height:1, background:'#f1f5f9' }} />
 
-            <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', flex:1, overflow:'hidden' }}>
-              <div style={{ overflowY:'auto', flex:1, 
+            <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', flex:1, minHeight:0 }}>
+              <div style={{ overflowY:'auto', overflowX:'visible', flex:1, 
                 padding: _mob ? '12px 14px 0' : _tab ? '18px 22px 0' : '22px 28px 0',
                 WebkitOverflowScrolling: 'touch' }}>
                 {formError && (

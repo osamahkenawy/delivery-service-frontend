@@ -29,7 +29,16 @@ export async function apiFetch(endpoint, options = {}) {
     return { success: false, message: 'Session expired' };
   }
 
-  return response.json();
+  const data = await response.json();
+
+  // D.6 — Handle plan limit / feature gate responses
+  if (response.status === 403 && data?.upgrade_required) {
+    // Dispatch custom event so UpgradeModal can be shown globally
+    window.dispatchEvent(new CustomEvent('plan-upgrade-required', { detail: data }));
+    return { ...data, success: false };
+  }
+
+  return data;
 }
 
 // Convenience methods

@@ -1606,7 +1606,23 @@
     },
     "tab_deliveries": "Deliveries",
     "tab_pickups": "Pickups",
-    "pickup_count": "{{count}} pending"
+    "pickup_count": "{{count}} pending",
+    "search_placeholder": "Search by order #, barcode, or recipient...",
+    "scan_barcode": "Scan Barcode",
+    "scanner_title": "Scan Barcode / QR Code",
+    "scanner_hint": "Point your camera at a barcode or QR code",
+    "scanner_manual": "Or enter barcode manually",
+    "scanner_not_supported": "Camera scanner not supported in this browser. Please type the barcode manually.",
+    "scanner_no_camera": "Unable to access camera. Please check permissions and try again.",
+    "scanner_search": "Search",
+    "filter_results": "Showing results for",
+    "results_found": "results found",
+    "clear_filter": "Clear",
+    "no_results": "No matching orders found",
+    "stats_total": "Total Orders",
+    "stats_unassigned": "Unassigned",
+    "stats_active": "In Progress",
+    "stats_drivers": "Available Drivers"
   },
   "pickup": {
     "stat_pending": "Pending Pickup",
@@ -2531,6 +2547,7 @@
     },
     "tab_webhooks": "Webhooks",
     "tab_delivery_log": "Delivery Log",
+    "tab_api_docs": "API Docs",
     "delete_key_confirm": "Delete this key?",
     "delete_webhook_confirm": "Delete this webhook?",
     "active": "Active",
@@ -2636,7 +2653,8 @@
       "notifications": "Notifications",
       "categories": "Categories",
       "roles": "Roles",
-      "users": "Users"
+      "users": "Users",
+      "subscription": "Subscription"
     },
     "tab_descriptions": {
       "general": "Company info, branding and regional preferences",
@@ -2645,7 +2663,8 @@
       "notifications": "Email SMTP and SMS gateway configuration",
       "categories": "Manage order categories and shipment types",
       "roles": "Define roles and configure module-level permissions",
-      "users": "Manage team members and their roles"
+      "users": "Manage team members and their roles",
+      "subscription": "View your current plan, usage limits and upgrade options"
     },
     "general": {
       "company_info": "Company Information",
